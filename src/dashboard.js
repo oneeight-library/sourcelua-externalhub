@@ -1,0 +1,884 @@
+export function getWebDashboardHTML(origin) {
+  const wsUrl = origin.replace("https://", "wss://").replace("http://", "ws://") + "/ws";
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OneEight External Hub - Fleet Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #080a11;
+      --bg-card: rgba(16, 21, 36, 0.75);
+      --bg-surface: rgba(22, 29, 50, 0.6);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-hover: rgba(99, 102, 241, 0.4);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.35);
+      --accent: #818cf8;
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.3);
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.3);
+      --text: #f3f4f6;
+      --text-muted: #94a3b8;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 45%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 45%);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      height: 64px;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(11, 15, 26, 0.85);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand-wrap { display: flex; align-items: center; gap: 12px; }
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 17px;
+      color: white;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+    .brand-info h1 { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
+    .brand-tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: #a5b4fc;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .brand-info p { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+
+    .header-right { display: flex; align-items: center; gap: 14px; }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--warning);
+      box-shadow: 0 0 8px currentColor;
+      animation: pulse 2s infinite;
+    }
+    .pulse-dot.online { background: var(--success); }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } }
+
+    .app-layout {
+      flex: 1;
+      display: flex;
+      height: calc(100vh - 64px);
+    }
+
+    /* SIDEBAR */
+    aside.sidebar {
+      width: 320px;
+      border-right: 1px solid var(--card-border);
+      background: rgba(12, 16, 28, 0.6);
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .sidebar-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sidebar-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); }
+    .badge-count {
+      padding: 2px 8px;
+      background: rgba(99, 102, 241, 0.2);
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #a5b4fc;
+    }
+
+    .fleet-list {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .fleet-item {
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .fleet-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--card-border-hover);
+      transform: translateX(2px);
+    }
+    .fleet-item.active {
+      background: rgba(99, 102, 241, 0.12);
+      border-color: var(--primary);
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+    }
+    .fleet-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1e293b, #334155);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 15px;
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+    .avatar-status {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid var(--bg-dark);
+      background: var(--warning);
+    }
+    .avatar-status.online { background: var(--success); }
+    .fleet-item-info { flex: 1; min-width: 0; }
+    .fleet-item-name {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .fleet-item-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* MAIN VIEW */
+    main.content-view {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .bot-hero {
+      background: var(--bg-card);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 22px 28px;
+      backdrop-filter: blur(16px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 18px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+    .bot-hero-left { display: flex; align-items: center; gap: 16px; }
+    .bot-hero-avatar {
+      width: 54px;
+      height: 54px;
+      background: linear-gradient(135deg, #4f46e5, #3b82f6);
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: white;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+    .bot-hero-title h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+    .bot-hero-chips { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .chip {
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+    }
+    .chip.game { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; }
+    .chip.status { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; font-family: var(--mono); }
+
+    .hero-actions { display: flex; gap: 10px; }
+
+    .tabs-bar {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 12px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
+    .tab-btn.active {
+      color: white;
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.35);
+      box-shadow: 0 0 14px rgba(99, 102, 241, 0.2);
+    }
+
+    .tab-panel { display: none; flex-direction: column; gap: 20px; }
+    .tab-panel.active { display: flex; }
+
+    .card-section {
+      background: var(--bg-card);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      gap: 16px;
+    }
+    .control-row:hover { border-color: rgba(255, 255, 255, 0.08); }
+    .control-meta h4 { font-size: 14px; font-weight: 700; }
+    .control-meta p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* SWITCH */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s;
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    input:checked + .slider {
+      background-color: var(--primary);
+      box-shadow: 0 0 14px var(--primary-glow);
+    }
+    input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+
+    /* SLIDER COMPONENT */
+    .range-box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+    .range-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .range-val {
+      font-family: var(--mono);
+      font-weight: 800;
+      font-size: 14px;
+      color: #818cf8;
+      background: rgba(99, 102, 241, 0.15);
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--primary-glow);
+      border: 2px solid white;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+    }
+    .metric-tile {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .metric-title { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px; }
+    .metric-number { font-size: 22px; font-weight: 800; font-family: var(--mono); }
+
+    .btn {
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 14px var(--primary-glow); }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-danger { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.3); color: white; }
+    .btn-outline { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: var(--text); }
+    .btn-outline:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
+
+    .console-box {
+      background: rgba(4, 6, 12, 0.95);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      max-height: 280px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .log-row { display: flex; gap: 10px; line-height: 1.5; }
+    .log-ts { color: var(--text-muted); opacity: 0.6; }
+    .log-SUCCESS { color: var(--success); }
+    .log-INFO { color: #60a5fa; }
+    .log-WARN { color: var(--warning); }
+    .log-ERROR { color: var(--danger); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-wrap">
+      <div class="brand-logo">OE</div>
+      <div class="brand-info">
+        <h1>ONEEIGHT COMMAND CENTER <span class="brand-tag">v2.0 FLEET</span></h1>
+        <p>External WebSocket Multi-Account Controller</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <div class="pulse-dot" id="headerWsDot"></div>
+        <span id="headerWsStatus">Menghubungkan...</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Armada Akun (Fleet)</span>
+        <span class="badge-count" id="fleetBadge">0 Bot</span>
+      </div>
+      <div class="fleet-list" id="fleetList">
+        <div class="fleet-item active" id="item_ALL" onclick="selectBot('ALL')">
+          <div class="fleet-avatar">🌐</div>
+          <div class="fleet-item-info">
+            <div class="fleet-item-name">Semua Akun (Global)</div>
+            <div class="fleet-item-sub">Ringkasan Armada & Aksi Massal</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content-view" id="mainContentView">
+    </main>
+  </div>
+
+  <script>
+    const WS_URL = "${wsUrl}?role=controller";
+    let socket = null;
+    let bots = new Map();
+    let selectedBotId = "ALL";
+    let activeTab = "tab_autofarm";
+    let logsHistory = [];
+
+    function formatMoney(num) {
+      if (!num) return "Rp 0";
+      return "Rp " + Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    function initWebSocket() {
+      const dot = document.getElementById("headerWsDot");
+      const statusText = document.getElementById("headerWsStatus");
+
+      socket = new WebSocket(WS_URL);
+
+      socket.onopen = () => {
+        dot.className = "pulse-dot online";
+        statusText.innerText = "Gateway Online";
+        addLog("System", "Terhubung ke Cloudflare Durable Object!", "SUCCESS");
+      };
+
+      socket.onclose = () => {
+        dot.className = "pulse-dot";
+        statusText.innerText = "Disconnected";
+        addLog("System", "Koneksi terputus. Mencoba reconnect...", "WARN");
+        setTimeout(initWebSocket, 3000);
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleSocketMessage(data);
+        } catch (e) {}
+      };
+    }
+
+    function handleSocketMessage(data) {
+      if (data.type === "SYNC_BOTS") {
+        bots.clear();
+        (data.bots || []).forEach(b => bots.set(b.id || b.botId, b));
+        renderSidebar();
+        renderMainView();
+      } else if (data.type === "BOT_JOINED") {
+        bots.set(data.bot.botId, data.bot);
+        renderSidebar();
+        renderMainView();
+        addLog(data.bot.name, "Akun baru bergabung ke armada!", "SUCCESS");
+      } else if (data.type === "BOT_LEFT") {
+        bots.delete(data.botId);
+        if (selectedBotId === data.botId) selectedBotId = "ALL";
+        renderSidebar();
+        renderMainView();
+        addLog(data.name || "Bot", "Akun terputus dari jaringan.", "WARN");
+      } else if (data.type === "BOT_TELEMETRY") {
+        const existing = bots.get(data.botId);
+        if (existing) {
+          Object.assign(existing, data.payload || {});
+          renderSidebar();
+          renderMainView();
+        }
+      } else if (data.type === "BOT_LOG") {
+        addLog(data.botName || "Bot", data.log, data.level);
+      }
+    }
+
+    function addLog(source, msg, level) {
+      const d = new Date();
+      const timeStr = d.toTimeString().split(" ")[0];
+      logsHistory.push({ time: timeStr, source, msg, level: level || "INFO" });
+      if (logsHistory.length > 100) logsHistory.shift();
+
+      const consoleBox = document.getElementById("botConsoleBox");
+      if (consoleBox) {
+        const div = document.createElement("div");
+        div.className = "log-row";
+        div.innerHTML = \`<span class="log-ts">[\${timeStr}] [\${source}]</span> <span class="log-\${level}">\${msg}</span>\`;
+        consoleBox.appendChild(div);
+        consoleBox.scrollTop = consoleBox.scrollHeight;
+      }
+    }
+
+    function renderSidebar() {
+      const list = document.getElementById("fleetList");
+      document.getElementById("fleetBadge").innerText = bots.size + " Bot";
+
+      let html = \`
+        <div class="fleet-item \${selectedBotId === 'ALL' ? 'active' : ''}" onclick="selectBot('ALL')">
+          <div class="fleet-avatar">🌐</div>
+          <div class="fleet-item-info">
+            <div class="fleet-item-name">Semua Akun (Global)</div>
+            <div class="fleet-item-sub">Ringkasan Armada & Aksi Massal</div>
+          </div>
+        </div>
+      \`;
+
+      for (const [id, b] of bots.entries()) {
+        const isSelected = selectedBotId === id;
+        const initial = (b.name || "B").substring(0, 2).toUpperCase();
+        const statusText = b.isFarming ? (b.status || "Farming") : "Standby";
+
+        html += \`
+          <div class="fleet-item \${isSelected ? 'active' : ''}" onclick="selectBot('\${id}')">
+            <div class="fleet-avatar">
+              \${initial}
+              <div class="avatar-status \${b.isFarming ? 'online' : ''}"></div>
+            </div>
+            <div class="fleet-item-info">
+              <div class="fleet-item-name">\${b.name || 'Bot'}</div>
+              <div class="fleet-item-sub">\${b.gameName || 'CDID'} • \${statusText}</div>
+            </div>
+          </div>
+        \`;
+      }
+
+      list.innerHTML = html;
+    }
+
+    function selectBot(botId) {
+      selectedBotId = botId;
+      renderSidebar();
+      renderMainView();
+    }
+
+    function setTab(tabName) {
+      activeTab = tabName;
+      renderMainView();
+    }
+
+    function renderMainView() {
+      const container = document.getElementById("mainContentView");
+
+      if (selectedBotId === "ALL") {
+        renderGlobalOverview(container);
+        return;
+      }
+
+      const bot = bots.get(selectedBotId);
+      if (!bot) {
+        selectedBotId = "ALL";
+        renderGlobalOverview(container);
+        return;
+      }
+
+      renderBotSpecificView(container, bot);
+    }
+
+    function renderGlobalOverview(container) {
+      let totalTrips = 0;
+      let totalCash = 0;
+      let farmingCount = 0;
+
+      for (const [_, b] of bots.entries()) {
+        totalTrips += (b.tripCount || 0);
+        totalCash += (b.totalEarnings || 0);
+        if (b.isFarming) farmingCount++;
+      }
+
+      container.innerHTML = \`
+        <div class="bot-hero">
+          <div class="bot-hero-left">
+            <div class="bot-hero-avatar">🌐</div>
+            <div class="bot-hero-title">
+              <h2>Overview Seluruh Armada</h2>
+              <div class="bot-hero-chips">
+                <span class="chip game">Global Control</span>
+                <span class="chip status">\${farmingCount} / \${bots.size} Sedang Auto Farm</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <button class="btn btn-primary" onclick="sendFleetCommand('START_FARM')">Mulai Semua</button>
+            <button class="btn btn-danger" onclick="sendFleetCommand('STOP_FARM')">Stop Semua</button>
+            <button class="btn btn-outline" onclick="sendFleetCommand('TOGGLE_LOW_RENDER')">Toggle Low GPU</button>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-tile">
+            <span class="metric-title">Total Bot Terhubung</span>
+            <span class="metric-number" style="color: #818cf8;">\${bots.size}</span>
+          </div>
+          <div class="metric-tile">
+            <span class="metric-title">Total Pengiriman Kargo</span>
+            <span class="metric-number" style="color: #f59e0b;">\${totalTrips} Trips</span>
+          </div>
+          <div class="metric-tile">
+            <span class="metric-title">Total Pendapatan Sesi</span>
+            <span class="metric-number" style="color: #10b981;">\${formatMoney(totalCash)}</span>
+          </div>
+        </div>
+
+        <div class="card-section">
+          <div class="card-title">Live Event Stream (Seluruh Akun)</div>
+          <div class="console-box" id="botConsoleBox">
+            \${renderLogsHTML()}
+          </div>
+        </div>
+      \`;
+    }
+
+    function renderBotSpecificView(container, bot) {
+      container.innerHTML = \`
+        <div class="bot-hero">
+          <div class="bot-hero-left">
+            <div class="bot-hero-avatar">\${(bot.name || "B").substring(0, 2).toUpperCase()}</div>
+            <div class="bot-hero-title">
+              <h2>\${bot.name || 'Roblox Player'}</h2>
+              <div class="bot-hero-chips">
+                <span class="chip game">\${bot.gameName || 'Car Driving Indonesia'}</span>
+                <span class="chip status">\${bot.status || 'CONNECTED'}</span>
+                <span class="chip">\${bot.currentRoute || 'IDLE'}</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <button class="btn \${bot.isFarming ? 'btn-danger' : 'btn-primary'}" onclick="toggleBotFarm('\${bot.botId}', \${!bot.isFarming})">
+              \${bot.isFarming ? 'Hentikan Farm' : 'Mulai Auto Farm'}
+            </button>
+          </div>
+        </div>
+
+        <div class="tabs-bar">
+          <button class="tab-btn \${activeTab === 'tab_autofarm' ? 'active' : ''}" onclick="setTab('tab_autofarm')">📦 Auto Farm Truck</button>
+          <button class="tab-btn \${activeTab === 'tab_nav' ? 'active' : ''}" onclick="setTab('tab_nav')">🚗 Navigasi & Kendaraan</button>
+          <button class="tab-btn \${activeTab === 'tab_perf' ? 'active' : ''}" onclick="setTab('tab_perf')">⚡ Optimasi & Misc</button>
+          <button class="tab-btn \${activeTab === 'tab_logs' ? 'active' : ''}" onclick="setTab('tab_logs')">📟 Live Console</button>
+        </div>
+
+        <div class="tab-panel \${activeTab === 'tab_autofarm' ? 'active' : ''}">
+          <div class="card-section">
+            <div class="card-title">Pengaturan Auto Farm Kargo CDID</div>
+            
+            <div class="control-row">
+              <div class="control-meta">
+                <h4>Aktifkan CDID Truck Auto Farm</h4>
+                <p>Eksekusi 6-State Server-Synchronized (Despawn, HQ, Route, Spawner, Seat, 50s Payout)</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" \${bot.isFarming ? 'checked' : ''} onchange="toggleBotFarm('\${bot.botId}', this.checked)">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="control-row">
+              <div class="range-box">
+                <div class="range-header">
+                  <div class="control-meta">
+                    <h4>Batas Jarak Minimum Rute</h4>
+                    <p>Hanya terima pengiriman bernilai tinggi (menolak rute pendek di bawah nilai ini)</p>
+                  </div>
+                  <span class="range-val" id="minDistLabel">\${(bot.minDistance || 100000).toLocaleString()} studs</span>
+                </div>
+                <input type="range" min="50000" max="150000" step="5000" value="\${bot.minDistance || 100000}" oninput="updateMinDistPreview(this.value)" onchange="sendMinDistance('\${bot.botId}', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-tile">
+              <span class="metric-title">Status Siklus</span>
+              <span class="metric-number" style="font-size: 16px; color: #6ee7b7;">\${bot.status || 'STANDBY'}</span>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-title">Rute Pengantaran</span>
+              <span class="metric-number" style="font-size: 16px; color: #93c5fd;">\${bot.currentRoute || 'IDLE'}</span>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-title">Pengiriman Selesai</span>
+              <span class="metric-number" style="color: #f59e0b;">\${bot.tripCount || 0} Trips</span>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-title">Total Pendapatan Sesi</span>
+              <span class="metric-number" style="color: #10b981;">\${formatMoney(bot.totalEarnings)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel \${activeTab === 'tab_nav' ? 'active' : ''}">
+          <div class="card-section">
+            <div class="card-title">Kontrol Lokasi & Armada Truk</div>
+            <div class="control-row">
+              <div class="control-meta">
+                <h4>Teleportasi ke Depo HQ Truk</h4>
+                <p>Pindahkan karakter instan ke markas depo kargo Jawa Timur</p>
+              </div>
+              <button class="btn btn-outline" onclick="sendBotAction('\${bot.botId}', 'TELEPORT_HQ')">Teleport HQ</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel \${activeTab === 'tab_perf' ? 'active' : ''}">
+          <div class="card-section">
+            <div class="card-title">Performa & AFK 24/7</div>
+            <div class="control-row">
+              <div class="control-meta">
+                <h4>Low GPU Mode (Disable 3D Rendering)</h4>
+                <p>Mematikan render 3D game Roblox di perangkat untuk menghemat CPU/GPU hingga 85%</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" \${bot.lowRender ? 'checked' : ''} onchange="sendBotAction('\${bot.botId}', 'TOGGLE_LOW_RENDER')">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="control-row">
+              <div class="control-meta">
+                <h4>Anti-AFK Protection (20-Min Bypass)</h4>
+                <p>Mencegah Roblox mendiskoneksikan akun karena tidak bergerak</p>
+              </div>
+              <span style="color: #10b981; font-weight: 700; font-size: 13px;">SELALU AKTIF (NATIVE)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel \${activeTab === 'tab_logs' ? 'active' : ''}">
+          <div class="card-section">
+            <div class="card-title">F9 Live Console Output</div>
+            <div class="console-box" id="botConsoleBox">
+              \${renderLogsHTML(bot.name)}
+            </div>
+          </div>
+        </div>
+      \`;
+    }
+
+    function renderLogsHTML(filterName) {
+      let filtered = logsHistory;
+      if (filterName) {
+        filtered = logsHistory.filter(l => l.source === filterName || l.source === "System");
+      }
+      return filtered.map(l => \`
+        <div class="log-row">
+          <span class="log-ts">[\${l.time}] [\${l.source}]</span>
+          <span class="log-\${l.level}">\${l.msg}</span>
+        </div>
+      \`).join("");
+    }
+
+    function toggleBotFarm(botId, start) {
+      sendBotAction(botId, start ? "START_FARM" : "STOP_FARM");
+    }
+
+    function sendBotAction(botId, action, payload) {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      socket.send(JSON.stringify({
+        type: "COMMAND",
+        targetBotId: botId,
+        action: action,
+        payload: payload || {}
+      }));
+    }
+
+    function sendFleetCommand(action) {
+      sendBotAction("ALL", action);
+    }
+
+    function updateMinDistPreview(val) {
+      const lbl = document.getElementById("minDistLabel");
+      if (lbl) lbl.innerText = Number(val).toLocaleString() + " studs";
+    }
+
+    function sendMinDistance(botId, val) {
+      sendBotAction(botId, "SET_MIN_DISTANCE", { minDistance: Number(val) });
+    }
+
+    window.onload = () => {
+      initWebSocket();
+      renderSidebar();
+      renderMainView();
+    };
+  </script>
+</body>
+</html>`;
+}
