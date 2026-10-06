@@ -1,4 +1,4 @@
-﻿--[[
+--[[
     OneEight External Hub - Full State-Driven CDID Truck Client Agent
     Version: 2.0.0 (Event & State-Driven with Real-Time WebSocket Telemetry)
 --]]

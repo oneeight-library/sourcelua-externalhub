@@ -182,7 +182,13 @@ export default {
     OneEight External Hub - Delta WebSocket Client Agent
     Version: 2.0.0
 --]]
-loadstring(game:HttpGet("${url.origin}/client/agent.lua"))()`;
+local src = game:HttpGet("${url.origin}/client/agent.lua")
+src = src:gsub("^\\239\\187\\191", "")
+local fn, err = loadstring(src, "OE_ExternalAgent")
+if not fn then
+    error("[OE-External Loader Error]: " .. tostring(err))
+end
+fn()`;
       return new Response(loaderCode, {
         headers: { "Content-Type": "text/plain; charset=utf-8", "Access-Control-Allow-Origin": "*" }
       });
