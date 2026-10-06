@@ -610,7 +610,7 @@
             </div>
             <div class="fleet-item-info">
               <div class="fleet-item-name">${b.name || 'Bot'}</div>
-              <div class="fleet-item-sub">${b.gameName || 'CDID'} • ${statusText}</div>
+              <div class="fleet-item-sub"><span style="color: #10b981; font-weight: 700;">${b.currentCash > 0 ? formatMoney(b.currentCash) : "Memuat..."}</span></div><div class="fleet-item-sub" style="font-size: 10px;">${b.gameName || "CDID"} • ${statusText}</div>
             </div>
           </div>
         `;
@@ -677,7 +677,7 @@
                     ${b.name || 'Roblox Player'}
                     <span class="chip status" style="font-size: 10px; padding: 2px 7px;">${b.status || 'STANDBY'}</span>
                   </h4>
-                  <p>${b.gameName || 'CDID'} • Rute: ${b.currentRoute || 'IDLE'} • Selesai: ${b.tripCount || 0} Pengiriman</p>
+                  <p>Saldo: <b style="color: #10b981;">${formatMoney(b.currentCash)}</b> • Sesi: <b style="color: #6ee7b7;">+${formatMoney(b.totalEarnings)}</b> • Selesai: <b>${b.tripCount || 0} Trips</b> (${b.sessionTime || "00:00:00"})</p>
                 </div>
               </div>
               <div style="display: flex; gap: 8px;" onclick="event.stopPropagation();">
@@ -739,7 +739,7 @@
               <div class="bot-hero-chips">
                 <span class="chip game">${bot.gameName || 'Car Driving Indonesia'}</span>
                 <span class="chip status">${bot.status || 'CONNECTED'}</span>
-                <span class="chip">${bot.currentRoute || 'IDLE'}</span>
+                <span class="chip" style="color: #10b981; font-weight: 700; border-color: rgba(16, 185, 129, 0.4);">Saldo: ${formatMoney(bot.currentCash)}</span><span class="chip" style="color: #6ee7b7; font-weight: 700; border-color: rgba(110, 231, 183, 0.4);">Sesi: +${formatMoney(bot.totalEarnings)}</span><span class="chip" style="font-family: var(--mono);">⏱ ${bot.sessionTime || "00:00:00"}</span>
               </div>
             </div>
           </div>
@@ -787,21 +787,29 @@
           </div>
 
           <div class="metrics-grid">
-            <div class="metric-tile">
-              <span class="metric-title">Status Siklus</span>
-              <span class="metric-number" style="font-size: 16px; color: #6ee7b7;">${bot.status || 'STANDBY'}</span>
+            <div class="metric-tile" style="border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.05);">
+              <span class="metric-title" style="color: #10b981;">Saldo Akun Saat Ini (Live Cash)</span>
+              <span class="metric-number" style="color: #10b981;">${formatMoney(bot.currentCash)}</span>
             </div>
-            <div class="metric-tile">
-              <span class="metric-title">Rute Pengantaran</span>
-              <span class="metric-number" style="font-size: 16px; color: #93c5fd;">${bot.currentRoute || 'IDLE'}</span>
+            <div class="metric-tile" style="border-color: rgba(99, 102, 241, 0.35); background: rgba(99, 102, 241, 0.05);">
+              <span class="metric-title" style="color: #a5b4fc;">Total Pendapatan Sesi</span>
+              <span class="metric-number" style="color: #818cf8;">+${formatMoney(bot.totalEarnings)}</span>
             </div>
             <div class="metric-tile">
               <span class="metric-title">Pengiriman Selesai</span>
               <span class="metric-number" style="color: #f59e0b;">${bot.tripCount || 0} Trips</span>
             </div>
             <div class="metric-tile">
-              <span class="metric-title">Total Pendapatan Sesi</span>
-              <span class="metric-number" style="color: #10b981;">${formatMoney(bot.totalEarnings)}</span>
+              <span class="metric-title">Durasi Sesi Berjalan</span>
+              <span class="metric-number" style="color: #cbd5e1; font-family: var(--mono);">${bot.sessionTime || "00:00:00"}</span>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-title">Status Siklus 6-State</span>
+              <span class="metric-number" style="font-size: 16px; color: #6ee7b7;">${bot.status || "STANDBY"}</span>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-title">Rute Pengantaran Aktif</span>
+              <span class="metric-number" style="font-size: 16px; color: #93c5fd;">${bot.currentRoute || "IDLE"}</span>
             </div>
           </div>
         </div>

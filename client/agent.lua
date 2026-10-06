@@ -89,16 +89,61 @@ local function formatMoney(val)
     return (tonumber(val) and tonumber(val) < 0 and "-Rp " or "Rp ") .. formatted
 end
 
+local function parseCashString(txt)
+    if not txt then return 0 end
+    local cleaned = tostring(txt):gsub("<[^<>]->", "")
+    local numStr = cleaned:gsub("[^%d]", "")
+    return tonumber(numStr) or 0
+end
+
+local function getCDIDCash()
+    local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        for _, desc in ipairs(pGui:GetDescendants()) do
+            if desc:IsA("TextLabel") and desc.Visible and not desc:GetFullName():find("cdid_hub") and not desc:GetFullName():find("Wind") then
+                local txt = desc.Text:gsub("<[^<>]->", "")
+                if txt:find("Rp") and not txt:find("%+") and not txt:find("%-") and not txt:find("/km") then
+                    local val = parseCashString(txt)
+                    if val > 1000 then
+                        return val
+                    end
+                end
+            end
+        end
+    end
+    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+    local cash = leaderstats and (leaderstats:FindFirstChild("Cash") or leaderstats:FindFirstChild("Uang"))
+    if cash then
+        return tonumber(cash.Value) or 0
+    end
+    return 0
+end
+
 -- Telemetry Heartbeat (1 detik sekali)
 task.spawn(function()
     while _G.OE_ExternalRunning do
         pcall(function()
-            local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-            local cash = leaderstats and (leaderstats:FindFirstChild("Cash") or leaderstats:FindFirstChild("Uang"))
-            if cash then
-                State.CurrentCash = cash.Value
+            local c = getCDIDCash()
+            if c > 0 then
+                if not State.StartCash or State.StartCash == 0 then
+                    State.StartCash = c
+                end
+                State.CurrentCash = c
+                if State.StartCash and State.CurrentCash >= State.StartCash then
+                    State.TotalEarnings = State.CurrentCash - State.StartCash
+                end
             end
         end)
+
+        local sessionSeconds = 0
+        local sessionTimeFormatted = "00:00:00"
+        if State.SessionStartTime then
+            sessionSeconds = math.floor(os.clock() - State.SessionStartTime)
+            local h = math.floor(sessionSeconds / 3600)
+            local m = math.floor((sessionSeconds % 3600) / 60)
+            local s = math.floor(sessionSeconds % 60)
+            sessionTimeFormatted = string.format("%02d:%02d:%02d", h, m, s)
+        end
 
         if State.Socket then
             sendPacket("TELEMETRY", {
@@ -107,6 +152,9 @@ task.spawn(function()
                 tripCount = State.TripCount,
                 totalEarnings = State.TotalEarnings,
                 currentCash = State.CurrentCash,
+                startCash = State.StartCash,
+                sessionTime = sessionTimeFormatted,
+                sessionSeconds = sessionSeconds,
                 isFarming = State.IsFarming,
                 lowRender = State.LowRender,
                 minDistance = State.MinDistance
@@ -538,20 +586,34 @@ local function runFarmLoop()
 
                 -- Tunggu verifikasi payout dari server CDID
                 State.Status = "WAIT_PAYOUT"
-                local cashBefore = State.PreDeliveryCash or State.CurrentCash or 0
+                local cashBefore = State.PreDeliveryCash or State.CurrentCash or getCDIDCash()
                 local waitPayoutStart = os.clock()
                 local gained = 0
 
                 while (os.clock() - waitPayoutStart < 7.0) and State.IsFarming do
-                    local curCash = State.CurrentCash or 0
+                    local curCash = getCDIDCash()
                     if curCash > cashBefore then
                         local delta = curCash - cashBefore
                         if delta >= 15000000 then
                             gained = delta
+                            State.CurrentCash = curCash
+                            if State.StartCash and State.CurrentCash >= State.StartCash then
+                                State.TotalEarnings = State.CurrentCash - State.StartCash
+                            end
                             break
                         end
                     end
                     task.wait(0.1)
+                end
+                if gained == 0 then
+                    local curCash = getCDIDCash()
+                    if curCash > cashBefore then
+                        gained = curCash - cashBefore
+                        State.CurrentCash = curCash
+                        if State.StartCash and State.CurrentCash >= State.StartCash then
+                            State.TotalEarnings = State.CurrentCash - State.StartCash
+                        end
+                    end
                 end
 
                 if not State.IsFarming then break end
@@ -664,6 +726,9 @@ local function connectWebSocket()
             if action == "START_FARM" then
                 if not State.IsFarming then
                     State.IsFarming = true
+                    State.SessionStartTime = os.clock()
+                    local initialC = getCDIDCash()
+                    if initialC > 0 then State.StartCash = initialC; State.CurrentCash = initialC; end
                     sendLog("Memulai State-Driven CDID Truck Farm", "SUCCESS")
                     task.spawn(runFarmLoop)
                 end
