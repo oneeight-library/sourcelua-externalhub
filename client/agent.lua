@@ -96,45 +96,114 @@ local function parseCashString(txt)
     return tonumber(numStr) or 0
 end
 
+local activeCashLabel = nil
+
+local function updateCash(txt)
+    local val = parseCashString(txt)
+    if val <= 0 then return end
+
+    if not State.StartCash or State.StartCash == 0 then
+        State.StartCash = val
+        print(string.format("[OE-External] Saldo Awal Terdeteksi: %s", formatMoney(val)))
+    end
+
+    State.CurrentCash = val
+    if State.StartCash and State.StartCash > 0 then
+        local netDiff = State.CurrentCash - State.StartCash
+        if netDiff >= 0 and netDiff > State.TotalEarnings then
+            State.TotalEarnings = netDiff
+        end
+    end
+end
+
 local function getCDIDCash()
-    local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:FindFirstChild("PlayerGui")
+    if activeCashLabel and activeCashLabel.Parent then
+        local val = parseCashString(activeCashLabel.Text)
+        if val > 0 then
+            State.CurrentCash = val
+            return val
+        end
+    end
+    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
     if pGui then
-        for _, desc in ipairs(pGui:GetDescendants()) do
-            if desc:IsA("TextLabel") and desc.Visible and not desc:GetFullName():find("cdid_hub") and not desc:GetFullName():find("Wind") then
-                local txt = desc.Text:gsub("<[^<>]->", "")
-                if txt:find("Rp") and not txt:find("%+") and not txt:find("%-") and not txt:find("/km") then
-                    local val = parseCashString(txt)
-                    if val > 1000 then
-                        return val
-                    end
-                end
+        local ok, lbl = pcall(function()
+            return pGui.Main.Container.Hub.CashFrame.Frame.TextLabel
+        end)
+        if ok and lbl then
+            activeCashLabel = lbl
+            local val = parseCashString(lbl.Text)
+            if val > 0 then
+                State.CurrentCash = val
+                return val
             end
         end
     end
-    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-    local cash = leaderstats and (leaderstats:FindFirstChild("Cash") or leaderstats:FindFirstChild("Uang"))
-    if cash then
-        return tonumber(cash.Value) or 0
-    end
-    return 0
+    return State.CurrentCash or 0
 end
 
--- Telemetry Heartbeat (1 detik sekali)
-task.spawn(function()
-    while _G.OE_ExternalRunning do
-        pcall(function()
-            local c = getCDIDCash()
-            if c > 0 then
-                if not State.StartCash or State.StartCash == 0 then
-                    State.StartCash = c
+-- BIND HUD CASH PERSIS DENGAN METODE ASLI ONEEIGHT HUB (SSOT DIRECT-PATH + FALLBACK)
+local function bindCashHUD()
+    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not pGui then return end
+
+    local targetLabel = nil
+    pcall(function()
+        local main = pGui:WaitForChild("Main", 10)
+        local container = main and main:WaitForChild("Container", 10)
+        local hub = container and container:WaitForChild("Hub", 10)
+        local cashFrame = hub and hub:WaitForChild("CashFrame", 10)
+        local innerFrame = cashFrame and cashFrame:WaitForChild("Frame", 10)
+        targetLabel = innerFrame and innerFrame:WaitForChild("TextLabel", 10)
+    end)
+
+    if targetLabel then
+        activeCashLabel = targetLabel
+        updateCash(targetLabel.Text)
+        targetLabel:GetPropertyChangedSignal("Text"):Connect(function()
+            updateCash(targetLabel.Text)
+        end)
+        print("[OE-External] HUD Cash terhubung via Direct-Path TextLabel!")
+    else
+        task.spawn(function()
+            local synced = false
+            for _ = 1, 10 do
+                if synced or not _G.OE_ExternalRunning then break end
+                for _, desc in ipairs(pGui:GetDescendants()) do
+                    if desc:IsA("TextLabel") and desc.Visible and not desc:GetFullName():find("cdid_hub") and not desc:GetFullName():find("Wind") then
+                        local txt = desc.Text:gsub("<[^<>]->", "")
+                        if txt:find("Rp") and not txt:find("%+") and not txt:find("%-") and not txt:lower():find("gaji") and not txt:lower():find("salary") and not txt:lower():find("delivery") and not txt:lower():find("trip") then
+                            if txt:find("%d%d%d") or txt:find("%d%.%d") or txt:find("%d%,%d") then
+                                activeCashLabel = desc
+                                updateCash(desc.Text)
+                                desc:GetPropertyChangedSignal("Text"):Connect(function()
+                                    updateCash(desc.Text)
+                                end)
+                                synced = true
+                                print("[OE-External] HUD Cash terhubung via Fallback Scanning!")
+                                break
+                            end
+                        end
+                    end
                 end
-                State.CurrentCash = c
-                if State.StartCash and State.CurrentCash >= State.StartCash then
-                    State.TotalEarnings = State.CurrentCash - State.StartCash
-                end
+                task.wait(1.5)
             end
         end)
+    end
+end
 
+task.spawn(function()
+    LocalPlayer:WaitForChild("PlayerGui", 15)
+    bindCashHUD()
+end)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(2.0)
+    bindCashHUD()
+end)
+
+-- Telemetry Heartbeat (1 detik sekali kirim live data ke WebSocket)
+task.spawn(function()
+    while _G.OE_ExternalRunning do
         local sessionSeconds = 0
         local sessionTimeFormatted = "00:00:00"
         if State.SessionStartTime then
@@ -584,9 +653,9 @@ local function runFarmLoop()
                 end
                 task.wait(1.2) -- Jeda settle fisik
 
-                -- Tunggu verifikasi payout dari server CDID
+                -- Tunggu verifikasi payout dari server CDID (SSOT Cash Delta >= 15jt)
                 State.Status = "WAIT_PAYOUT"
-                local cashBefore = State.PreDeliveryCash or State.CurrentCash or getCDIDCash()
+                local cashBefore = State.PreDeliveryCash > 0 and State.PreDeliveryCash or getCDIDCash()
                 local waitPayoutStart = os.clock()
                 local gained = 0
 
@@ -597,9 +666,6 @@ local function runFarmLoop()
                         if delta >= 15000000 then
                             gained = delta
                             State.CurrentCash = curCash
-                            if State.StartCash and State.CurrentCash >= State.StartCash then
-                                State.TotalEarnings = State.CurrentCash - State.StartCash
-                            end
                             break
                         end
                     end
@@ -610,9 +676,6 @@ local function runFarmLoop()
                     if curCash > cashBefore then
                         gained = curCash - cashBefore
                         State.CurrentCash = curCash
-                        if State.StartCash and State.CurrentCash >= State.StartCash then
-                            State.TotalEarnings = State.CurrentCash - State.StartCash
-                        end
                     end
                 end
 
@@ -620,7 +683,11 @@ local function runFarmLoop()
 
                 State.TripCount = State.TripCount + 1
                 if gained > 0 then
-                    State.TotalEarnings = State.TotalEarnings + gained
+                    State.LastSalary = gained
+                    State.TotalEarnings = (State.TotalEarnings or 0) + gained
+                    if State.StartCash and State.StartCash > 0 and (State.CurrentCash - State.StartCash) > State.TotalEarnings then
+                        State.TotalEarnings = State.CurrentCash - State.StartCash
+                    end
                     sendLog(string.format("[State 6] Pengiriman #%d Berhasil! Gaji masuk (+%s)", State.TripCount, formatMoney(gained)), "SUCCESS")
                 else
                     sendLog(string.format("[State 6] Pengiriman #%d Selesai!", State.TripCount), "SUCCESS")
