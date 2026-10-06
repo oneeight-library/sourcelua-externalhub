@@ -11,3 +11,8 @@ bindings = [
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["HubRoom"]
+
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true
