@@ -203,15 +203,6 @@ end
 -- ============================================================================
 -- MODULAR CDID SUB-MODULES
 -- ============================================================================
--- ============================================================================
--- MODULAR CDID SUB-MODULES
--- ============================================================================
--- ============================================================================
--- MODULAR CDID SUB-MODULES
--- ============================================================================
--- ============================================================================
--- MODULAR CDID SUB-MODULES
--- ============================================================================
 Modules["games/cdid/features/lighting"] = function()
 --[[
     CDID Feature: Lighting & Performance Visuals
@@ -376,6 +367,7 @@ end
 Modules["games/cdid/features/dealership"] = function()
 --[[
     CDID Feature: Dealership Controller, Catalog Extractor & Remote Buy
+    100% Dynamic - Auto-discovers dealers from in-game UI & CarData memory
 --]]
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
@@ -384,21 +376,66 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DealershipFeature = {}
 
+-- Urutan dan nama dealer CDID resmi
+local KNOWN_DEALER_ORDER = {
+    "77", "Bandung", "Otnas", "Premium", "Toyota", "Honda",
+    "Hyundai", "Mitsubishi", "MercedesBenz", "Suzuki", "Daihatsu",
+    "KIA", "Nissan", "Mazda", "Lexus", "Wuling", "Audi", "VW",
+    "DIR", "Chery", "Jaecoo", "Geely", "Shehua", "SLM", "Komersial"
+}
+
 function DealershipFeature.GetRealDealerList()
     local list = {}
     local seen = {}
 
-    local dealershipFolder = Workspace:FindFirstChild("Etc") and Workspace.Etc:FindFirstChild("Dealership")
-    if dealershipFolder then
-        for _, child in ipairs(dealershipFolder:GetChildren()) do
-            if not seen[child.Name] and not child.Name:find("Fake_") then
-                seen[child.Name] = true
-                table.insert(list, child.Name)
+    -- 1. Baca dari UI Dealerlist in-game CDID (PlayerGui.Dealership.Container.Dealership.Dealerlist)
+    pcall(function()
+        local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local dGui = pGui and pGui:FindFirstChild("Dealership")
+        local dList = dGui and dGui:FindFirstChild("Container") and dGui.Container:FindFirstChild("Dealership") and dGui.Container.Dealership:FindFirstChild("Dealerlist")
+        if dList then
+            for _, child in ipairs(dList:GetChildren()) do
+                if (child:IsA("ScrollingFrame") or child:IsA("Frame") or child:IsA("Folder")) and not seen[child.Name] then
+                    seen[child.Name] = true
+                    table.insert(list, child.Name)
+                end
             end
         end
+    end)
+
+    -- 2. Baca dari CarData di ReplicatedStorage (ekstraksi dinamis dari data mobil game)
+    pcall(function()
+        local carData = ReplicatedStorage:FindFirstChild("CarData")
+        if carData then
+            for _, car in ipairs(carData:GetChildren()) do
+                local d = car:FindFirstChild("Dealership") and car.Dealership.Value
+                if d and d ~= "" and not seen[d] then
+                    seen[d] = true
+                    table.insert(list, d)
+                end
+            end
+        end
+    end)
+
+    -- 3. Fallback jika data belum termuat
+    if #list == 0 then
+        for _, name in ipairs(KNOWN_DEALER_ORDER) do
+            table.insert(list, name)
+        end
+    else
+        -- Urutkan berdasarkan urutan CDID populer
+        local orderMap = {}
+        for idx, name in ipairs(KNOWN_DEALER_ORDER) do
+            orderMap[name:lower()] = idx
+        end
+        table.sort(list, function(a, b)
+            local oa = orderMap[a:lower()] or 999
+            local ob = orderMap[b:lower()] or 999
+            if oa ~= ob then return oa < ob end
+            return a:lower() < b:lower()
+        end)
     end
 
-    table.sort(list, function(a, b) return a < b end)
     return list
 end
 
@@ -407,15 +444,30 @@ function DealershipFeature.GetCars(dealerTarget)
     local carData = ReplicatedStorage:FindFirstChild("CarData")
     if not carData then return list end
 
-    dealerTarget = (dealerTarget or ""):lower():gsub("%s+", "")
+    local cleanTarget = (dealerTarget or ""):lower():gsub("%s+", ""):gsub("[^%w]", "")
+    -- Aliases normalizer
+    if cleanTarget == "dealer77" or cleanTarget == "utama" then cleanTarget = "77" end
+    if cleanTarget == "bekasbandung" then cleanTarget = "bandung" end
+    if cleanTarget == "komersil" then cleanTarget = "komersial" end
 
     for _, car in ipairs(carData:GetChildren()) do
         local dealerVal = car:FindFirstChild("Dealership")
         local unobtainable = car:FindFirstChild("Unobtainable")
         if dealerVal and not unobtainable then
             local rawDealer = dealerVal.Value
-            local cleanDealer = rawDealer:lower():gsub("%s+", "")
-            if dealerTarget == "" or dealerTarget == "all" or cleanDealer:find(dealerTarget) or dealerTarget:find(cleanDealer) then
+            local cleanDealer = rawDealer:lower():gsub("%s+", ""):gsub("[^%w]", "")
+            if cleanDealer == "komersil" then cleanDealer = "komersial" end
+
+            local isMatch = false
+            if cleanTarget == "" or cleanTarget == "all" or cleanTarget == "semuadealer" then
+                isMatch = true
+            elseif cleanDealer == cleanTarget then
+                isMatch = true
+            elseif cleanDealer:find(cleanTarget, 1, true) or cleanTarget:find(cleanDealer, 1, true) then
+                isMatch = true
+            end
+
+            if isMatch then
                 local img = car:FindFirstChild("CarImage") and car.CarImage.Value or ""
                 local assetId = img:match("id=(%d+)") or img:match("(%d+)$") or ""
                 table.insert(list, {

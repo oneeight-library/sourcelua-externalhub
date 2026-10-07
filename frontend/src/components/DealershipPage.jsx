@@ -15,37 +15,51 @@ import {
   Gauge,
   Zap,
   Tag,
-  RefreshCw
+  RefreshCw,
+  Store
 } from "lucide-react";
 
-const ALL_DEALERS = [
-  "Semua Dealer",
-  "Toyota",
-  "Honda",
-  "Mitsubishi",
-  "Porsche",
-  "MercedesBenz",
-  "BMW",
-  "Audi",
-  "Lexus",
-  "Hyundai",
-  "Wuling",
-  "Suzuki",
-  "Nissan",
-  "Mazda",
-  "Daihatsu",
-  "KIA",
-  "Chery",
-  "Geely",
-  "Komersial",
-  "SLM",
-  "DIR",
-  "Premium",
-  "Otnas",
-  "Shehua",
-  "Bandung",
-  "77"
+// Urutan dan pengelompokan resmi dealer CDID sesuai game
+export const CDID_DEALERS_CONFIG = [
+  { key: "Semua Dealer", label: "Semua Dealer", badge: "Katalog" },
+  { key: "77", label: "Dealer 77", badge: "Utama" },
+  { key: "Bandung", label: "Bekas Bandung", badge: "Used Car" },
+  { key: "Otnas", label: "Otnas", badge: "JDM & Klasik" },
+  { key: "Premium", label: "Premium", badge: "Supercar" },
+  { key: "Toyota", label: "Toyota" },
+  { key: "Honda", label: "Honda" },
+  { key: "Hyundai", label: "Hyundai" },
+  { key: "Mitsubishi", label: "Mitsubishi" },
+  { key: "MercedesBenz", label: "Mercedes-Benz" },
+  { key: "Suzuki", label: "Suzuki" },
+  { key: "Daihatsu", label: "Daihatsu" },
+  { key: "KIA", label: "KIA" },
+  { key: "Nissan", label: "Nissan" },
+  { key: "Mazda", label: "Mazda" },
+  { key: "Lexus", label: "Lexus" },
+  { key: "Wuling", label: "Wuling" },
+  { key: "Audi", label: "Audi" },
+  { key: "VW", label: "Volkswagen" },
+  { key: "DIR", label: "DIR (BYD)" },
+  { key: "Chery", label: "Chery" },
+  { key: "Jaecoo", label: "Jaecoo" },
+  { key: "Geely", label: "Geely" },
+  { key: "Shehua", label: "Shehua (Denza)" },
+  { key: "SLM", label: "SLM" },
+  { key: "Komersial", label: "Komersial", badge: "Truk & Bus" }
 ];
+
+export function normalizeDealer(str) {
+  if (!str) return "";
+  const s = str.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, "");
+  if (s === "dealer77" || s === "utama") return "77";
+  if (s === "bekasbandung") return "bandung";
+  if (s === "komersil") return "komersial";
+  if (s === "volkswagen") return "vw";
+  if (s === "byd") return "dir";
+  if (s === "denza" || s === "yangwang") return "shehua";
+  return s;
+}
 
 const PRESET_COLORS = [
   { name: "Putih", rgb: { r: 255, g: 255, b: 255 }, hex: "#ffffff" },
@@ -81,6 +95,23 @@ export function DealershipPage({
     }
   }, [initialDealer]);
 
+  // Dynamic merged dealer list: Config items + any extras from active bot memory
+  const dealerOptions = React.useMemo(() => {
+    const list = [...CDID_DEALERS_CONFIG];
+    const seen = new Set(list.map((d) => normalizeDealer(d.key)));
+
+    if (activeBot?.dealerList && Array.isArray(activeBot.dealerList)) {
+      activeBot.dealerList.forEach((raw) => {
+        const norm = normalizeDealer(raw);
+        if (!seen.has(norm) && raw.trim() !== "") {
+          seen.add(norm);
+          list.push({ key: raw, label: raw, badge: "In-Game" });
+        }
+      });
+    }
+    return list;
+  }, [activeBot?.dealerList]);
+
   // Request cars from active bot when dealer changes
   React.useEffect(() => {
     if (activeBot && activeBot.botId) {
@@ -89,20 +120,26 @@ export function DealershipPage({
     }
   }, [selectedDealer, activeBot?.botId, onFetchCars]);
 
-  const dealerKey = (selectedDealer === "Semua Dealer" ? "all" : selectedDealer).toLowerCase().replace(/\s+/g, "");
+  const dealerKey = normalizeDealer(selectedDealer === "Semua Dealer" ? "all" : selectedDealer);
   const rawCars = dealerCatalog[dealerKey] || dealerCatalog["all"] || [];
 
   // Filter cars based on dealer & search query
   const filteredCars = React.useMemo(() => {
+    const selNorm = normalizeDealer(selectedDealer);
     return rawCars
       .filter((car) => {
+        const carNorm = normalizeDealer(car.dealer);
         const matchesDealer =
           selectedDealer === "Semua Dealer" ||
-          car.dealer?.toLowerCase().replace(/\s+/g, "") === selectedDealer.toLowerCase().replace(/\s+/g, "");
+          carNorm === selNorm ||
+          carNorm.includes(selNorm) ||
+          selNorm.includes(carNorm);
+
         const matchesSearch =
           !searchQuery.trim() ||
           car.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           car.id.toLowerCase().includes(searchQuery.toLowerCase());
+
         return matchesDealer && matchesSearch;
       })
       .sort((a, b) => {
@@ -153,20 +190,20 @@ export function DealershipPage({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-black tracking-tight text-zinc-100 flex items-center gap-2">
-                <Car className="h-5 w-5 text-emerald-400" />
+                <Store className="h-5 w-5 text-emerald-400" />
                 CDID Showroom Online
               </h1>
               <Badge variant="emerald" className="text-[10px] font-mono px-2 py-0.5">
                 Live Game Sync
               </Badge>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Katalog resmi dealer CDID. Pembelian mobil langsung dieksekusi di akun game.
+            <p className="text-xs text-zinc-400">
+              Lihat katalog mobil lengkap dan beli unit langsung dari in-game memory.
             </p>
           </div>
         </div>
 
-        {/* Saldo Akun Pemain */}
+        {/* Player Cash Display */}
         <div className="flex items-center gap-3 bg-zinc-950/80 px-4 py-2.5 rounded-xl border border-zinc-800/80 shrink-0">
           <Coins className="h-5 w-5 text-emerald-400 shrink-0" />
           <div>
@@ -182,27 +219,32 @@ export function DealershipPage({
 
       {/* 2. Filter & Controls Bar */}
       <div className="space-y-3">
-        {/* Horizontal Scrolling Dealer Badges */}
+        {/* Horizontal Scrolling Dealer Badges (Persis Game CDID) */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-800">
-          {ALL_DEALERS.map((dealer) => {
-            const isSelected = selectedDealer.toLowerCase() === dealer.toLowerCase();
+          {dealerOptions.map((item) => {
+            const isSelected = normalizeDealer(selectedDealer) === normalizeDealer(item.key);
             return (
               <button
-                key={dealer}
+                key={item.key}
                 onClick={() => {
-                  setSelectedDealer(dealer);
-                  const cleanKey = dealer.replace(/\s+/g, "_").toLowerCase();
+                  setSelectedDealer(item.key);
+                  const cleanKey = item.key.replace(/\s+/g, "_").toLowerCase();
                   if (typeof window !== "undefined") {
-                    window.history.replaceState(null, "", dealer === "Semua Dealer" ? "/cdid_dealer" : `/cdid_${cleanKey}`);
+                    window.history.replaceState(null, "", item.key === "Semua Dealer" ? "/cdid_dealer" : `/cdid_${cleanKey}`);
                   }
                 }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 ${
                   isSelected
                     ? "bg-emerald-500 text-zinc-950 border-emerald-400 shadow-md shadow-emerald-500/20"
                     : "bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700"
                 }`}
               >
-                {dealer}
+                <span>{item.label}</span>
+                {item.badge && (
+                  <span className={`text-[9px] px-1 py-0.2 rounded ${isSelected ? "bg-zinc-950/20 text-zinc-950" : "bg-zinc-800 text-zinc-400"}`}>
+                    {item.badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -257,7 +299,7 @@ export function DealershipPage({
           <Car className="h-12 w-12 text-zinc-600 mx-auto mb-3" />
           <h3 className="text-sm font-bold text-zinc-300">Memuat Katalog Mobil dari Game CDID...</h3>
           <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
-            Pastikan akun Roblox aktif dan terhubung ke server game CDID.
+            Sedang mensinkronkan daftar kendaraan dari server game CDID.
           </p>
         </div>
       ) : (
@@ -272,23 +314,31 @@ export function DealershipPage({
                 className="border-zinc-800 bg-gradient-to-b from-zinc-900/70 to-zinc-950/70 overflow-hidden flex flex-col hover:border-zinc-700 transition-all group"
               >
                 {/* Thumbnail Image Container */}
-                <div className="relative aspect-video w-full bg-zinc-950/80 overflow-hidden border-b border-zinc-800/60 flex items-center justify-center">
+                <div className="relative aspect-video w-full bg-zinc-950/90 overflow-hidden border-b border-zinc-800/60 flex items-center justify-center">
                   {imgUrl ? (
                     <img
                       src={imgUrl}
                       alt={car.name}
                       loading="lazy"
-                      className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300 z-10"
                       onError={(e) => {
                         e.target.style.display = "none";
+                        const fb = e.target.parentElement.querySelector(".car-fallback");
+                        if (fb) fb.classList.remove("hidden");
                       }}
                     />
-                  ) : (
-                    <Car className="h-10 w-10 text-zinc-700" />
-                  )}
+                  ) : null}
+                  
+                  {/* Fallback Display */}
+                  <div className={`car-fallback ${imgUrl ? "hidden" : "flex"} flex-col items-center justify-center text-zinc-600 absolute inset-0`}>
+                    <Car className="h-10 w-10 text-zinc-700 mb-1" />
+                    <span className="text-[10px] font-mono text-zinc-500 uppercase">{car.dealer}</span>
+                  </div>
+
                   <Badge
                     variant="secondary"
-                    className="absolute top-2 right-2 text-[9px] font-mono bg-zinc-900/90 text-zinc-300 border border-zinc-700/60"
+                    className="absolute top-2 right-2 text-[9px] font-mono bg-zinc-900/90 text-zinc-300 border border-zinc-700/60 z-20"
                   >
                     {car.dealer}
                   </Badge>
@@ -313,23 +363,26 @@ export function DealershipPage({
                     </div>
                   </div>
 
-                  {/* Price & Buy Button */}
-                  <div className="pt-2 border-t border-zinc-800/60 space-y-2">
-                    <div>
-                      <span className="text-[9px] uppercase font-bold text-zinc-500 block">Harga</span>
-                      <span className="text-sm font-black text-emerald-400 font-mono">
+                  <div className="pt-2 border-t border-zinc-800/80">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">
+                        Harga
+                      </span>
+                      <span className="text-xs font-black text-emerald-400 font-mono">
                         {formatRupiah(car.cost)}
                       </span>
                     </div>
 
                     <Button
                       size="sm"
-                      variant={canAfford ? "emerald" : "secondary"}
-                      disabled={!canAfford}
-                      className="w-full h-8 text-xs font-bold"
                       onClick={() => handleOpenBuyModal(car)}
+                      className={`w-full text-xs font-bold transition-all ${
+                        canAfford
+                          ? "bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black shadow-md shadow-emerald-500/10"
+                          : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                      }`}
                     >
-                      {canAfford ? "Beli Mobil" : "Saldo Tidak Cukup"}
+                      Beli Mobil
                     </Button>
                   </div>
                 </CardContent>
@@ -339,107 +392,109 @@ export function DealershipPage({
         </div>
       )}
 
-      {/* 4. Purchase Confirmation Modal */}
+      {/* 4. Buy Confirmation Modal */}
       {modalCar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl space-y-4">
-            
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Car className="h-5 w-5 text-emerald-400" />
-                <h3 className="font-bold text-sm text-zinc-100">Konfirmasi Pembelian Mobil</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-zinc-900 border border-zinc-800 p-6 shadow-2xl space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest font-bold">
+                  Konfirmasi Pembelian
+                </span>
+                <h3 className="text-base font-bold text-zinc-100 mt-1">
+                  {modalCar.name}
+                </h3>
               </div>
-              <Badge variant="outline" className="text-[10px] font-mono">
+              <Badge variant="outline" className="border-zinc-700 text-zinc-300">
                 {modalCar.dealer}
               </Badge>
             </div>
 
-            {/* Car Preview Image */}
-            <div className="aspect-video w-full rounded-xl bg-zinc-900/50 border border-zinc-800 flex items-center justify-center overflow-hidden p-2">
-              {modalCar.assetId ? (
-                <img
-                  src={`/api/car-thumbnail?id=${modalCar.assetId}`}
-                  alt={modalCar.name}
-                  className="max-h-full object-contain"
-                />
-              ) : (
-                <Car className="h-12 w-12 text-zinc-600" />
-              )}
-            </div>
-
-            {/* Car Info */}
-            <div>
-              <h4 className="text-sm font-black text-zinc-100">{modalCar.name}</h4>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-xs text-zinc-400">Total Harga:</span>
-                <span className="text-base font-black text-emerald-400 font-mono">
+            {/* Price & Balance Check */}
+            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80 space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-400">Harga Mobil:</span>
+                <span className="font-mono font-bold text-emerald-400">
                   {formatRupiah(modalCar.cost)}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-400">Saldo Akun:</span>
+                <span className="font-mono text-zinc-200">
+                  {formatRupiah(playerCash)}
+                </span>
+              </div>
+              <div className="pt-2 border-t border-zinc-800/60 flex justify-between text-xs font-bold">
+                <span className="text-zinc-400">Sisa Saldo:</span>
+                <span className={`font-mono ${playerCash >= modalCar.cost ? "text-zinc-200" : "text-rose-400"}`}>
+                  {formatRupiah(playerCash - modalCar.cost)}
                 </span>
               </div>
             </div>
 
-            {/* Color Swatch Picker */}
-            <div className="space-y-1.5 pt-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">
-                Pilih Warna Cat: <span className="text-zinc-200">{selectedColor.name}</span>
-              </span>
-              <div className="flex items-center gap-2">
-                {PRESET_COLORS.map((col) => {
-                  const isColSelected = selectedColor.name === col.name;
-                  return (
-                    <button
-                      key={col.name}
-                      onClick={() => setSelectedColor(col)}
-                      className={`h-7 w-7 rounded-full border-2 transition-transform flex items-center justify-center ${
-                        isColSelected ? "scale-110 border-emerald-400 shadow-md" : "border-zinc-700 hover:scale-105"
-                      }`}
-                      style={{ backgroundColor: col.hex }}
-                    >
-                      {isColSelected && (
-                        <Check className={`h-3.5 w-3.5 ${col.name === "Putih" ? "text-black" : "text-white"}`} />
-                      )}
-                    </button>
-                  );
-                })}
+            {playerCash < modalCar.cost && (
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>Saldo tidak cukup untuk membeli mobil ini.</span>
+              </div>
+            )}
+
+            {/* Color Selection */}
+            <div>
+              <label className="text-xs font-semibold text-zinc-300 block mb-2">
+                Pilih Warna Kendaraan:
+              </label>
+              <div className="flex items-center gap-2 flex-wrap">
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c.name}
+                    onClick={() => setSelectedColor(c)}
+                    className={`h-8 px-2.5 rounded-lg text-xs font-medium border flex items-center gap-2 transition-all ${
+                      selectedColor.name === c.name
+                        ? "border-emerald-400 bg-zinc-800 text-white ring-1 ring-emerald-400"
+                        : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700"
+                    }`}
+                  >
+                    <span
+                      className="h-3.5 w-3.5 rounded-full border border-zinc-700 shrink-0"
+                      style={{ backgroundColor: c.hex }}
+                    />
+                    <span>{c.name}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Status Message */}
-            {buyStatus === "SUBMITTED" && (
-              <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-800/60 text-xs text-indigo-300 flex items-center gap-2 animate-pulse">
-                <Sparkles className="h-4 w-4" />
-                Mengirim transaksi ke server CDID...
-              </div>
-            )}
-            {buyStatus === "SUCCESS" && (
-              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs text-emerald-300 flex items-center gap-2">
-                <Check className="h-4 w-4 text-emerald-400" />
-                Transaksi berhasil diproses di client Roblox!
-              </div>
-            )}
-
-            {/* Buttons */}
-            <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 pt-2">
               <Button
                 variant="outline"
-                size="sm"
-                className="flex-1 text-xs border-zinc-800"
+                className="flex-1 border-zinc-700"
                 onClick={() => setModalCar(null)}
                 disabled={buyStatus !== null}
               >
                 Batal
               </Button>
               <Button
-                variant="emerald"
-                size="sm"
-                className="flex-1 text-xs font-bold"
+                className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black"
                 onClick={handleConfirmBuy}
-                disabled={buyStatus !== null}
+                disabled={playerCash < modalCar.cost || buyStatus !== null}
               >
-                Beli Sekarang
+                {buyStatus === "SUBMITTED" ? (
+                  <span className="flex items-center gap-1.5">
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    Mengirim ke Game...
+                  </span>
+                ) : buyStatus === "SUCCESS" ? (
+                  <span className="flex items-center gap-1.5 text-emerald-950">
+                    <Check className="h-4 w-4" />
+                    Berhasil Dibeli!
+                  </span>
+                ) : (
+                  "Konfirmasi Beli"
+                )}
               </Button>
             </div>
-
           </div>
         </div>
       )}

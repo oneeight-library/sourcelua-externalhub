@@ -266,6 +266,27 @@ export default {
       return obj.fetch(request);
     }
 
+    if (url.pathname === "/api/car-thumbnail") {
+      const id = url.searchParams.get("id");
+      if (!id) return new Response("Missing id", { status: 400 });
+      try {
+        const robloxRes = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${id}&size=420x420&format=Png&isCircular=false`);
+        const data = await robloxRes.json();
+        const imgUrl = data.data?.[0]?.imageUrl;
+        if (imgUrl) {
+          const imgRes = await fetch(imgUrl);
+          return new Response(imgRes.body, {
+            headers: {
+              "Content-Type": "image/png",
+              "Cache-Control": "public, max-age=604800, s-maxage=604800",
+              "Access-Control-Allow-Origin": "*"
+            }
+          });
+        }
+      } catch (e) {}
+      return new Response("Not Found", { status: 404 });
+    }
+
     if (url.pathname.startsWith("/api/")) {
       return handleApiRequest(request, env);
     }
@@ -294,19 +315,7 @@ fn()`;
       });
     }
 
-    if (url.pathname === "/api/car-thumbnail") {
-      const id = url.searchParams.get("id");
-      if (!id) return new Response("Missing id", { status: 400 });
-      try {
-        const robloxRes = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${id}&size=420x420&format=Png&isCircular=false`);
-        const data = await robloxRes.json();
-        const imgUrl = data.data?.[0]?.imageUrl;
-        if (imgUrl) {
-          return Response.redirect(imgUrl, 302);
-        }
-      } catch (e) {}
-      return new Response("Not Found", { status: 404 });
-    }
+
 
     if (url.pathname === "/" || url.pathname === "/dashboard" || url.pathname.startsWith("/cdid_")) {
       return new Response(getWebDashboardHTML(url.origin), {
