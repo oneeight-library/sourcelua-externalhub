@@ -894,7 +894,9 @@
         color: "#3b82f6",
         currency: "Rp",
         formatMoney: (num) => formatRupiah(num),
-        metricUnit: "Maps",
+        metricLabel: "Status",
+        metricUnit: "Lobby",
+        defaultJob: "Server Gateway",
         tabs: [
           { id: "tab_server_gateway", label: "🌐 Gerbang Server & Map", render: (bot) => renderCDIDMenuPortal(bot) },
           { id: "tab_safety", label: "🛡️ Proteksi & Rejoin", render: (bot) => renderSafetyTab(bot) },
@@ -908,7 +910,9 @@
         color: "#10b981",
         currency: "Rp",
         formatMoney: (num) => formatRupiah(num),
+        metricLabel: "Terkirim",
         metricUnit: "Trips",
+        defaultJob: "Supir Truk",
         tabs: [
           { id: "tab_autofarm", label: "📦 Auto Farm Truk", render: (bot) => renderCDIDFarm(bot) },
           { id: "tab_nav", label: "🚗 Lokasi & Armada", render: (bot) => renderCDIDNav(bot) },
@@ -924,7 +928,9 @@
         color: "#f59e0b",
         currency: "Coins",
         formatMoney: (num) => (num || 0).toLocaleString() + " Coins",
+        metricLabel: "Balapan",
         metricUnit: "Races",
+        defaultJob: "Drag Racer",
         tabs: [
           { id: "tab_autofarm", label: "🏁 Auto Drag Race", render: (bot) => renderDDSFarm(bot) },
           { id: "tab_safety", label: "🛡️ Proteksi & Rejoin", render: (bot) => renderSafetyTab(bot) },
@@ -939,7 +945,9 @@
         color: "#6366f1",
         currency: "Cash",
         formatMoney: (num) => (num || 0).toLocaleString(),
+        metricLabel: "Selesai",
         metricUnit: "Cycles",
+        defaultJob: "Auto Farm",
         tabs: [
           { id: "tab_safety", label: "🛡️ Proteksi & Rejoin", render: (bot) => renderSafetyTab(bot) },
           { id: "tab_perf", label: "⚡ Hemat GPU", render: (bot) => renderPerfTab(bot) },
@@ -1312,18 +1320,16 @@
       const currentTabDef = gameCfg.tabs.find(t => t.id === activeTab) || gameCfg.tabs[0];
       const tabContentHtml = currentTabDef.render(bot);
 
-      // Humanized Status Label
-      let statusHuman = "Standby di Lobi";
+      // Dynamic Humanized Status (Modular for any game/job)
+      const currentJob = bot.job || gameCfg.defaultJob || "Auto Farm";
+      let statusHuman = isLobby ? "Standby di Lobi" : `Standby (${gameCfg.name})`;
       let statusColor = "var(--text-muted)";
       if (isKicked) {
-        statusHuman = "Terkena Kick (" + (bot.kickReason || "Disconnect") + ")";
+        statusHuman = "Terputus (" + (bot.kickReason || "Disconnect") + ")";
         statusColor = "var(--rose)";
       } else if (bot.isFarming) {
-        statusHuman = bot.status || "Sedang Bekerja Mengantar Kargo";
+        statusHuman = bot.status || `Aktif (${currentJob})`;
         statusColor = "var(--emerald)";
-      } else if (!isLobby) {
-        statusHuman = "Standby di Jawa Timur";
-        statusColor = "var(--text-muted)";
       }
 
       container.innerHTML = `
@@ -1374,7 +1380,7 @@
                 <span class="stat-chip-value" style="color: var(--emerald);">+${gameCfg.formatMoney(bot.totalEarnings)}</span>
               </div>
               <div class="stat-chip">
-                <span class="stat-chip-label">Selesai</span>
+                <span class="stat-chip-label">${gameCfg.metricLabel || 'Selesai'}</span>
                 <span class="stat-chip-value">${bot.tripCount || 0} ${gameCfg.metricUnit}</span>
               </div>
               <div class="stat-chip">
