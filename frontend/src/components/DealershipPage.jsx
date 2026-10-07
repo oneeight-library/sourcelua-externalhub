@@ -189,7 +189,7 @@ export function DealershipPage({
   const botList = bots ? Array.from(bots.values()) : [];
 
   return (
-    <div className="min-h-screen min-h-[100dvh] w-full bg-zinc-950 text-zinc-100 flex flex-col selection:bg-emerald-500/20 selection:text-emerald-300">
+    <div className="h-screen h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-zinc-950 text-zinc-100 flex flex-col selection:bg-emerald-500/20 selection:text-emerald-300 overscroll-contain">
       
       {/* 1. Dedicated Standalone Top Navbar Header */}
       <header className="sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl">
