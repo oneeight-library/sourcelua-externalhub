@@ -214,6 +214,12 @@ local LocalPlayer = Players.LocalPlayer
 local Context = nil
 local activeCashLabel = nil
 
+local function cleanRoute(name)
+    if not name then return "Cargo" end
+    local s = tostring(name):gsub("%b()", ""):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+    return (s ~= "" and s) or "Cargo"
+end
+
 local State = {
     IsFarming = false,
     Status = "CONNECTED",
@@ -229,7 +235,8 @@ local State = {
     CurrentTargetPos = nil,
     CurrentTargetName = nil,
     TRUCK_STARTER_POS = Vector3.new(34938.023, 135.125, -54577.938),
-    DriveMinDuration = 50
+    DriveMinDuration = 45,
+    FarmStartTime = 0
 }
 
 -- ============================================================================
@@ -694,8 +701,9 @@ local function runFarmLoop()
             local routeDist = (State.CurrentTargetPos - State.TRUCK_STARTER_POS).Magnitude
 
             if routeDist < minStuds then
+                State.Status = "GET_BEST_DESTINATION"
                 if Context and Context.SendLog then
-                    Context.SendLog(string.format("Rute %s ditolak (%.0f < %.0f studs). Reroll...", State.CurrentTargetName or "?", routeDist, minStuds), "INFO")
+                    Context.SendLog(string.format("Menganalisis rute terbaik: %s...", State.CurrentTargetName or "Cargo"), "INFO")
                 end
                 pcall(function() ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Unemployee") end)
                 State.CurrentTargetPos = nil
@@ -706,9 +714,9 @@ local function runFarmLoop()
 
             -- STATE 4: SPAWN TRUCK
             State.Status = "SPAWN_TRUCK"
-            State.CurrentRoute = string.format("%s (%.0f km)", State.CurrentTargetName or "Cargo", routeDist / 1000)
+            State.CurrentRoute = cleanRoute(State.CurrentTargetName)
             if Context and Context.SendLog then
-                Context.SendLog(string.format("Rute Cocok: %s (%.1f km)! Memunculkan truk...", State.CurrentTargetName, routeDist / 1000), "SUCCESS")
+                Context.SendLog(string.format("Rute Terbaik: %s! Memunculkan armada...", cleanRoute(State.CurrentTargetName)), "SUCCESS")
             end
 
             tf = Helpers.findTruckFolder()
@@ -805,9 +813,9 @@ local function runFarmLoop()
 
                     if chainDist >= minStuds then
                         canChain = true
-                        State.CurrentRoute = string.format("%s (%.0f km)", State.CurrentTargetName or "Chain", chainDist / 1000)
+                        State.CurrentRoute = cleanRoute(State.CurrentTargetName)
                         if Context and Context.SendLog then
-                            Context.SendLog(string.format("[Smart Chain] Rute Sambungan Ditemukan: %s (%.1f km)!", State.CurrentTargetName, chainDist / 1000), "SUCCESS")
+                            Context.SendLog(string.format("[Smart Chain] Rute Sambungan: %s! Menghubungkan jalur...", cleanRoute(State.CurrentTargetName)), "SUCCESS")
                         end
                         DriveEngine.EnsureSeated(car)
                         task.wait(0.5)
@@ -890,6 +898,7 @@ function CDIDModule.HandleCommand(action, payload)
     if action == "START_FARM" then
         if not State.IsFarming then
             State.IsFarming = true
+            State.FarmStartTime = os.clock()
             local curC = getCDIDCash()
             if curC > 0 and (not State.StartCash or State.StartCash == 0) then
                 State.StartCash = curC
@@ -933,7 +942,7 @@ function CDIDModule.HandleCommand(action, payload)
         if payload and payload.minDistance then
             State.MinDistance = tonumber(payload.minDistance) or 100000
             if Context and Context.SendLog then
-                Context.SendLog("Batas jarak minimum diubah ke: " .. State.MinDistance .. " studs", "INFO")
+                Context.SendLog("Konfigurasi Best Destination diperbarui: " .. tostring(State.MinDistance), "INFO")
             end
         end
         return true
@@ -952,7 +961,8 @@ function CDIDModule.GetTelemetry()
         startCash = State.StartCash,
         isFarming = State.IsFarming,
         lowRender = State.LowRender,
-        minDistance = State.MinDistance
+        minDistance = State.MinDistance,
+        farmDuration = (State.IsFarming and State.FarmStartTime and State.FarmStartTime > 0) and math.floor(os.clock() - State.FarmStartTime) or 0
     }
 end
 
