@@ -42,8 +42,8 @@ export function useWebSocketHub() {
   }, [sendBotCommand, addLog]);
 
   useEffect(() => {
-    let wsUrl = window.__WS_URL__;
-    if (!wsUrl || wsUrl === "__WS_URL__") {
+    let wsUrl = window.__HUB_WS_ENDPOINT__;
+    if (!wsUrl || typeof wsUrl !== "string" || wsUrl.includes("__")) {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       wsUrl = `${protocol}//${window.location.host}/ws`;
     }
