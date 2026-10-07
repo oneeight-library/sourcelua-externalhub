@@ -51,17 +51,22 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
     return `${hrs}:${mins}:${secs}`;
   };
 
-  const farmActiveTime = formatTime(bot.farmDuration || 0);
-
-  // Hitung Pendapatan Rata-rata per Jam (Avg / Jam)
+    // Perhitungan Durasi & Rata-rata Pendapatan per Jam (100% Rumus Resmi OneEight)
+  const trips = bot.tripCount || 0;
   const earnings = bot.totalEarnings || 0;
-  const activeDuration = bot.farmDuration || 0;
-  let avgPerHourStr = "Menghitung...";
+  // Fallback: Jika bot belum mengirimkan farmDuration (loader lama), estimasi dari trip * 50s
+  const elapsedSec = (bot.farmDuration && bot.farmDuration > 0) ? bot.farmDuration : (trips > 0 ? trips * 50 : 0);
+  const farmActiveTime = formatTime(elapsedSec);
 
-  if (activeDuration >= 15 && earnings > 0) {
-    const hourlyRate = Math.round((earnings / activeDuration) * 3600);
+  // Rumus Resmi OneEight:
+  // effectiveHours = math.max(elapsedSec / 3600, (tripCount * 50) / 3600)
+  // avgPerHour = totalEarned / effectiveHours
+  let avgPerHourStr = "Menghitung...";
+  if (trips > 0 && earnings > 0) {
+    const effectiveHours = Math.max(elapsedSec / 3600, (trips * 50) / 3600);
+    const hourlyRate = Math.round(earnings / effectiveHours);
     avgPerHourStr = gameCfg.formatMoney ? gameCfg.formatMoney(hourlyRate) + " / jam" : `${hourlyRate.toLocaleString()} / jam`;
-  } else if (activeDuration >= 15 && earnings === 0) {
+  } else if (elapsedSec >= 15 && earnings === 0) {
     avgPerHourStr = gameCfg.formatMoney ? gameCfg.formatMoney(0) + " / jam" : "0 / jam";
   }
 
