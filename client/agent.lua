@@ -367,7 +367,7 @@ end
 Modules["games/cdid/features/dealership"] = function()
 --[[
     CDID Feature: Dealership Controller, Catalog Extractor & Remote Buy
-    100% Dynamic - Auto-discovers dealers from in-game UI & CarData memory
+    100% Berbasis Nilai car.Dealership.Value dari ReplicatedStorage.CarData
 --]]
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
@@ -376,8 +376,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DealershipFeature = {}
 
--- Urutan dan nama dealer CDID resmi
-local KNOWN_DEALER_ORDER = {
+-- Urutan resmi nama dealer CDID langsung dari nilai Dealership di CarData
+local DEFAULT_DEALER_LIST = {
     "77", "Bandung", "Otnas", "Premium", "Toyota", "Honda",
     "Hyundai", "Mitsubishi", "MercedesBenz", "Suzuki", "Daihatsu",
     "KIA", "Nissan", "Mazda", "Lexus", "Wuling", "Audi", "VW",
@@ -388,53 +388,39 @@ function DealershipFeature.GetRealDealerList()
     local list = {}
     local seen = {}
 
-    -- 1. Baca dari UI Dealerlist in-game CDID (PlayerGui.Dealership.Container.Dealership.Dealerlist)
-    pcall(function()
-        local pGui = LocalPlayer:FindFirstChild("PlayerGui")
-        local dGui = pGui and pGui:FindFirstChild("Dealership")
-        local dList = dGui and dGui:FindFirstChild("Container") and dGui.Container:FindFirstChild("Dealership") and dGui.Container.Dealership:FindFirstChild("Dealerlist")
-        if dList then
-            for _, child in ipairs(dList:GetChildren()) do
-                if (child:IsA("ScrollingFrame") or child:IsA("Frame") or child:IsA("Folder")) and not seen[child.Name] then
-                    seen[child.Name] = true
-                    table.insert(list, child.Name)
-                end
-            end
-        end
-    end)
-
-    -- 2. Baca dari CarData di ReplicatedStorage (ekstraksi dinamis dari data mobil game)
+    -- Baca langsung semua nilai unik dari car.Dealership.Value di ReplicatedStorage.CarData
     pcall(function()
         local carData = ReplicatedStorage:FindFirstChild("CarData")
         if carData then
             for _, car in ipairs(carData:GetChildren()) do
+                local unobtainable = car:FindFirstChild("Unobtainable")
                 local d = car:FindFirstChild("Dealership") and car.Dealership.Value
-                if d and d ~= "" and not seen[d] then
-                    seen[d] = true
-                    table.insert(list, d)
+                if d and d ~= "" and not unobtainable then
+                    if d == "Komersil" then d = "Komersial" end
+                    if not seen[d] then
+                        seen[d] = true
+                        table.insert(list, d)
+                    end
                 end
             end
         end
     end)
 
-    -- 3. Fallback jika data belum termuat
     if #list == 0 then
-        for _, name in ipairs(KNOWN_DEALER_ORDER) do
-            table.insert(list, name)
-        end
-    else
-        -- Urutkan berdasarkan urutan CDID populer
-        local orderMap = {}
-        for idx, name in ipairs(KNOWN_DEALER_ORDER) do
-            orderMap[name:lower()] = idx
-        end
-        table.sort(list, function(a, b)
-            local oa = orderMap[a:lower()] or 999
-            local ob = orderMap[b:lower()] or 999
-            if oa ~= ob then return oa < ob end
-            return a:lower() < b:lower()
-        end)
+        return DEFAULT_DEALER_LIST
     end
+
+    -- Urutkan sesuai urutan populer CDID
+    local orderMap = {}
+    for idx, name in ipairs(DEFAULT_DEALER_LIST) do
+        orderMap[name:lower()] = idx
+    end
+    table.sort(list, function(a, b)
+        local oa = orderMap[a:lower()] or 999
+        local ob = orderMap[b:lower()] or 999
+        if oa ~= ob then return oa < ob end
+        return a:lower() < b:lower()
+    end)
 
     return list
 end
@@ -444,26 +430,22 @@ function DealershipFeature.GetCars(dealerTarget)
     local carData = ReplicatedStorage:FindFirstChild("CarData")
     if not carData then return list end
 
-    local cleanTarget = (dealerTarget or ""):lower():gsub("%s+", ""):gsub("[^%w]", "")
-    -- Aliases normalizer
-    if cleanTarget == "dealer77" or cleanTarget == "utama" then cleanTarget = "77" end
-    if cleanTarget == "bekasbandung" then cleanTarget = "bandung" end
+    local cleanTarget = tostring(dealerTarget or ""):lower():gsub("%s+", "")
     if cleanTarget == "komersil" then cleanTarget = "komersial" end
 
     for _, car in ipairs(carData:GetChildren()) do
         local dealerVal = car:FindFirstChild("Dealership")
         local unobtainable = car:FindFirstChild("Unobtainable")
         if dealerVal and not unobtainable then
-            local rawDealer = dealerVal.Value
-            local cleanDealer = rawDealer:lower():gsub("%s+", ""):gsub("[^%w]", "")
+            local rawDealer = tostring(dealerVal.Value)
+            local cleanDealer = rawDealer:lower():gsub("%s+", "")
             if cleanDealer == "komersil" then cleanDealer = "komersial" end
 
             local isMatch = false
             if cleanTarget == "" or cleanTarget == "all" or cleanTarget == "semuadealer" then
                 isMatch = true
             elseif cleanDealer == cleanTarget then
-                isMatch = true
-            elseif cleanDealer:find(cleanTarget, 1, true) or cleanTarget:find(cleanDealer, 1, true) then
+                -- PURE EXACT MATCH terhadap nilai car.Dealership.Value
                 isMatch = true
             end
 
@@ -474,7 +456,7 @@ function DealershipFeature.GetCars(dealerTarget)
                     id = car.Name,
                     name = car:FindFirstChild("CarName") and car.CarName.Value or car.Name,
                     cost = car:FindFirstChild("Cost") and car.Cost.Value or 0,
-                    dealer = rawDealer,
+                    dealer = rawDealer, -- Nilai tepat dari car.Dealership.Value
                     assetId = assetId,
                     topSpeed = car:FindFirstChild("TopSpeed") and car.TopSpeed.Value or 0,
                     hp = car:FindFirstChild("Horsepower") and car.Horsepower.Value or 0,
@@ -502,7 +484,7 @@ function DealershipFeature.Buy(carId, dealer, color, Context)
 end
 
 function DealershipFeature.Open(dealerName, Context)
-    dealerName = dealerName or "Dealer Utama"
+    dealerName = dealerName or "77"
     pcall(function()
         local etc = Workspace:FindFirstChild("Etc") or Instance.new("Folder", Workspace)
         etc.Name = "Etc"

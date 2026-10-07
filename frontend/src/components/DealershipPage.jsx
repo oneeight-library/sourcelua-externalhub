@@ -19,47 +19,35 @@ import {
   Store
 } from "lucide-react";
 
-// Urutan dan pengelompokan resmi dealer CDID sesuai game
-export const CDID_DEALERS_CONFIG = [
-  { key: "Semua Dealer", label: "Semua Dealer", badge: "Katalog" },
-  { key: "77", label: "Dealer 77", badge: "Utama" },
-  { key: "Bandung", label: "Bekas Bandung", badge: "Used Car" },
-  { key: "Otnas", label: "Otnas", badge: "JDM & Klasik" },
-  { key: "Premium", label: "Premium", badge: "Supercar" },
-  { key: "Toyota", label: "Toyota" },
-  { key: "Honda", label: "Honda" },
-  { key: "Hyundai", label: "Hyundai" },
-  { key: "Mitsubishi", label: "Mitsubishi" },
-  { key: "MercedesBenz", label: "Mercedes-Benz" },
-  { key: "Suzuki", label: "Suzuki" },
-  { key: "Daihatsu", label: "Daihatsu" },
-  { key: "KIA", label: "KIA" },
-  { key: "Nissan", label: "Nissan" },
-  { key: "Mazda", label: "Mazda" },
-  { key: "Lexus", label: "Lexus" },
-  { key: "Wuling", label: "Wuling" },
-  { key: "Audi", label: "Audi" },
-  { key: "VW", label: "Volkswagen" },
-  { key: "DIR", label: "DIR (BYD)" },
-  { key: "Chery", label: "Chery" },
-  { key: "Jaecoo", label: "Jaecoo" },
-  { key: "Geely", label: "Geely" },
-  { key: "Shehua", label: "Shehua (Denza)" },
-  { key: "SLM", label: "SLM" },
-  { key: "Komersial", label: "Komersial", badge: "Truk & Bus" }
+// Daftar dealer resmi CDID 100% persis sesuai nilai car.Dealership.Value di in-game CarData
+const CDID_DEALERS_LIST = [
+  "Semua Dealer",
+  "77",
+  "Bandung",
+  "Otnas",
+  "Premium",
+  "Toyota",
+  "Honda",
+  "Hyundai",
+  "Mitsubishi",
+  "MercedesBenz",
+  "Suzuki",
+  "Daihatsu",
+  "KIA",
+  "Nissan",
+  "Mazda",
+  "Lexus",
+  "Wuling",
+  "Audi",
+  "VW",
+  "DIR",
+  "Chery",
+  "Jaecoo",
+  "Geely",
+  "Shehua",
+  "SLM",
+  "Komersial"
 ];
-
-export function normalizeDealer(str) {
-  if (!str) return "";
-  const s = str.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, "");
-  if (s === "dealer77" || s === "utama") return "77";
-  if (s === "bekasbandung") return "bandung";
-  if (s === "komersil") return "komersial";
-  if (s === "volkswagen") return "vw";
-  if (s === "byd") return "dir";
-  if (s === "denza" || s === "yangwang") return "shehua";
-  return s;
-}
 
 const PRESET_COLORS = [
   { name: "Putih", rgb: { r: 255, g: 255, b: 255 }, hex: "#ffffff" },
@@ -95,17 +83,17 @@ export function DealershipPage({
     }
   }, [initialDealer]);
 
-  // Dynamic merged dealer list: Config items + any extras from active bot memory
+  // Gabungkan daftar dealer: Daftar default + dealer baru apapun yang dikirim bot secara dinamis
   const dealerOptions = React.useMemo(() => {
-    const list = [...CDID_DEALERS_CONFIG];
-    const seen = new Set(list.map((d) => normalizeDealer(d.key)));
+    const list = [...CDID_DEALERS_LIST];
+    const seen = new Set(list.map((d) => d.toLowerCase()));
 
     if (activeBot?.dealerList && Array.isArray(activeBot.dealerList)) {
       activeBot.dealerList.forEach((raw) => {
-        const norm = normalizeDealer(raw);
-        if (!seen.has(norm) && raw.trim() !== "") {
-          seen.add(norm);
-          list.push({ key: raw, label: raw, badge: "In-Game" });
+        const lower = raw.toLowerCase().trim();
+        if (!seen.has(lower) && raw.trim() !== "") {
+          seen.add(lower);
+          list.push(raw.trim());
         }
       });
     }
@@ -120,20 +108,19 @@ export function DealershipPage({
     }
   }, [selectedDealer, activeBot?.botId, onFetchCars]);
 
-  const dealerKey = normalizeDealer(selectedDealer === "Semua Dealer" ? "all" : selectedDealer);
+  const dealerKey = (selectedDealer === "Semua Dealer" ? "all" : selectedDealer).toLowerCase().replace(/\s+/g, "");
   const rawCars = dealerCatalog[dealerKey] || dealerCatalog["all"] || [];
 
-  // Filter cars based on dealer & search query
+  // PENGELOMPOKAN 100% MURNI SESUAI car.dealer (car.Dealership.Value dari CarData)
   const filteredCars = React.useMemo(() => {
-    const selNorm = normalizeDealer(selectedDealer);
+    const selLower = selectedDealer.toLowerCase().trim();
     return rawCars
       .filter((car) => {
-        const carNorm = normalizeDealer(car.dealer);
+        const carDealerLower = (car.dealer || "").toLowerCase().trim();
+        // Strict match ke nilai car.Dealership.Value
         const matchesDealer =
           selectedDealer === "Semua Dealer" ||
-          carNorm === selNorm ||
-          carNorm.includes(selNorm) ||
-          selNorm.includes(carNorm);
+          carDealerLower === selLower;
 
         const matchesSearch =
           !searchQuery.trim() ||
@@ -194,11 +181,11 @@ export function DealershipPage({
                 CDID Showroom Online
               </h1>
               <Badge variant="emerald" className="text-[10px] font-mono px-2 py-0.5">
-                Live Game Sync
+                Live CarData Sync
               </Badge>
             </div>
             <p className="text-xs text-zinc-400">
-              Lihat katalog mobil lengkap dan beli unit langsung dari in-game memory.
+              Katalog mobil resmi CDID dikelompokkan berdasarkan data Dealership in-game.
             </p>
           </div>
         </div>
@@ -219,18 +206,18 @@ export function DealershipPage({
 
       {/* 2. Filter & Controls Bar */}
       <div className="space-y-3">
-        {/* Horizontal Scrolling Dealer Badges (Persis Game CDID) */}
+        {/* Horizontal Scrolling Dealer Badges (Persis Nama Dealership CDID) */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-800">
-          {dealerOptions.map((item) => {
-            const isSelected = normalizeDealer(selectedDealer) === normalizeDealer(item.key);
+          {dealerOptions.map((dealerName) => {
+            const isSelected = selectedDealer.toLowerCase().trim() === dealerName.toLowerCase().trim();
             return (
               <button
-                key={item.key}
+                key={dealerName}
                 onClick={() => {
-                  setSelectedDealer(item.key);
-                  const cleanKey = item.key.replace(/\s+/g, "_").toLowerCase();
+                  setSelectedDealer(dealerName);
+                  const cleanKey = dealerName.replace(/\s+/g, "_").toLowerCase();
                   if (typeof window !== "undefined") {
-                    window.history.replaceState(null, "", item.key === "Semua Dealer" ? "/cdid_dealer" : `/cdid_${cleanKey}`);
+                    window.history.replaceState(null, "", dealerName === "Semua Dealer" ? "/cdid_dealer" : `/cdid_${cleanKey}`);
                   }
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 ${
@@ -239,12 +226,7 @@ export function DealershipPage({
                     : "bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700"
                 }`}
               >
-                <span>{item.label}</span>
-                {item.badge && (
-                  <span className={`text-[9px] px-1 py-0.2 rounded ${isSelected ? "bg-zinc-950/20 text-zinc-950" : "bg-zinc-800 text-zinc-400"}`}>
-                    {item.badge}
-                  </span>
-                )}
+                <span>{dealerName}</span>
               </button>
             );
           })}
