@@ -12,7 +12,7 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
   const selectedBot = bots.get(selectedBotId);
   const gameCfg = selectedBot ? getGameConfig(selectedBot.gameId) : null;
   const currentLabel = selectedBotId === "ALL" 
-    ? `🌐 Semua Akun (${bots.size})` 
+    ? `Semua Akun (${bots.size})` 
     : (selectedBot ? selectedBot.name : "Pilih Akun");
 
   return (
@@ -77,9 +77,7 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
                         : "bg-zinc-900/40 border-zinc-800/80 hover:bg-zinc-900"
                     }`}
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700 text-lg">
-                      🌐
-                    </div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-300"><Users className="h-4 w-4" /></div>
                     <div>
                       <div className="font-bold text-xs text-zinc-100">Semua Akun (Global)</div>
                       <div className="text-[11px] text-zinc-400">Kelola Seluruh Armada ({bots.size} Bot)</div>
@@ -104,7 +102,7 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
                       >
                         <Avatar className="h-10 w-10 border-zinc-700">
                           {b.avatarUrl && <AvatarImage src={b.avatarUrl} alt={b.name} />}
-                          <AvatarFallback>{b.isKicked ? "🚨" : initial}</AvatarFallback>
+                          <AvatarFallback>{initial}</AvatarFallback>
                         </Avatar>
 
                         <div className="flex-1 min-w-0">

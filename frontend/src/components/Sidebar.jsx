@@ -44,9 +44,7 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
               : "bg-zinc-950 border-transparent hover:bg-zinc-900/60 hover:border-zinc-800/60"
           }`}
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-lg">
-            🌐
-          </div>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400"><Users className="h-4 w-4" /></div>
           <div className="min-w-0 flex-1">
             <div className="font-bold text-xs text-zinc-100">Semua Akun (Global)</div>
             <div className="text-[11px] text-zinc-400 truncate">Kelola Seluruh Armada ({bots.size} Bot)</div>
@@ -73,7 +71,7 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
               <div className="relative shrink-0">
                 <Avatar className="h-10 w-10 border-zinc-800">
                   {b.avatarUrl && <AvatarImage src={b.avatarUrl} alt={b.name} />}
-                  <AvatarFallback>{b.isKicked ? "🚨" : initial}</AvatarFallback>
+                  <AvatarFallback>{initial}</AvatarFallback>
                 </Avatar>
                 <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-zinc-950 ${
                   b.isKicked ? "bg-rose-500" : (b.isFarming ? "bg-emerald-500" : "bg-amber-500")

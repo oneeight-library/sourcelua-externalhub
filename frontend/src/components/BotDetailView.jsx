@@ -70,7 +70,7 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
             <Avatar className="h-14 w-14 border-2 border-zinc-700 shadow-xl rounded-2xl shrink-0">
               {bot.avatarUrl && <AvatarImage src={bot.avatarUrl} alt={bot.name} />}
               <AvatarFallback className="rounded-2xl text-base font-black">
-                {isKicked ? "🚨" : initial}
+                {initial}
               </AvatarFallback>
             </Avatar>
 
@@ -80,7 +80,7 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                   {bot.name || "Roblox Player"}
                 </h2>
                 {isKicked ? (
-                  <Badge variant="rose" className="text-[11px] font-bold">🚨 Terputus</Badge>
+                  <Badge variant="rose" className="text-[11px] font-bold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Terputus</Badge>
                 ) : (
                   <Badge variant={isFarming ? "emerald" : "secondary"} className="text-[11px] font-bold">
                     <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${isFarming ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />

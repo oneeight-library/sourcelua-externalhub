@@ -22,9 +22,7 @@ export function FleetOverview({ bots, onSelectBot, onSendCommand, onRejoinBot })
         <CardHeader className="p-5 md:p-6 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-2xl">
-                🌐
-              </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"><Users className="h-6 w-6" /></div>
               <div>
                 <CardTitle className="text-base md:text-lg font-bold">Ringkasan Seluruh Akun</CardTitle>
                 <div className="flex items-center gap-2 mt-1">
@@ -33,7 +31,7 @@ export function FleetOverview({ bots, onSelectBot, onSendCommand, onRejoinBot })
                   </Badge>
                   {kickedCount > 0 && (
                     <Badge variant="rose" className="text-[11px]">
-                      🚨 {kickedCount} Terputus
+                      {kickedCount} Terputus
                     </Badge>
                   )}
                 </div>
@@ -80,7 +78,7 @@ export function FleetOverview({ bots, onSelectBot, onSendCommand, onRejoinBot })
         <CardContent className="p-5 pt-0">
           {bots.size === 0 ? (
             <div className="text-center py-12 px-4 border border-dashed border-zinc-800 rounded-xl">
-              <div className="text-4xl mb-3">🎮</div>
+              <div className="text-zinc-600 mb-3 flex justify-center"><Gamepad2 className="h-10 w-10" /></div>
               <h4 className="font-bold text-sm text-zinc-200">Belum Ada Akun Terhubung</h4>
               <p className="text-xs text-zinc-400 max-w-sm mx-auto mt-1 leading-relaxed">
                 Jalankan script loader di executor Roblox akun Anda untuk mulai mengontrol auto farm dari dashboard ini.
@@ -106,7 +104,7 @@ export function FleetOverview({ bots, onSelectBot, onSendCommand, onRejoinBot })
                       <div className="relative shrink-0">
                         <Avatar className="h-11 w-11 border-zinc-700">
                           {b.avatarUrl && <AvatarImage src={b.avatarUrl} alt={b.name} />}
-                          <AvatarFallback>{b.isKicked ? "🚨" : initial}</AvatarFallback>
+                          <AvatarFallback>{initial}</AvatarFallback>
                         </Avatar>
                         <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-zinc-950 ${
                           b.isKicked ? "bg-rose-500" : (b.isFarming ? "bg-emerald-500" : "bg-amber-500")
