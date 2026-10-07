@@ -3,16 +3,25 @@
     Version: 3.1.0 (CDID Main Menu & Server Gateway Support)
 --]]
 
+local HttpService = game:GetService("HttpService")
+local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
+
 if _G.OE_ExternalRunning then
-    print("[OE-External] Instance sebelumnya terdeteksi, membersihkan...")
+    print("[OE-External] Instance sebelumnya terdeteksi, mematikan instance lama...")
     _G.OE_ExternalRunning = false
+    _G.OE_ExternalCurrentInstance = nil
     if _G.OE_ExternalSocket then
         pcall(function() _G.OE_ExternalSocket:Close() end)
     end
-    task.wait(1)
+    task.wait(0.5)
 end
 
+_G.OE_ExternalCurrentInstance = MY_INSTANCE_ID
 _G.OE_ExternalRunning = true
+
+local function isInstanceAlive()
+    return _G.OE_ExternalRunning and (_G.OE_ExternalCurrentInstance == MY_INSTANCE_ID)
+end
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -1920,7 +1929,7 @@ function CDIDMenu.Init(coreContext)
 
     -- Background scanner berkala tiap 3 detik
     task.spawn(function()
-        while _G.OE_ExternalRunning do
+        while isInstanceAlive() do
             task.wait(3)
             if State.CurrentServerCode == "" then
                 scanAllSources()
@@ -2201,10 +2210,14 @@ local function connectWebSocket()
     end)
 
     ws.OnClose:Connect(function()
-        warn("[OE-External] WebSocket terputus! Mencoba rekoneksi dalam 3 detik...")
         CoreState.Socket = nil
+        if not isInstanceAlive() then
+            print("[OE-External] Instance lama ditutup permanen, coroutine berhenti.")
+            return
+        end
+        warn("[OE-External] WebSocket terputus! Mencoba rekoneksi dalam 3 detik...")
         task.wait(3)
-        if _G.OE_ExternalRunning and not Safety.IsKicked then
+        if isInstanceAlive() and not Safety.IsKicked then
             connectWebSocket()
         end
     end)

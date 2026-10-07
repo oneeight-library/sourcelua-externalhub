@@ -100,10 +100,15 @@ export function DealershipPage({
     return list;
   }, [activeBot?.dealerList]);
 
-  // Request cars from active bot when dealer changes
+  // Request cars from active bot only when dealer actually changes (prevent infinite re-render loops)
+  const fetchedRef = React.useRef({ botId: null, dealer: null });
   React.useEffect(() => {
     if (activeBot && activeBot.botId) {
       const dKey = selectedDealer === "Semua Dealer" ? "all" : selectedDealer;
+      if (fetchedRef.current.botId === activeBot.botId && fetchedRef.current.dealer === dKey) {
+        return;
+      }
+      fetchedRef.current = { botId: activeBot.botId, dealer: dKey };
       onFetchCars(activeBot.botId, dKey);
     }
   }, [selectedDealer, activeBot?.botId, onFetchCars]);
