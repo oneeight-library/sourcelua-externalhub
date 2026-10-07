@@ -3,12 +3,15 @@ import { Navbar } from "@/components/Navbar.jsx";
 import { Sidebar } from "@/components/Sidebar.jsx";
 import { FleetOverview } from "@/components/FleetOverview.jsx";
 import { BotDetailView } from "@/components/BotDetailView.jsx";
+import { Button } from "@/ui/button.jsx";
 import { useWebSocketHub } from "@/hooks/useWebSocketHub.js";
 
 export default function App() {
   const {
     bots,
     selectedBotId,
+    selectedBot,
+    selectedAccountName,
     setSelectedBotId,
     activeTab,
     setActiveTab,
@@ -20,8 +23,6 @@ export default function App() {
     rejoinBot
   } = useWebSocketHub();
 
-  const selectedBot = bots.get(selectedBotId);
-
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
       
@@ -32,7 +33,7 @@ export default function App() {
         onSelectBot={setSelectedBotId}
       />
 
-      {/* 2. Main Workspace (Fills all remaining screen width) */}
+      {/* 2. Main Workspace */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         
         {/* Top Navbar */}
@@ -44,17 +45,17 @@ export default function App() {
           wsStatus={wsStatus}
         />
 
-        {/* Scrollable Viewport (No more weird centered container!) */}
+        {/* Scrollable Viewport */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-zinc-950/60">
           <div className="w-full max-w-6xl mx-auto space-y-6">
-            {selectedBotId === "ALL" || !selectedBot ? (
+            {selectedAccountName === "ALL" ? (
               <FleetOverview
                 bots={bots}
                 onSelectBot={setSelectedBotId}
                 onSendCommand={sendBotCommand}
                 onRejoinBot={rejoinBot}
               />
-            ) : (
+            ) : selectedBot ? (
               <BotDetailView
                 bot={selectedBot}
                 activeTab={activeTab}
@@ -64,6 +65,23 @@ export default function App() {
                 onSendCommand={sendBotCommand}
                 onRejoinBot={rejoinBot}
               />
+            ) : (
+              /* State Teleportasi / Menghubungkan Ulang: Jangan melempar user ke home */
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center rounded-2xl border border-zinc-800 bg-zinc-900/40">
+                <div className="h-8 w-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mb-4" />
+                <h3 className="font-bold text-base text-zinc-100">Menghubungkan ke Akun ({selectedAccountName})...</h3>
+                <p className="text-xs text-zinc-400 mt-1 max-w-sm leading-relaxed">
+                  Akun sedang proses teleportasi server Roblox atau reconnecting. Halaman akan tersinkron otomatis begitu Roblox siap.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-5 text-xs font-semibold border-zinc-700 hover:bg-zinc-800"
+                  onClick={() => setSelectedBotId("ALL")}
+                >
+                  Kembali ke Semua Akun
+                </Button>
+              </div>
             )}
           </div>
         </main>

@@ -9,6 +9,7 @@ export class HubRoom {
     this.env = env;
     this.bots = new Map();         // botId -> { ws, info }
     this.controllers = new Set();  // Set of ws
+    this.recentLogs = [];          // ring buffer last 50 logs
   }
 
   async fetch(request) {
@@ -156,13 +157,19 @@ export class HubRoom {
             payload: botInfo
           });
         } else if (data.type === "LOG") {
-          this.broadcastToControllers({
-            type: "BOT_LOG",
+          const logItem = {
+            id: Math.random().toString(36),
             botId,
             botName: botInfo.name,
             log: data.message,
             level: data.level || "INFO",
             timestamp: Date.now()
+          };
+          this.recentLogs.push(logItem);
+          if (this.recentLogs.length > 50) this.recentLogs.shift();
+          this.broadcastToControllers({
+            type: "BOT_LOG",
+            ...logItem
           });
         }
       } catch (e) {}
@@ -192,6 +199,13 @@ export class HubRoom {
       type: "SYNC_BOTS",
       bots: currentBots
     }));
+
+    if (this.recentLogs.length > 0) {
+      ws.send(JSON.stringify({
+        type: "LOG_HISTORY",
+        logs: this.recentLogs
+      }));
+    }
 
     ws.addEventListener("message", (event) => {
       try {

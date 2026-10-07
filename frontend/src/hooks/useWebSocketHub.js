@@ -2,11 +2,29 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 export function useWebSocketHub() {
   const [bots, setBots] = useState(new Map());
-  const [selectedBotId, setSelectedBotId] = useState("ALL");
+  
+  // 1. Persist Selected Account Name (Berdasarkan Username Akun Roblox)
+  const [selectedAccountName, setSelectedAccountName] = useState(() => {
+    try {
+      return localStorage.getItem("oe_selected_account") || "ALL";
+    } catch (e) {
+      return "ALL";
+    }
+  });
+
   const [activeTab, setActiveTab] = useState("tab_autofarm");
   const [wsStatus, setWsStatus] = useState("Menghubungkan");
   const [isWsOnline, setIsWsOnline] = useState(false);
-  const [logsHistory, setLogsHistory] = useState([]);
+
+  // 2. Persist Logs History di SessionStorage (agar saat F5 / Refresh riwayat log tidak hilang)
+  const [logsHistory, setLogsHistory] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("oe_logs_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   
   const socketRef = useRef(null);
 
@@ -14,15 +32,24 @@ export function useWebSocketHub() {
     const timeStr = new Date().toTimeString().split(" ")[0];
     setLogsHistory((prev) => {
       const next = [...prev, { id: Math.random().toString(36), time: timeStr, source, msg, level, botId }];
-      return next.length > 150 ? next.slice(-150) : next;
+      const trimmed = next.length > 150 ? next.slice(-150) : next;
+      try {
+        sessionStorage.setItem("oe_logs_history", JSON.stringify(trimmed));
+      } catch (e) {}
+      return trimmed;
     });
   }, []);
 
   const clearLogs = useCallback((targetBotId) => {
     if (!targetBotId || targetBotId === "ALL") {
       setLogsHistory([]);
+      try { sessionStorage.removeItem("oe_logs_history"); } catch (e) {}
     } else {
-      setLogsHistory((prev) => prev.filter((l) => l.botId !== targetBotId));
+      setLogsHistory((prev) => {
+        const filtered = prev.filter((l) => l.botId !== targetBotId);
+        try { sessionStorage.setItem("oe_logs_history", JSON.stringify(filtered)); } catch (e) {}
+        return filtered;
+      });
     }
   }, []);
 
@@ -40,6 +67,31 @@ export function useWebSocketHub() {
     sendBotCommand(botId, "REJOIN_SERVER");
     addLog("Controller", "Mengirim perintah Rejoin Server...", "WARN", botId);
   }, [sendBotCommand, addLog]);
+
+  // Resolusi bot terpilih secara tangguh (mencocokkan botId ATAU account username)
+  let resolvedBot = null;
+  if (selectedAccountName !== "ALL") {
+    for (const [id, b] of bots.entries()) {
+      if (id === selectedAccountName || (b.name && b.name.toLowerCase() === selectedAccountName.toLowerCase())) {
+        resolvedBot = b;
+        break;
+      }
+    }
+  }
+
+  const selectedBotId = resolvedBot ? resolvedBot.botId : selectedAccountName;
+
+  const setSelectedBotId = useCallback((id) => {
+    if (id === "ALL") {
+      setSelectedAccountName("ALL");
+      try { localStorage.setItem("oe_selected_account", "ALL"); } catch (e) {}
+    } else {
+      const b = bots.get(id);
+      const accName = b && b.name ? b.name : id;
+      setSelectedAccountName(accName);
+      try { localStorage.setItem("oe_selected_account", accName); } catch (e) {}
+    }
+  }, [bots]);
 
   useEffect(() => {
     let wsUrl = window.__HUB_WS_ENDPOINT__;
@@ -73,7 +125,6 @@ export function useWebSocketHub() {
           if (data.type === "SYNC_BOTS") {
             const map = new Map();
             (data.bots || []).forEach((b) => {
-              // Deduplicate by name to prevent double accounts
               for (const [id, existing] of map.entries()) {
                 if (existing.name && b.name && existing.name.toLowerCase() === b.name.toLowerCase()) {
                   map.delete(id);
@@ -82,6 +133,23 @@ export function useWebSocketHub() {
               map.set(b.botId || b.id, b);
             });
             setBots(map);
+
+          } else if (data.type === "LOG_HISTORY") {
+            setLogsHistory((prev) => {
+              const existingIds = new Set(prev.map(l => l.id));
+              const incoming = (data.logs || []).map(l => ({
+                id: l.id || Math.random().toString(36),
+                time: new Date(l.timestamp || Date.now()).toTimeString().split(" ")[0],
+                source: l.botName || "Bot",
+                msg: l.log,
+                level: l.level || "INFO",
+                botId: l.botId
+              })).filter(l => !existingIds.has(l.id));
+              const combined = [...prev, ...incoming];
+              const trimmed = combined.length > 150 ? combined.slice(-150) : combined;
+              try { sessionStorage.setItem("oe_logs_history", JSON.stringify(trimmed)); } catch (e) {}
+              return trimmed;
+            });
 
           } else if (data.type === "BOT_JOINED") {
             setBots((prev) => {
@@ -102,8 +170,9 @@ export function useWebSocketHub() {
               next.delete(data.botId);
               return next;
             });
-            setSelectedBotId((cur) => (cur === data.botId ? "ALL" : cur));
-            addLog(data.name || "Bot", "Akun offline", "WARN", data.botId);
+            // CATATAN PENTING: JANGAN melempar user ke 'ALL' saat BOT_LEFT!
+            // Karena jika akun sedang teleportasi / reconnecting, akun akan segera kembali dengan nama yang sama.
+            addLog(data.name || "Bot", "Koneksi terputus (reconnect/teleport)...", "WARN", data.botId);
 
           } else if (data.type === "BOT_TELEMETRY") {
             setBots((prev) => {
@@ -151,6 +220,8 @@ export function useWebSocketHub() {
   return {
     bots,
     selectedBotId,
+    selectedBot: resolvedBot,
+    selectedAccountName,
     setSelectedBotId,
     activeTab,
     setActiveTab,
