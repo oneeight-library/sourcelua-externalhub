@@ -1028,9 +1028,48 @@
       } else if (data.type === "BOT_TELEMETRY") {
         const existing = bots.get(data.botId);
         if (existing) {
+          const oldGameId = existing.gameId;
+          const oldIsKicked = existing.isKicked;
+          const oldIsFarming = existing.isFarming;
           Object.assign(existing, data.payload || {});
-          renderFleetNavigators();
-          renderMainView();
+
+          // In-place sidebar update tanpa menghapus DOM
+          const sideCashEl = document.getElementById("sidebarCash_" + data.botId);
+          if (sideCashEl) {
+            const gameCfg = getGameConfig(existing.gameId);
+            sideCashEl.innerText = existing.currentCash > 0 ? gameCfg.formatMoney(existing.currentCash) : "Memuat...";
+          }
+          const sideSubEl = document.getElementById("sidebarSub_" + data.botId);
+          if (sideSubEl) {
+            const gameCfg = getGameConfig(existing.gameId);
+            const gameName = gameCfg.name || existing.gameName || "Roblox";
+            const farmType = existing.job || gameCfg.defaultJob || "Auto Farm";
+            if (existing.isKicked) {
+              sideSubEl.innerHTML = `<span style="color: var(--rose); font-weight: 600;">${gameName} • Terputus</span>`;
+            } else if (existing.isFarming) {
+              sideSubEl.innerHTML = `<span style="color: #6ee7b7; font-weight: 600;">${gameName} • ${farmType}</span>`;
+            } else {
+              sideSubEl.innerHTML = `<span style="color: var(--text-muted);">${gameName} • Standby</span>`;
+            }
+          }
+
+          // Jika terjadi perubahan mode game atau status kick, re-render dengan proteksi scroll
+          if (oldGameId !== existing.gameId || oldIsKicked !== existing.isKicked || oldIsFarming !== existing.isFarming) {
+            safeRenderFleetNavigators();
+            safeRenderMainView();
+            return;
+          }
+
+          // Jika sedang melihat bot ini, update angka secara in-place (scroll posisi 100% aman!)
+          if (selectedBotId === data.botId) {
+            updateLiveBotTelemetryInPlace(existing);
+          } else if (selectedBotId === "ALL") {
+            const globalCardCash = document.getElementById("globalCash_" + data.botId);
+            if (globalCardCash) {
+              const gameCfg = getGameConfig(existing.gameId);
+              globalCardCash.innerText = gameCfg.formatMoney(existing.currentCash);
+            }
+          }
         }
       } else if (data.type === "BOT_KICKED") {
         const existing = bots.get(data.botId);
@@ -1055,11 +1094,14 @@
 
       const consoleBox = document.getElementById("terminalConsole");
       if (consoleBox) {
+        const isNearBottom = (consoleBox.scrollHeight - consoleBox.scrollTop - consoleBox.clientHeight) < 40;
         const div = document.createElement("div");
         div.className = "log-line";
         div.innerHTML = `<span class="log-time">[${timeStr}]</span> <span class="log-${level}">[${source}] ${msg}</span>`;
         consoleBox.appendChild(div);
-        consoleBox.scrollTop = consoleBox.scrollHeight;
+        if (isNearBottom) {
+          consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
       }
     }
 
@@ -1196,7 +1238,101 @@
     // =========================================================================
     // 4. MAIN VIEWPORT RENDERER
     // =========================================================================
-    function renderMainView() {
+
+    // =========================================================================
+    // IN-PLACE TELEMETRY UPDATE (ZERO DOM RE-CREATION, ZERO SCROLL JUMP)
+    // =========================================================================
+    function updateLiveBotTelemetryInPlace(bot) {
+      const gameCfg = getGameConfig(bot.gameId);
+      
+      const moneyEl = document.getElementById("heroMoneyAmount");
+      if (moneyEl) moneyEl.innerText = gameCfg.formatMoney(bot.currentCash);
+
+      const earnEl = document.getElementById("heroEarnings");
+      if (earnEl) earnEl.innerText = "+" + gameCfg.formatMoney(bot.totalEarnings);
+
+      const tripEl = document.getElementById("heroTripCount");
+      if (tripEl) tripEl.innerText = (bot.tripCount || 0) + " " + (gameCfg.metricUnit || "Trips");
+
+      const durEl = document.getElementById("heroDuration");
+      if (durEl) durEl.innerText = bot.sessionTime || "00:00:00";
+
+      const routeEl = document.getElementById("currentRouteVal");
+      if (routeEl) routeEl.innerText = bot.currentRoute || "Standby";
+
+      const vehEl = document.getElementById("currentVehicleStatusVal");
+      if (vehEl) vehEl.innerText = bot.status || "Standby";
+
+      const statusTextEl = document.getElementById("heroStatusText");
+      if (statusTextEl) {
+        const currentJob = bot.job || gameCfg.defaultJob || "Auto Farm";
+        if (bot.isKicked) {
+          statusTextEl.innerText = "Terputus (" + (bot.kickReason || "Disconnect") + ")";
+          statusTextEl.style.color = "var(--rose)";
+        } else if (bot.isFarming) {
+          statusTextEl.innerText = bot.status || ("Aktif (" + currentJob + ")");
+          statusTextEl.style.color = "var(--emerald)";
+        } else {
+          statusTextEl.innerText = bot.gameId === "cdid_menu" ? "Standby di Lobi" : ("Standby (" + gameCfg.name + ")");
+          statusTextEl.style.color = "var(--text-muted)";
+        }
+      }
+
+      const statusDotEl = document.getElementById("heroStatusDot");
+      if (statusDotEl) {
+        statusDotEl.className = "pulse-dot " + (bot.isKicked ? "kicked" : (bot.isFarming ? "online" : ""));
+      }
+
+      // Sync server code input if in lobby and not focused by user
+      if (bot.serverCode) {
+        const codeInput = document.getElementById("serverCodeInput_" + bot.botId);
+        if (codeInput && document.activeElement !== codeInput) {
+          codeInput.value = bot.serverCode;
+        }
+      }
+    }
+
+    function safeRenderMainView() {
+      const container = document.getElementById("mainContentView");
+      if (!container) return;
+
+      const savedMainScroll = container.scrollTop;
+      const tabsStrip = document.querySelector(".tabs-strip");
+      const savedTabsScroll = tabsStrip ? tabsStrip.scrollLeft : 0;
+      const consoleBox = document.getElementById("terminalConsole");
+      const savedConsoleScroll = consoleBox ? consoleBox.scrollTop : 0;
+      const isConsoleAtBottom = consoleBox ? ((consoleBox.scrollHeight - consoleBox.scrollTop - consoleBox.clientHeight) < 40) : true;
+
+      renderMainView();
+
+      container.scrollTop = savedMainScroll;
+      const newTabsStrip = document.querySelector(".tabs-strip");
+      if (newTabsStrip) newTabsStrip.scrollLeft = savedTabsScroll;
+
+      const newConsole = document.getElementById("terminalConsole");
+      if (newConsole) {
+        if (isConsoleAtBottom) {
+          newConsole.scrollTop = newConsole.scrollHeight;
+        } else {
+          newConsole.scrollTop = savedConsoleScroll;
+        }
+      }
+    }
+
+    function safeRenderFleetNavigators() {
+      const reel = document.getElementById("mobileFleetReel");
+      const savedReelScroll = reel ? reel.scrollLeft : 0;
+      const desktopList = document.getElementById("desktopSidebarList");
+      const savedSidebarScroll = desktopList ? desktopList.scrollTop : 0;
+
+      renderFleetNavigators();
+
+      const newReel = document.getElementById("mobileFleetReel");
+      if (newReel) newReel.scrollLeft = savedReelScroll;
+      const newSidebar = document.getElementById("desktopSidebarList");
+      if (newSidebar) newSidebar.scrollTop = savedSidebarScroll;
+    }
+\n    function renderMainView() {
       const container = document.getElementById("mainContentView");
       if (!container) return;
 
@@ -1368,8 +1504,8 @@
               <div class="hero-identity-text">
                 <h2>${bot.name || 'Roblox Player'}</h2>
                 <div class="hero-status-pill">
-                  <span class="pulse-dot ${isKicked ? 'kicked' : (bot.isFarming ? 'online' : '')}"></span>
-                  <span style="color: ${statusColor}; font-weight: 700;">${statusHuman}</span>
+                  <span class="pulse-dot ${isKicked ? 'kicked' : (bot.isFarming ? 'online' : '')}" id="heroStatusDot"></span>
+                  <span style="color: ${statusColor}; font-weight: 700;" id="heroStatusText">${statusHuman}</span>
                 </div>
               </div>
             </div>
@@ -1385,21 +1521,21 @@
           <div class="hero-asymmetric-panel">
             <div class="money-display">
               <span class="money-label">Saldo Akun</span>
-              <span class="money-amount">${gameCfg.formatMoney(bot.currentCash)}</span>
+              <span class="money-amount" id="heroMoneyAmount">${gameCfg.formatMoney(bot.currentCash)}</span>
             </div>
 
             <div class="session-stats-cluster">
               <div class="stat-chip">
                 <span class="stat-chip-label">Hasil Sesi Ini</span>
-                <span class="stat-chip-value" style="color: var(--emerald);">+${gameCfg.formatMoney(bot.totalEarnings)}</span>
+                <span class="stat-chip-value" style="color: var(--emerald);" id="heroEarnings">+${gameCfg.formatMoney(bot.totalEarnings)}</span>
               </div>
               <div class="stat-chip">
                 <span class="stat-chip-label">${gameCfg.metricLabel || 'Selesai'}</span>
-                <span class="stat-chip-value">${bot.tripCount || 0} ${gameCfg.metricUnit}</span>
+                <span class="stat-chip-value" id="heroTripCount">${bot.tripCount || 0} ${gameCfg.metricUnit}</span>
               </div>
               <div class="stat-chip">
                 <span class="stat-chip-label">Durasi</span>
-                <span class="stat-chip-value">${bot.sessionTime || "00:00:00"}</span>
+                <span class="stat-chip-value" id="heroDuration">${bot.sessionTime || "00:00:00"}</span>
               </div>
             </div>
           </div>
@@ -1588,11 +1724,11 @@
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
             <div class="action-row" style="flex-direction: column; align-items: flex-start;">
               <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase;">Rute Tujuan</span>
-              <span style="font-size: 13px; font-weight: 700; color: #93c5fd; margin-top: 2px;">${bot.currentRoute || 'Standby'}</span>
+              <span style="font-size: 13px; font-weight: 700; color: #93c5fd; margin-top: 2px;" id="currentRouteVal">${bot.currentRoute || 'Standby'}</span>
             </div>
             <div class="action-row" style="flex-direction: column; align-items: flex-start;">
               <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase;">Status Kendaraan</span>
-              <span style="font-size: 13px; font-weight: 700; color: #6ee7b7; margin-top: 2px;">${bot.status || 'Standby'}</span>
+              <span style="font-size: 13px; font-weight: 700; color: #6ee7b7; margin-top: 2px;" id="currentVehicleStatusVal">${bot.status || 'Standby'}</span>
             </div>
           </div>
         </div>
