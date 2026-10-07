@@ -2,362 +2,675 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OneEight External Hub - Modular Fleet Command Center</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OneEight Hub - Fleet & Auto Farm</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #080a11;
-      --bg-card: rgba(16, 21, 36, 0.75);
-      --bg-surface: rgba(22, 29, 50, 0.6);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-border-hover: rgba(99, 102, 241, 0.4);
+      --bg: #07090e;
+      --bg-surface: #0e131f;
+      --bg-card: rgba(16, 22, 36, 0.7);
+      --bg-card-hover: rgba(22, 30, 48, 0.85);
+      --border: rgba(255, 255, 255, 0.07);
+      --border-focus: rgba(99, 102, 241, 0.45);
       --primary: #6366f1;
       --primary-hover: #4f46e5;
-      --primary-glow: rgba(99, 102, 241, 0.35);
-      --accent: #818cf8;
-      --success: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.3);
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --danger-glow: rgba(239, 68, 68, 0.3);
-      --text: #f3f4f6;
+      --primary-glow: rgba(99, 102, 241, 0.25);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.2);
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --text: #f8fafc;
       --text-muted: #94a3b8;
+      --text-dim: #64748b;
       --mono: 'JetBrains Mono', monospace;
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 22px;
+      --radius-xl: 28px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
     body {
-      background: var(--bg-dark);
+      background: var(--bg);
       background-image: 
-        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 45%),
-        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 45%);
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(16, 185, 129, 0.08), transparent);
       color: var(--text);
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
     }
 
+    /* =========================================================================
+       1. MOBILE-FIRST TOP HEADER
+       ========================================================================= */
     header {
-      height: 64px;
-      padding: 0 24px;
+      height: 60px;
+      padding: 0 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid var(--card-border);
-      background: rgba(11, 15, 26, 0.85);
+      background: rgba(7, 9, 14, 0.85);
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
-      z-index: 50;
+      z-index: 60;
     }
-    .brand-wrap { display: flex; align-items: center; gap: 12px; }
-    .brand-logo {
-      width: 38px;
-      height: 38px;
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
       background: linear-gradient(135deg, #6366f1, #3b82f6);
-      border-radius: 10px;
+      border-radius: var(--radius-sm);
       display: grid;
       place-items: center;
       font-weight: 800;
-      font-size: 17px;
+      font-size: 16px;
       color: white;
-      box-shadow: 0 0 20px var(--primary-glow);
-    }
-    .brand-info h1 { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
-    .brand-tag {
-      font-size: 10px;
-      padding: 2px 6px;
-      background: rgba(99, 102, 241, 0.2);
-      border: 1px solid rgba(99, 102, 241, 0.4);
-      color: #a5b4fc;
-      border-radius: 4px;
-      font-weight: 700;
-    }
-    .brand-info p { font-size: 11px; color: var(--text-muted); font-weight: 500; }
-
-    .header-right { display: flex; align-items: center; gap: 14px; }
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 600;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--card-border);
-    }
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--warning);
-      box-shadow: 0 0 8px currentColor;
-    }
-    .pulse-dot.online { background: var(--success); }
-    .pulse-dot.kicked { background: var(--danger); animation: pulseAlert 1.2s infinite; }
-
-    @keyframes pulseAlert {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.4); opacity: 0.6; }
-      100% { transform: scale(1); opacity: 1; }
+      box-shadow: 0 4px 14px var(--primary-glow);
     }
 
-    .app-layout {
-      display: grid;
-      grid-template-columns: 310px 1fr;
-      flex: 1;
-      height: calc(100vh - 64px);
-    }
-
-    .sidebar {
-      background: rgba(11, 15, 26, 0.7);
-      border-right: 1px solid var(--card-border);
-      backdrop-filter: blur(15px);
+    .brand-title {
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
     }
-    .sidebar-header {
+
+    .brand-title h1 {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-title p {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 8px currentColor;
+    }
+    .pulse-dot.online { background: var(--emerald); }
+    .pulse-dot.kicked { background: var(--rose); animation: pulseAlert 1.2s infinite; }
+
+    @keyframes pulseAlert {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+
+    /* Mobile Quick Account Switcher Button */
+    .mobile-account-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .mobile-account-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+    /* =========================================================================
+       2. APP LAYOUT & ASYMMETRICAL RESPONSIVENESS
+       ========================================================================= */
+    .app-layout {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      width: 100%;
+    }
+
+    /* Desktop Sidebar (Hidden on Mobile) */
+    .sidebar {
+      display: none;
+    }
+
+    /* Mobile Quick Fleet Bar (Horizontal Pill Reel) */
+    .mobile-fleet-reel {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      background: rgba(14, 19, 31, 0.4);
+      border-bottom: 1px solid var(--border);
+    }
+    .mobile-fleet-reel::-webkit-scrollbar { display: none; }
+
+    .fleet-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      color: var(--text-muted);
+    }
+    .fleet-pill:hover {
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text);
+    }
+    .fleet-pill.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: white;
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2);
+    }
+    .fleet-pill.kicked {
+      background: rgba(244, 63, 94, 0.12);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fda4af;
+    }
+
+    /* Main Content Viewport */
+    .content-viewport {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Desktop Layout Rules */
+    @media (min-width: 1024px) {
+      .app-layout {
+        display: grid;
+        grid-template-columns: 310px 1fr;
+        height: calc(100vh - 60px);
+      }
+      .mobile-fleet-reel { display: none; }
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        background: rgba(10, 14, 23, 0.7);
+        border-right: 1px solid var(--border);
+        backdrop-filter: blur(20px);
+        overflow-y: auto;
+      }
+      .content-viewport {
+        overflow-y: auto;
+        padding: 24px 32px;
+        gap: 20px;
+        margin: 0;
+        max-width: none;
+      }
+    }
+
+    /* =========================================================================
+       3. SIDEBAR STYLES (DESKTOP)
+       ========================================================================= */
+    .sidebar-head {
       padding: 16px 20px;
-      border-bottom: 1px solid var(--card-border);
+      border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .sidebar-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
-    .badge-count {
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      color: #a5b4fc;
-      padding: 2px 8px;
-      border-radius: 999px;
+    .sidebar-label {
       font-size: 11px;
+      font-weight: 800;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .sidebar-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 999px;
+      color: var(--text-muted);
       font-weight: 700;
     }
-
-    .fleet-list {
+    .sidebar-list {
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      padding: 10px;
       gap: 6px;
     }
-    .fleet-item {
+    .sidebar-item {
       padding: 12px 14px;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.02);
       border: 1px solid transparent;
       display: flex;
       align-items: center;
       gap: 12px;
       cursor: pointer;
       transition: all 0.2s ease;
-      background: rgba(255, 255, 255, 0.02);
     }
-    .fleet-item:hover {
+    .sidebar-item:hover {
       background: rgba(255, 255, 255, 0.05);
-      border-color: rgba(255, 255, 255, 0.08);
-      transform: translateX(2px);
+      border-color: var(--border);
     }
-    .fleet-item.active {
-      background: rgba(99, 102, 241, 0.15);
-      border-color: rgba(99, 102, 241, 0.4);
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
+    .sidebar-item.active {
+      background: rgba(99, 102, 241, 0.12);
+      border-color: rgba(99, 102, 241, 0.35);
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.1);
     }
-    .fleet-item.kicked {
-      background: rgba(239, 68, 68, 0.12);
-      border-color: rgba(239, 68, 68, 0.4);
+    .sidebar-item.kicked {
+      background: rgba(244, 63, 94, 0.1);
+      border-color: rgba(244, 63, 94, 0.35);
     }
-    .fleet-avatar {
+
+    .item-avatar {
       width: 38px;
       height: 38px;
       border-radius: 10px;
       background: var(--bg-surface);
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
       display: grid;
       place-items: center;
-      font-weight: 800;
       font-size: 14px;
+      font-weight: 800;
       position: relative;
       flex-shrink: 0;
     }
-    .avatar-status {
+    .item-status-dot {
       position: absolute;
       bottom: -2px;
       right: -2px;
-      width: 10px;
-      height: 10px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
-      border: 2px solid var(--bg-dark);
-      background: var(--warning);
+      border: 2px solid var(--bg);
+      background: var(--amber);
     }
-    .avatar-status.online { background: var(--success); }
-    .avatar-status.kicked { background: var(--danger); }
-    .fleet-item-info { flex: 1; min-width: 0; }
-    .fleet-item-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
-    .fleet-item-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .item-status-dot.online { background: var(--emerald); }
+    .item-status-dot.kicked { background: var(--rose); }
 
-    .content-view {
-      overflow-y: auto;
-      padding: 24px 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    /* KICK ALERT BANNER */
-    .kick-banner {
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(185, 28, 28, 0.1));
-      border: 1px solid rgba(239, 68, 68, 0.5);
-      box-shadow: 0 0 25px rgba(239, 68, 68, 0.25);
-      border-radius: 16px;
-      padding: 18px 22px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      animation: pulseAlert 2.5s infinite;
-    }
-    .kick-banner-left { display: flex; align-items: center; gap: 16px; }
-    .kick-banner-icon { font-size: 28px; }
-    .kick-banner-title { font-size: 15px; font-weight: 800; color: #fca5a5; display: flex; align-items: center; gap: 8px; }
-    .kick-banner-desc { font-size: 12px; color: #fecaca; margin-top: 3px; font-family: var(--mono); }
-
-    .bot-hero {
-      background: var(--bg-card);
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      padding: 22px 26px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-      position: relative;
+    .item-info { flex: 1; min-width: 0; }
+    .item-name {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
       overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .bot-hero::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--primary), var(--success));
-    }
-    .bot-hero.theme-cdid::before { background: linear-gradient(90deg, #10b981, #059669); }
-    .bot-hero.theme-dds::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
-    .bot-hero.theme-kicked::before { background: linear-gradient(90deg, #ef4444, #b91c1c); }
-
-    .bot-hero-left { display: flex; align-items: center; gap: 18px; }
-    .bot-hero-avatar {
-      width: 58px;
-      height: 58px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-      border: 1px solid var(--card-border);
-      display: grid;
-      place-items: center;
-      font-size: 24px;
-      font-weight: 800;
-    }
-    .bot-hero-title h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; }
-    .bot-hero-chips { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
-    .chip {
+    .item-cash {
       font-size: 11px;
       font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
+      color: var(--emerald);
+      margin-top: 2px;
+    }
+    .item-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* =========================================================================
+       4. ASYMMETRICAL EDITORIAL HERO CARD (HUMAN DESIGN)
+       ========================================================================= */
+    .hero-card {
+      background: linear-gradient(135deg, rgba(20, 27, 45, 0.8), rgba(11, 15, 26, 0.9));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(25px);
+    }
+
+    /* Subtle decorative accent pill top edge */
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 20px;
+      width: 60px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 0 0 3px 3px;
+      box-shadow: 0 0 10px var(--primary);
+    }
+    .hero-card.theme-cdid::before { background: var(--emerald); box-shadow: 0 0 10px var(--emerald); }
+    .hero-card.theme-menu::before { background: #3b82f6; box-shadow: 0 0 10px #3b82f6; }
+    .hero-card.theme-kicked::before { background: var(--rose); box-shadow: 0 0 10px var(--rose); }
+
+    .hero-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .hero-identity {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hero-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      font-weight: 800;
+      flex-shrink: 0;
+      box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.05);
+    }
+
+    .hero-identity-text h2 {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      line-height: 1.2;
+    }
+
+    .hero-status-pill {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
     }
-    .chip.status { color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3); }
-    .chip.game { color: #93c5fd; border-color: rgba(59, 130, 246, 0.3); }
-    .chip.kicked { color: #fca5a5; border-color: rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.15); }
 
-    .hero-actions { display: flex; align-items: center; gap: 10px; }
+    .hero-actions-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-    .tabs-bar {
+    /* Asymmetric Focus Box: The Big Currency & Session Counter */
+    .hero-asymmetric-panel {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      background: rgba(14, 20, 34, 0.6);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+
+    @media (min-width: 640px) {
+      .hero-asymmetric-panel {
+        grid-template-columns: 1.4fr 1fr;
+        align-items: center;
+      }
+    }
+
+    .money-display {
+      display: flex;
+      flex-direction: column;
+    }
+    .money-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .money-amount {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--emerald);
+      letter-spacing: -0.5px;
+      font-family: var(--mono);
+      margin-top: 2px;
+      text-shadow: 0 0 20px var(--emerald-glow);
+    }
+    @media (min-width: 768px) {
+      .money-amount { font-size: 28px; }
+    }
+
+    .session-stats-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .stat-chip {
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .stat-chip-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; }
+    .stat-chip-value { color: var(--text); font-family: var(--mono); }
+
+    /* =========================================================================
+       5. HORIZONTAL SCROLLABLE TAB PILLS
+       ========================================================================= */
+    .tabs-strip {
       display: flex;
       gap: 8px;
-      border-bottom: 1px solid var(--card-border);
-      padding-bottom: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding-bottom: 2px;
+      position: sticky;
+      top: 60px;
+      background: rgba(7, 9, 14, 0.8);
+      backdrop-filter: blur(15px);
+      z-index: 40;
+      margin: 0 -4px;
+      padding: 6px 4px;
     }
-    .tab-btn {
-      padding: 9px 18px;
-      background: transparent;
-      border: none;
+    .tabs-strip::-webkit-scrollbar { display: none; }
+
+    .tab-pill {
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.03);
       color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab-pill:hover { background: rgba(255, 255, 255, 0.06); color: var(--text); }
+    .tab-pill.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: white;
+    }
+    .tab-pill.theme-cdid.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+    .tab-pill.theme-menu.active {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.4);
+      color: #93c5fd;
+    }
+
+    /* =========================================================================
+       6. CARDS & SECTIONS (CLEAN, NO OVER-INFO BACKEND)
+       ========================================================================= */
+    .card-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      backdrop-filter: blur(20px);
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-head h3 {
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Interactive Control Rows */
+    .action-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .action-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .action-meta h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .action-meta p {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--radius-md);
       font-weight: 700;
       font-size: 13px;
       cursor: pointer;
-      border-radius: 8px;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 7px;
+      border: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      text-decoration: none;
+      min-height: 42px;
     }
-    .tab-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
-    .tab-btn.active {
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), #4f46e5);
       color: white;
-      background: rgba(99, 102, 241, 0.2);
-      border: 1px solid rgba(99, 102, 241, 0.4);
+      box-shadow: 0 4px 14px var(--primary-glow);
     }
-    .tab-btn.theme-cdid.active {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: rgba(16, 185, 129, 0.4);
-    }
-    .tab-btn.theme-dds.active {
-      background: rgba(245, 158, 11, 0.2);
-      border-color: rgba(245, 158, 11, 0.4);
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      box-shadow: 0 6px 20px var(--primary-glow);
     }
 
-    .tab-panel { display: none; flex-direction: column; gap: 18px; }
-    .tab-panel.active { display: flex; }
-
-    .card-section {
-      background: var(--bg-card);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 20px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+    .btn-emerald {
+      background: linear-gradient(135deg, var(--emerald), #059669);
+      color: white;
+      box-shadow: 0 4px 14px var(--emerald-glow);
     }
-    .card-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    .btn-emerald:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+      box-shadow: 0 6px 20px var(--emerald-glow);
     }
 
-    .control-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 18px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      transition: border-color 0.2s;
+    .btn-rose {
+      background: linear-gradient(135deg, var(--rose), #e11d48);
+      color: white;
+      box-shadow: 0 4px 14px rgba(244, 63, 94, 0.25);
     }
-    .control-row:hover { border-color: rgba(255, 255, 255, 0.15); }
-    .control-meta h4 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
-    .control-meta p { font-size: 12px; color: var(--text-muted); }
 
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Modern Tactile Switch */
     .switch {
       position: relative;
       display: inline-block;
-      width: 48px;
-      height: 26px;
+      width: 44px;
+      height: 24px;
       flex-shrink: 0;
     }
     .switch input { opacity: 0; width: 0; height: 0; }
@@ -366,146 +679,204 @@
       cursor: pointer;
       top: 0; left: 0; right: 0; bottom: 0;
       background-color: rgba(255, 255, 255, 0.1);
-      transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: 34px;
-      border: 1px solid var(--card-border);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 999px;
+      border: 1px solid var(--border);
     }
     .slider:before {
       position: absolute;
       content: "";
       height: 18px;
       width: 18px;
-      left: 3px;
-      bottom: 3px;
+      left: 2px;
+      bottom: 2px;
       background-color: white;
-      transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
       border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     }
-    input:checked + .slider { background-color: var(--success); border-color: var(--success); box-shadow: 0 0 12px var(--success-glow); }
-    input:checked + .slider:before { transform: translateX(22px); }
+    input:checked + .slider {
+      background-color: var(--emerald);
+      border-color: var(--emerald);
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
 
-    .range-box { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-    .range-header { display: flex; justify-content: space-between; align-items: center; }
-    .range-val { font-family: var(--mono); font-weight: 700; color: #a5b4fc; }
+    /* Slider Range */
+    .slider-box {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
     input[type=range] {
+      -webkit-appearance: none;
       width: 100%;
       height: 6px;
+      border-radius: 3px;
       background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
       outline: none;
-      -webkit-appearance: none;
     }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      appearance: none;
       width: 18px;
       height: 18px;
       border-radius: 50%;
       background: var(--primary);
       cursor: pointer;
       box-shadow: 0 0 10px var(--primary-glow);
-      border: 2px solid white;
     }
 
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 14px;
-    }
-    .metric-tile {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 14px;
+    /* Alert Banner */
+    .alert-banner {
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(190, 18, 60, 0.08));
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      border-radius: var(--radius-md);
       padding: 16px;
       display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .metric-title { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px; }
-    .metric-number { font-size: 22px; font-weight: 800; font-family: var(--mono); }
-
-    .btn {
-      padding: 9px 16px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 13px;
-      cursor: pointer;
-      border: none;
-      display: inline-flex;
       align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
+      justify-content: space-between;
+      gap: 14px;
     }
-    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 14px var(--primary-glow); }
-    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-    .btn-success { background: var(--success); color: white; box-shadow: 0 4px 14px var(--success-glow); }
-    .btn-success:hover { background: #059669; }
-    .btn-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; }
-    .btn-danger:hover { background: rgba(239, 68, 68, 0.4); color: white; }
-    .btn-outline { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: var(--text); }
-    .btn-outline:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
+    .alert-banner-left { display: flex; align-items: center; gap: 12px; }
+    .alert-banner-title { font-size: 13px; font-weight: 800; color: #fca5a5; }
+    .alert-banner-desc { font-size: 11px; color: #fecaca; margin-top: 2px; }
 
-    .console-box {
-      background: rgba(4, 6, 12, 0.95);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 16px;
+    /* Live Console Box */
+    .console-terminal {
+      background: #05070c;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
       font-family: var(--mono);
-      font-size: 12px;
-      max-height: 280px;
+      font-size: 11px;
+      height: 200px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
-    .log-row { display: flex; gap: 10px; line-height: 1.5; }
-    .log-ts { color: var(--text-muted); opacity: 0.6; }
-    .log-SUCCESS { color: var(--success); }
-    .log-INFO { color: #60a5fa; }
-    .log-WARN { color: var(--warning); }
-    .log-ERROR { color: var(--danger); font-weight: 700; }
+    .log-line { display: flex; gap: 8px; line-height: 1.5; }
+    .log-time { color: var(--text-dim); flex-shrink: 0; }
+    .log-INFO { color: #94a3b8; }
+    .log-SUCCESS { color: #34d399; font-weight: 600; }
+    .log-WARN { color: #fbbf24; }
+    .log-ERROR { color: #f87171; font-weight: 700; }
+
+    /* Mobile Account Switcher Modal */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+    }
+    .drawer-overlay.open { display: flex; }
+    .drawer-sheet {
+      width: 100%;
+      background: #0d121f;
+      border-top: 1px solid var(--border);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      padding: 20px;
+      max-height: 75vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .drawer-handle {
+      width: 40px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      margin: 0 auto 10px;
+    }
   </style>
 </head>
 <body>
+
+  <!-- HEADER -->
   <header>
-    <div class="brand-wrap">
-      <div class="brand-logo">OE</div>
-      <div class="brand-info">
-        <h1>ONEEIGHT COMMAND CENTER <span class="brand-tag">v3.0 MODULAR</span></h1>
-        <p>Universal Multi-Game WebSocket Controller</p>
+    <div class="brand-group">
+      <div class="brand-icon">18</div>
+      <div class="brand-title">
+        <h1>OneEight Hub</h1>
+        <p>Command Center</p>
       </div>
     </div>
-    <div class="header-right">
-      <div class="status-pill">
-        <div class="pulse-dot" id="headerWsDot"></div>
-        <span id="headerWsStatus">Menghubungkan...</span>
+
+    <div class="header-actions">
+      <!-- Mobile Account Switcher Trigger -->
+      <button class="mobile-account-btn" id="mobileAccountBtn" onclick="toggleMobileDrawer()">
+        <span id="mobileAccountLabel">🌐 Semua Akun</span>
+        <span style="font-size: 10px; opacity: 0.6;">▼</span>
+      </button>
+
+      <div class="status-badge">
+        <span class="pulse-dot" id="headerWsDot"></span>
+        <span id="headerWsStatus">Menghubungkan</span>
       </div>
     </div>
   </header>
 
   <div class="app-layout">
+    
+    <!-- DESKTOP SIDEBAR -->
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <span class="sidebar-title">Armada Akun (Fleet)</span>
-        <span class="badge-count" id="fleetBadge">0 Bot</span>
+      <div class="sidebar-head">
+        <span class="sidebar-label">Daftar Akun Roblox</span>
+        <span class="sidebar-badge" id="fleetBadge">0 Bot</span>
       </div>
-      <div class="fleet-list" id="fleetList">
-        <div class="fleet-item active" id="item_ALL" onclick="selectBot('ALL')">
-          <div class="fleet-avatar">🌐</div>
-          <div class="fleet-item-info">
-            <div class="fleet-item-name">Semua Akun (Global)</div>
-            <div class="fleet-item-sub">Aksi Massal Seluruh Armada</div>
-          </div>
-        </div>
+      <div class="sidebar-list" id="desktopSidebarList">
+        <!-- Rendered via JS -->
       </div>
     </aside>
 
-    <main class="content-view" id="mainContentView">
+    <!-- MAIN WRAPPER -->
+    <main style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+      
+      <!-- MOBILE FLEET HORIZONTAL REEL -->
+      <div class="mobile-fleet-reel" id="mobileFleetReel">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- SCROLLABLE CONTENT VIEWPORT -->
+      <div class="content-viewport" id="mainContentView">
+        <!-- Rendered via JS -->
+      </div>
     </main>
+
+  </div>
+
+  <!-- MOBILE DRAWER MODAL -->
+  <div class="drawer-overlay" id="mobileDrawerOverlay" onclick="if(event.target === this) toggleMobileDrawer()">
+    <div class="drawer-sheet">
+      <div class="drawer-handle"></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <h3 style="font-size: 15px; font-weight: 800;">Pilih Akun Roblox</h3>
+        <button class="btn btn-outline" style="padding: 4px 12px; font-size: 11px;" onclick="toggleMobileDrawer()">Tutup</button>
+      </div>
+      <div id="drawerFleetList" style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
   </div>
 
   <script>
-    const WS_URL = "__WS_URL__?role=controller";
+    const WS_URL = "__WS_URL__";
     let socket = null;
     let bots = new Map();
     let selectedBotId = "ALL";
@@ -513,7 +884,7 @@
     let logsHistory = [];
 
     // =========================================================================
-    // 1. GAME REGISTRY (EXTENSIBLE CONTRACT)
+    // 1. GAME REGISTRY
     // =========================================================================
     const GameRegistry = {
       cdid_menu: {
@@ -525,25 +896,25 @@
         formatMoney: (num) => formatRupiah(num),
         metricUnit: "Maps",
         tabs: [
-          { id: "tab_server_gateway", label: "🌐 Server Gateway & Maps", render: (bot) => renderCDIDMenuPortal(bot) },
-          { id: "tab_safety", label: "🛡️ Safety & Rejoin", render: (bot) => renderSafetyTab(bot) },
-          { id: "tab_logs", label: "📟 Live Console", render: (bot) => renderLogsTab(bot) }
+          { id: "tab_server_gateway", label: "🌐 Gerbang Server & Map", render: (bot) => renderCDIDMenuPortal(bot) },
+          { id: "tab_safety", label: "🛡️ Proteksi & Rejoin", render: (bot) => renderSafetyTab(bot) },
+          { id: "tab_logs", label: "📟 Konsol", render: (bot) => renderLogsTab(bot) }
         ]
       },
       cdid: {
         id: "cdid",
-        name: "Car Driving Indonesia (Jatim)",
+        name: "CDID Jawa Timur",
         icon: "🚚",
         color: "#10b981",
         currency: "Rp",
         formatMoney: (num) => formatRupiah(num),
         metricUnit: "Trips",
         tabs: [
-          { id: "tab_autofarm", label: "📦 Auto Farm Truck", render: (bot) => renderCDIDFarm(bot) },
-          { id: "tab_nav", label: "🚗 Navigasi & Kendaraan", render: (bot) => renderCDIDNav(bot) },
-          { id: "tab_safety", label: "🛡️ Safety & Rejoin", render: (bot) => renderSafetyTab(bot) },
-          { id: "tab_perf", label: "⚡ Optimasi & GPU", render: (bot) => renderPerfTab(bot) },
-          { id: "tab_logs", label: "📟 Live Console", render: (bot) => renderLogsTab(bot) }
+          { id: "tab_autofarm", label: "📦 Auto Farm Truk", render: (bot) => renderCDIDFarm(bot) },
+          { id: "tab_nav", label: "🚗 Lokasi & Armada", render: (bot) => renderCDIDNav(bot) },
+          { id: "tab_safety", label: "🛡️ Proteksi & Rejoin", render: (bot) => renderSafetyTab(bot) },
+          { id: "tab_perf", label: "⚡ Hemat GPU", render: (bot) => renderPerfTab(bot) },
+          { id: "tab_logs", label: "📟 Konsol", render: (bot) => renderLogsTab(bot) }
         ]
       },
       dds: {
@@ -556,9 +927,9 @@
         metricUnit: "Races",
         tabs: [
           { id: "tab_autofarm", label: "🏁 Auto Drag Race", render: (bot) => renderDDSFarm(bot) },
-          { id: "tab_safety", label: "🛡️ Safety & Rejoin", render: (bot) => renderSafetyTab(bot) },
-          { id: "tab_perf", label: "⚡ Optimasi & GPU", render: (bot) => renderPerfTab(bot) },
-          { id: "tab_logs", label: "📟 Live Console", render: (bot) => renderLogsTab(bot) }
+          { id: "tab_safety", label: "🛡️ Proteksi & Rejoin", render: (bot) => renderSafetyTab(bot) },
+          { id: "tab_perf", label: "⚡ Hemat GPU", render: (bot) => renderPerfTab(bot) },
+          { id: "tab_logs", label: "📟 Konsol", render: (bot) => renderLogsTab(bot) }
         ]
       },
       generic: {
@@ -570,9 +941,9 @@
         formatMoney: (num) => (num || 0).toLocaleString(),
         metricUnit: "Cycles",
         tabs: [
-          { id: "tab_safety", label: "🛡️ Safety & Rejoin", render: (bot) => renderSafetyTab(bot) },
-          { id: "tab_perf", label: "⚡ Optimasi & GPU", render: (bot) => renderPerfTab(bot) },
-          { id: "tab_logs", label: "📟 Live Console", render: (bot) => renderLogsTab(bot) }
+          { id: "tab_safety", label: "🛡️ Proteksi & Rejoin", render: (bot) => renderSafetyTab(bot) },
+          { id: "tab_perf", label: "⚡ Hemat GPU", render: (bot) => renderPerfTab(bot) },
+          { id: "tab_logs", label: "📟 Konsol", render: (bot) => renderLogsTab(bot) }
         ]
       }
     };
@@ -587,88 +958,7 @@
     }
 
     // =========================================================================
-    // 2. UI COMPONENT BUILDER API (DECLARATIVE HELPERS)
-    // =========================================================================
-    const UI = {
-      KickAlertBanner: (bot) => {
-        if (!bot.isKicked) return "";
-        return `
-          <div class="kick-banner">
-            <div class="kick-banner-left">
-              <span class="kick-banner-icon">🚨</span>
-              <div>
-                <div class="kick-banner-title">
-                  ROBLOX DISCONNECT / KICK DETECTED!
-                </div>
-                <div class="kick-banner-desc">
-                  Alasan: ${bot.kickReason || "Koneksi terputus dari server"}
-                </div>
-              </div>
-            </div>
-            <div style="display:flex; gap: 8px;">
-              <button class="btn btn-primary" onclick="rejoinBot('${bot.botId}')">Rejoin Server Sekarang</button>
-            </div>
-          </div>
-        `;
-      },
-
-      Section: (title, innerHtml) => `
-        <div class="card-section">
-          <div class="card-title">${title}</div>
-          ${innerHtml}
-        </div>
-      `,
-
-      Toggle: (label, desc, isChecked, onchangeCode) => `
-        <div class="control-row">
-          <div class="control-meta">
-            <h4>${label}</h4>
-            <p>${desc}</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="${onchangeCode}">
-            <span class="slider"></span>
-          </label>
-        </div>
-      `,
-
-      Slider: (label, desc, min, max, step, value, unitLabel, oninputCode, onchangeCode) => `
-        <div class="control-row">
-          <div class="range-box">
-            <div class="range-header">
-              <div class="control-meta">
-                <h4>${label}</h4>
-                <p>${desc}</p>
-              </div>
-              <span class="range-val" id="rangeLabel_${label.replace(/\s+/g, '_')}">${Number(value).toLocaleString()} ${unitLabel}</span>
-            </div>
-            <input type="range" min="${min}" max="${max}" step="${step}" value="${value}"
-              oninput="${oninputCode}" onchange="${onchangeCode}">
-          </div>
-        </div>
-      `,
-
-      ButtonRow: (label, desc, btnText, btnClass, onclickCode) => `
-        <div class="control-row">
-          <div class="control-meta">
-            <h4>${label}</h4>
-            <p>${desc}</p>
-          </div>
-          <button class="btn ${btnClass || 'btn-outline'}" onclick="${onclickCode}">${btnText}</button>
-        </div>
-      `,
-
-      MetricTile: (title, value, colorHex, subtext) => `
-        <div class="metric-tile" style="border-color: ${colorHex ? colorHex + '40' : 'rgba(255,255,255,0.08)'};">
-          <span class="metric-title" style="color: ${colorHex || 'var(--text-muted)'};">${title}</span>
-          <span class="metric-number" style="color: ${colorHex || 'var(--text)'};">${value}</span>
-          ${subtext ? `<span style="font-size: 11px; color: var(--text-muted);">${subtext}</span>` : ''}
-        </div>
-      `
-    };
-
-    // =========================================================================
-    // 3. WEBSOCKET CONTROLLER ENGINE
+    // 2. WEBSOCKET CONTROLLER
     // =========================================================================
     function initWebSocket() {
       const dot = document.getElementById("headerWsDot");
@@ -678,14 +968,14 @@
 
       socket.onopen = () => {
         dot.className = "pulse-dot online";
-        statusText.innerText = "Gateway Online";
-        addLog("System", "Terhubung ke Cloudflare Durable Object!", "SUCCESS");
+        statusText.innerText = "Online";
+        addLog("System", "Koneksi gateway aktif", "SUCCESS");
       };
 
       socket.onclose = () => {
         dot.className = "pulse-dot";
-        statusText.innerText = "Disconnected";
-        addLog("System", "Koneksi terputus. Mencoba reconnect...", "WARN");
+        statusText.innerText = "Offline";
+        addLog("System", "Koneksi terputus. Menghubungkan ulang...", "WARN");
         setTimeout(initWebSocket, 3000);
       };
 
@@ -701,7 +991,6 @@
       if (data.type === "SYNC_BOTS") {
         bots.clear();
         (data.bots || []).forEach(b => {
-          // Hapus bot lama jika ada username yang sama
           for (const [id, existing] of bots.entries()) {
             if (existing.name && b.name && existing.name.toLowerCase() === b.name.toLowerCase()) {
               bots.delete(id);
@@ -709,10 +998,9 @@
           }
           bots.set(b.id || b.botId, b);
         });
-        renderSidebar();
+        renderFleetNavigators();
         renderMainView();
       } else if (data.type === "BOT_JOINED") {
-        // Hapus duplikat username jika akun berpindah map / teleport
         for (const [id, existing] of bots.entries()) {
           if (existing.name && data.bot.name && existing.name.toLowerCase() === data.bot.name.toLowerCase()) {
             bots.delete(id);
@@ -720,20 +1008,20 @@
           }
         }
         bots.set(data.bot.botId, data.bot);
-        renderSidebar();
+        renderFleetNavigators();
         renderMainView();
-        addLog(data.bot.name, `Akun terhubung (${data.bot.gameName || 'Roblox'})!`, "SUCCESS");
+        addLog(data.bot.name, `Akun terhubung (${data.bot.gameName || 'Roblox'})`, "SUCCESS");
       } else if (data.type === "BOT_LEFT") {
         bots.delete(data.botId);
         if (selectedBotId === data.botId) selectedBotId = "ALL";
-        renderSidebar();
+        renderFleetNavigators();
         renderMainView();
-        addLog(data.name || "Bot", "Akun terputus dari jaringan.", "WARN");
+        addLog(data.name || "Bot", "Akun offline", "WARN");
       } else if (data.type === "BOT_TELEMETRY") {
         const existing = bots.get(data.botId);
         if (existing) {
           Object.assign(existing, data.payload || {});
-          renderSidebar();
+          renderFleetNavigators();
           renderMainView();
         }
       } else if (data.type === "BOT_KICKED") {
@@ -742,7 +1030,7 @@
           existing.isKicked = true;
           existing.kickReason = data.reason;
           existing.status = `KICKED (${data.reason})`;
-          renderSidebar();
+          renderFleetNavigators();
           renderMainView();
         }
         addLog(data.botName || "Bot", `ROBLOX KICK: ${data.reason}`, "ERROR");
@@ -755,13 +1043,13 @@
       const d = new Date();
       const timeStr = d.toTimeString().split(" ")[0];
       logsHistory.push({ time: timeStr, source, msg, level: level || "INFO" });
-      if (logsHistory.length > 100) logsHistory.shift();
+      if (logsHistory.length > 80) logsHistory.shift();
 
-      const consoleBox = document.getElementById("botConsoleBox");
+      const consoleBox = document.getElementById("terminalConsole");
       if (consoleBox) {
         const div = document.createElement("div");
-        div.className = "log-row";
-        div.innerHTML = `<span class="log-ts">[${timeStr}] [${source}]</span> <span class="log-${level}">${msg}</span>`;
+        div.className = "log-line";
+        div.innerHTML = `<span class="log-time">[${timeStr}]</span> <span class="log-${level}">[${source}] ${msg}</span>`;
         consoleBox.appendChild(div);
         consoleBox.scrollTop = consoleBox.scrollHeight;
       }
@@ -783,26 +1071,61 @@
 
     function rejoinBot(botId) {
       sendBotCommand(botId, "REJOIN_SERVER");
-      addLog("Controller", "Mengirim perintah Rejoin Server ke bot...", "WARN");
+      addLog("Controller", "Mengirim perintah Rejoin Server...", "WARN");
     }
 
     function toggleAutoRejoin(botId, enabled) {
       sendBotCommand(botId, "TOGGLE_AUTO_REJOIN", { enabled });
     }
 
-    // =========================================================================
-    // 4. RENDERING VIEWS
-    // =========================================================================
-    function renderSidebar() {
-      const list = document.getElementById("fleetList");
-      document.getElementById("fleetBadge").innerText = bots.size + " Bot";
+    function toggleMobileDrawer() {
+      const overlay = document.getElementById("mobileDrawerOverlay");
+      overlay.classList.toggle("open");
+    }
 
-      let html = `
-        <div class="fleet-item ${selectedBotId === 'ALL' ? 'active' : ''}" onclick="selectBot('ALL')">
-          <div class="fleet-avatar">🌐</div>
-          <div class="fleet-item-info">
-            <div class="fleet-item-name">Semua Akun (Global)</div>
-            <div class="fleet-item-sub">Aksi Massal Seluruh Armada</div>
+    // =========================================================================
+    // 3. NAVIGATION & FLEET RENDERING
+    // =========================================================================
+    function renderFleetNavigators() {
+      const badge = document.getElementById("fleetBadge");
+      if (badge) badge.innerText = bots.size + " Bot";
+
+      // Update Mobile Header Label
+      const mobileLabel = document.getElementById("mobileAccountLabel");
+      if (selectedBotId === "ALL") {
+        mobileLabel.innerText = "🌐 Semua Akun (" + bots.size + ")";
+      } else {
+        const sel = bots.get(selectedBotId);
+        mobileLabel.innerText = sel ? (sel.name || "Akun") : "🌐 Semua Akun";
+      }
+
+      // 1. Render Mobile Fleet Horizontal Reel
+      const reel = document.getElementById("mobileFleetReel");
+      let reelHtml = `
+        <div class="fleet-pill ${selectedBotId === 'ALL' ? 'active' : ''}" onclick="selectBot('ALL')">
+          🌐 Semua Akun
+        </div>
+      `;
+      for (const [id, b] of bots.entries()) {
+        const isSelected = selectedBotId === id;
+        const gameCfg = getGameConfig(b.gameId);
+        reelHtml += `
+          <div class="fleet-pill ${isSelected ? 'active' : ''} ${b.isKicked ? 'kicked' : ''}" onclick="selectBot('${id}')">
+            <span>${b.isKicked ? '🚨' : gameCfg.icon}</span>
+            <span>${b.name || 'Bot'}</span>
+          </div>
+        `;
+      }
+      if (reel) reel.innerHTML = reelHtml;
+
+      // 2. Render Desktop Sidebar List
+      const desktopList = document.getElementById("desktopSidebarList");
+      let sideHtml = `
+        <div class="sidebar-item ${selectedBotId === 'ALL' ? 'active' : ''}" onclick="selectBot('ALL')">
+          <div class="item-avatar">🌐</div>
+          <div class="item-info">
+            <div class="item-name">Semua Akun (Global)</div>
+            <div class="item-sub">Kelola ${bots.size} Akun Terhubung</div>
           </div>
         </div>
       `;
@@ -812,36 +1135,37 @@
         const gameCfg = getGameConfig(b.gameId);
         const initial = (b.name || "B").substring(0, 2).toUpperCase();
         const isKicked = b.isKicked;
-        const statusText = isKicked ? "KICKED" : (b.isFarming ? (b.status || "Farming") : "Standby");
+        const statusText = isKicked ? "Terkena Kick" : (b.isFarming ? "Sedang Farm" : "Standby");
 
-        html += `
-          <div class="fleet-item ${isSelected ? 'active' : ''} ${isKicked ? 'kicked' : ''}" onclick="selectBot('${id}')">
-            <div class="fleet-avatar" style="${isKicked ? 'border-color: #ef4444;' : ''}">
+        sideHtml += `
+          <div class="sidebar-item ${isSelected ? 'active' : ''} ${isKicked ? 'kicked' : ''}" onclick="selectBot('${id}')">
+            <div class="item-avatar" style="${isKicked ? 'border-color: var(--rose);' : ''}">
               ${isKicked ? '🚨' : initial}
-              <div class="avatar-status ${isKicked ? 'kicked' : (b.isFarming ? 'online' : '')}"></div>
+              <div class="item-status-dot ${isKicked ? 'kicked' : (b.isFarming ? 'online' : '')}"></div>
             </div>
-            <div class="fleet-item-info">
-              <div class="fleet-item-name">
+            <div class="item-info">
+              <div class="item-name">
                 ${b.name || 'Bot'}
                 <span style="font-size: 10px; opacity: 0.8;">${gameCfg.icon}</span>
               </div>
-              <div class="fleet-item-sub">
-                <span style="color: ${gameCfg.color}; font-weight: 700;">${b.currentCash > 0 ? gameCfg.formatMoney(b.currentCash) : "Memuat..."}</span>
-              </div>
-              <div class="fleet-item-sub" style="font-size: 10px; color: ${isKicked ? '#f87171' : 'var(--text-muted)'};">
-                ${b.gameName || 'Roblox'} • ${statusText}
-              </div>
+              <div class="item-cash">${b.currentCash > 0 ? gameCfg.formatMoney(b.currentCash) : "Memuat..."}</div>
+              <div class="item-sub">${statusText}</div>
             </div>
           </div>
         `;
       }
+      if (desktopList) desktopList.innerHTML = sideHtml;
 
-      list.innerHTML = html;
+      // 3. Render Drawer List
+      const drawerList = document.getElementById("drawerFleetList");
+      if (drawerList) {
+        drawerList.innerHTML = sideHtml.replace(/sidebar-item/g, 'sidebar-item" onclick="toggleMobileDrawer(); selectBot');
+      }
     }
 
     function selectBot(botId) {
       selectedBotId = botId;
-      renderSidebar();
+      renderFleetNavigators();
       renderMainView();
     }
 
@@ -850,8 +1174,12 @@
       renderMainView();
     }
 
+    // =========================================================================
+    // 4. MAIN VIEWPORT RENDERER
+    // =========================================================================
     function renderMainView() {
       const container = document.getElementById("mainContentView");
+      if (!container) return;
 
       if (selectedBotId === "ALL") {
         renderGlobalOverview(container);
@@ -876,12 +1204,15 @@
         if (b.isKicked) kickedCount++;
       }
 
-      let botsCardsHtml = "";
+      let cardsHtml = "";
       if (bots.size === 0) {
-        botsCardsHtml = `
-          <div style="text-align:center; padding: 40px 20px; color: var(--text-muted);">
-            <p style="font-size: 15px; font-weight: 600;">Belum ada akun yang terhubung.</p>
-            <p style="margin-top: 8px; font-size: 13px;">Jalankan script loader di executor Delta Anda untuk mulai mengontrol bot.</p>
+        cardsHtml = `
+          <div style="text-align: center; padding: 48px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border);">
+            <div style="font-size: 36px; margin-bottom: 12px;">🎮</div>
+            <h4 style="font-size: 15px; font-weight: 700; color: var(--text);">Belum Ada Akun Terhubung</h4>
+            <p style="font-size: 12px; margin-top: 6px; max-width: 380px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+              Jalankan script loader di executor Roblox akun Anda untuk mulai mengontrol auto farm dari dashboard ini.
+            </p>
           </div>
         `;
       } else {
@@ -890,35 +1221,32 @@
           const initial = (b.name || "B").substring(0, 2).toUpperCase();
           const isKicked = b.isKicked;
 
-          botsCardsHtml += `
-            <div class="control-row" style="cursor: pointer; ${isKicked ? 'border-color: rgba(239, 68, 68, 0.4); background: rgba(239,68,68,0.05);' : ''}" onclick="selectBot('${id}')">
-              <div style="display:flex; align-items:center; gap: 14px;">
-                <div class="fleet-avatar" style="width: 42px; height: 42px; font-size: 14px;">
+          cardsHtml += `
+            <div class="action-row" style="cursor: pointer; ${isKicked ? 'border-color: rgba(244,63,94,0.35); background: rgba(244,63,94,0.05);' : ''}" onclick="selectBot('${id}')">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="item-avatar" style="width: 42px; height: 42px;">
                   ${isKicked ? '🚨' : initial}
-                  <div class="avatar-status ${isKicked ? 'kicked' : (b.isFarming ? 'online' : '')}"></div>
+                  <div class="item-status-dot ${isKicked ? 'kicked' : (b.isFarming ? 'online' : '')}"></div>
                 </div>
-                <div class="control-meta">
-                  <h4 style="display: flex; align-items: center; gap: 8px;">
+                <div>
+                  <h4 style="display: flex; align-items: center; gap: 6px;">
                     ${b.name || 'Roblox Player'}
-                    <span class="chip game">${gameCfg.icon} ${b.gameName || 'Roblox'}</span>
-                    <span class="chip ${isKicked ? 'kicked' : 'status'}">${isKicked ? 'KICKED' : (b.status || 'STANDBY')}</span>
+                    <span style="font-size: 11px; opacity: 0.7;">${gameCfg.icon}</span>
                   </h4>
-                  <p>Saldo: <b style="color: ${gameCfg.color};">${gameCfg.formatMoney(b.currentCash)}</b> • Sesi: <b style="color: #6ee7b7;">+${gameCfg.formatMoney(b.totalEarnings)}</b> • Selesai: <b>${b.tripCount || 0} ${gameCfg.metricUnit}</b> (${b.sessionTime || "00:00:00"})</p>
+                  <p style="font-size: 12px; font-weight: 700; color: ${gameCfg.color}; font-family: var(--mono); margin-top: 2px;">
+                    ${gameCfg.formatMoney(b.currentCash)}
+                  </p>
                 </div>
               </div>
-              <div style="display: flex; gap: 8px;" onclick="event.stopPropagation();">
+              <div style="display: flex; align-items: center; gap: 8px;" onclick="event.stopPropagation();">
                 ${isKicked ? `
-                  <button class="btn btn-primary" style="padding: 7px 14px; font-size: 12px;" onclick="rejoinBot('${id}')">
-                    Rejoin Server
-                  </button>
+                  <button class="btn btn-rose" style="padding: 6px 12px; font-size: 11px;" onclick="rejoinBot('${id}')">Rejoin</button>
                 ` : `
-                  <button class="btn ${b.isFarming ? 'btn-danger' : 'btn-primary'}" style="padding: 7px 14px; font-size: 12px;" onclick="sendBotCommand('${id}', '${b.isFarming ? 'STOP_FARM' : 'START_FARM'}')">
-                    ${b.isFarming ? 'Stop' : 'Start'}
+                  <button class="btn ${b.isFarming ? 'btn-rose' : 'btn-emerald'}" style="padding: 6px 14px; font-size: 12px;" onclick="sendBotCommand('${id}', '${b.isFarming ? 'STOP_FARM' : 'START_FARM'}')">
+                    ${b.isFarming ? 'Berhenti' : 'Mulai'}
                   </button>
                 `}
-                <button class="btn btn-outline" style="padding: 7px 14px; font-size: 12px;" onclick="selectBot('${id}')">
-                  Panel Kontrol &rarr;
-                </button>
+                <button class="btn btn-outline" style="padding: 6px 12px; font-size: 11px;" onclick="selectBot('${id}')">Detail &rarr;</button>
               </div>
             </div>
           `;
@@ -926,36 +1254,39 @@
       }
 
       container.innerHTML = `
-        <div class="bot-hero">
-          <div class="bot-hero-left">
-            <div class="bot-hero-avatar">🌐</div>
-            <div class="bot-hero-title">
-              <h2>Kontrol Seluruh Armada</h2>
-              <div class="bot-hero-chips">
-                <span class="chip game">Global Manager</span>
-                <span class="chip status">${farmingCount} / ${bots.size} Aktif Farm</span>
-                ${kickedCount > 0 ? `<span class="chip kicked">🚨 ${kickedCount} Akun Terkena Kick!</span>` : ''}
+        <div class="hero-card">
+          <div class="hero-top-row">
+            <div class="hero-identity">
+              <div class="hero-avatar">🌐</div>
+              <div class="hero-identity-text">
+                <h2>Ringkasan Seluruh Akun</h2>
+                <div class="hero-status-pill">
+                  <span>${farmingCount} / ${bots.size} Sedang Bekerja</span>
+                  ${kickedCount > 0 ? `<span style="color: var(--rose);">• 🚨 ${kickedCount} Terputus</span>` : ''}
+                </div>
               </div>
             </div>
-          </div>
-          <div class="hero-actions">
-            <button class="btn btn-primary" onclick="sendFleetCommand('START_FARM')">Mulai Semua (Start)</button>
-            <button class="btn btn-danger" onclick="sendFleetCommand('STOP_FARM')">Stop Semua</button>
-            <button class="btn btn-outline" onclick="sendFleetCommand('TOGGLE_LOW_RENDER')">Toggle Low GPU</button>
-            <button class="btn btn-outline" onclick="sendFleetCommand('REJOIN_SERVER')">Rejoin Semua</button>
+            <div class="hero-actions-bar">
+              <button class="btn btn-emerald" onclick="sendFleetCommand('START_FARM')">Mulai Semua</button>
+              <button class="btn btn-rose" onclick="sendFleetCommand('STOP_FARM')">Stop Semua</button>
+            </div>
           </div>
         </div>
 
-        <div class="card-section">
-          <div class="card-title">Daftar Akun Terhubung</div>
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            ${botsCardsHtml}
+        <div class="card-box">
+          <div class="card-head">
+            <h3>Daftar Akun Roblox Aktif</h3>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${cardsHtml}
           </div>
         </div>
 
-        <div class="card-section">
-          <div class="card-title">Live Event Stream (Seluruh Akun)</div>
-          <div class="console-box" id="botConsoleBox">
+        <div class="card-box">
+          <div class="card-head">
+            <h3>Aktivitas Live</h3>
+          </div>
+          <div class="console-terminal" id="terminalConsole">
             ${renderLogsHTML()}
           </div>
         </div>
@@ -965,302 +1296,411 @@
     function renderBotSpecificView(container, bot) {
       const gameCfg = getGameConfig(bot.gameId);
       const isKicked = bot.isKicked;
+      const isLobby = bot.gameId === "cdid_menu";
 
-      // Render tab buttons dynamically based on game config
+      // Tab Pills Horizontal
       let tabsHtml = "";
       gameCfg.tabs.forEach(t => {
         const isActive = activeTab === t.id;
         tabsHtml += `
-          <button class="tab-btn theme-${bot.gameId} ${isActive ? 'active' : ''}" onclick="setTab('${t.id}')">
+          <button class="tab-pill theme-${bot.gameId === 'cdid_menu' ? 'menu' : (bot.gameId || 'cdid')} ${isActive ? 'active' : ''}" onclick="setTab('${t.id}')">
             ${t.label}
           </button>
         `;
       });
 
-      // Find active tab renderer
       const currentTabDef = gameCfg.tabs.find(t => t.id === activeTab) || gameCfg.tabs[0];
       const tabContentHtml = currentTabDef.render(bot);
 
-      container.innerHTML = `
-        ${UI.KickAlertBanner(bot)}
+      // Humanized Status Label
+      let statusHuman = "Standby di Lobi";
+      let statusColor = "var(--text-muted)";
+      if (isKicked) {
+        statusHuman = "Terkena Kick (" + (bot.kickReason || "Disconnect") + ")";
+        statusColor = "var(--rose)";
+      } else if (bot.isFarming) {
+        statusHuman = bot.status || "Sedang Bekerja Mengantar Kargo";
+        statusColor = "var(--emerald)";
+      } else if (!isLobby) {
+        statusHuman = "Standby di Jawa Timur";
+        statusColor = "var(--text-muted)";
+      }
 
-        <div class="bot-hero theme-${isKicked ? 'kicked' : (bot.gameId || 'cdid')}">
-          <div class="bot-hero-left">
-            <div class="bot-hero-avatar">${isKicked ? '🚨' : gameCfg.icon}</div>
-            <div class="bot-hero-title">
-              <h2>${bot.name || 'Roblox Player'}</h2>
-              <div class="bot-hero-chips">
-                <span class="chip game">${gameCfg.icon} ${bot.gameName || 'Roblox'}</span>
-                <span class="chip ${isKicked ? 'kicked' : 'status'}">${isKicked ? 'KICKED' : (bot.status || 'CONNECTED')}</span>
-                <span class="chip" style="color: ${gameCfg.color}; font-weight: 700; border-color: ${gameCfg.color}40;">
-                  Saldo: ${gameCfg.formatMoney(bot.currentCash)}
-                </span>
-                <span class="chip" style="color: #6ee7b7; font-weight: 700;">
-                  Sesi: +${gameCfg.formatMoney(bot.totalEarnings)}
-                </span>
-                <span class="chip" style="font-family: var(--mono);">⏱ ${bot.sessionTime || "00:00:00"}</span>
+      container.innerHTML = `
+        ${isKicked ? `
+          <div class="alert-banner">
+            <div class="alert-banner-left">
+              <span style="font-size: 24px;">🚨</span>
+              <div>
+                <div class="alert-banner-title">Koneksi Roblox Terputus (Kick)</div>
+                <div class="alert-banner-desc">Alasan: ${bot.kickReason || "Koneksi terputus dari game"}</div>
+              </div>
+            </div>
+            <button class="btn btn-rose" onclick="rejoinBot('${bot.botId}')">Rejoin Sekarang</button>
+          </div>
+        ` : ''}
+
+        <!-- ASYMMETRICAL EDITORIAL HERO -->
+        <div class="hero-card theme-${isKicked ? 'kicked' : (isLobby ? 'menu' : 'cdid')}">
+          <div class="hero-top-row">
+            <div class="hero-identity">
+              <div class="hero-avatar">${isKicked ? '🚨' : gameCfg.icon}</div>
+              <div class="hero-identity-text">
+                <h2>${bot.name || 'Roblox Player'}</h2>
+                <div class="hero-status-pill">
+                  <span class="pulse-dot ${isKicked ? 'kicked' : (bot.isFarming ? 'online' : '')}"></span>
+                  <span style="color: ${statusColor}; font-weight: 700;">${statusHuman}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hero-actions-bar">
+              ${isKicked ? `
+                <button class="btn btn-rose" onclick="rejoinBot('${bot.botId}')">Rejoin</button>
+              ` : (isLobby ? `
+                <button class="btn btn-emerald" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaTimur', code: '${bot.serverCode || ''}' })">
+                  🚀 Masuk Jawa Timur
+                </button>
+              ` : `
+                <button class="btn ${bot.isFarming ? 'btn-rose' : 'btn-emerald'}" onclick="sendBotCommand('${bot.botId}', '${bot.isFarming ? 'STOP_FARM' : 'START_FARM'}')">
+                  ${bot.isFarming ? '⏹ Hentikan Farm' : '▶ Mulai Farm'}
+                </button>
+              `)}
+            </div>
+          </div>
+
+          <!-- ASYMMETRIC MONEY & REWARD PANEL -->
+          <div class="hero-asymmetric-panel">
+            <div class="money-display">
+              <span class="money-label">Saldo Akun</span>
+              <span class="money-amount">${gameCfg.formatMoney(bot.currentCash)}</span>
+            </div>
+
+            <div class="session-stats-cluster">
+              <div class="stat-chip">
+                <span class="stat-chip-label">Hasil Sesi Ini</span>
+                <span class="stat-chip-value" style="color: var(--emerald);">+${gameCfg.formatMoney(bot.totalEarnings)}</span>
+              </div>
+              <div class="stat-chip">
+                <span class="stat-chip-label">Selesai</span>
+                <span class="stat-chip-value">${bot.tripCount || 0} ${gameCfg.metricUnit}</span>
+              </div>
+              <div class="stat-chip">
+                <span class="stat-chip-label">Durasi</span>
+                <span class="stat-chip-value">${bot.sessionTime || "00:00:00"}</span>
               </div>
             </div>
           </div>
-          <div class="hero-actions">
-            ${isKicked ? `
-              <button class="btn btn-primary" onclick="rejoinBot('${bot.botId}')">Rejoin Server</button>
-            ` : `
-              <button class="btn ${bot.isFarming ? 'btn-danger' : 'btn-primary'}" onclick="sendBotCommand('${bot.botId}', '${bot.isFarming ? 'STOP_FARM' : 'START_FARM'}')">
-                ${bot.isFarming ? 'Hentikan Farm' : 'Mulai Auto Farm'}
-              </button>
-            `}
-          </div>
         </div>
 
-        <div class="tabs-bar">
+        <!-- TABS STRIP -->
+        <div class="tabs-strip">
           ${tabsHtml}
         </div>
 
-        <div class="tab-panel active">
+        <!-- TAB BODY CONTENT -->
+        <div style="display: flex; flex-direction: column; gap: 14px;">
           ${tabContentHtml}
         </div>
       `;
     }
 
     // =========================================================================
-    // 5. GAME-SPECIFIC TAB RENDERERS (MODULAR)
+    // 5. GAME-SPECIFIC TABS
     // =========================================================================
+
+    // A. CDID MAIN MENU (LOBBY GATEWAY)
     function renderCDIDMenuPortal(bot) {
       const activeCode = bot.serverCode || "";
       const hasCode = activeCode.length > 0;
 
       return `
-        <div class="card-section" style="border-color: rgba(59, 130, 246, 0.4); background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(15, 23, 42, 0.8));">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
+        <!-- FEATURED HERO: MASUK JAWA TIMUR -->
+        <div class="action-row" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.04)); border: 1px solid rgba(16, 185, 129, 0.35); padding: 18px 20px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="font-size: 32px;">🚚</div>
             <div>
-              <h3 style="font-size: 16px; font-weight: 800; color: #93c5fd; display: flex; align-items: center; gap: 8px;">
-                🏰 Gerbang Server CDID (Lobby Portal)
-              </h3>
-              <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-                Akun saat ini berada di <b>Main Menu CDID</b>. Pekerjaan <b>Truck Driver</b> hanya berada di map <b>Jawa Timur</b>.
-              </p>
+              <h4 style="font-size: 15px; font-weight: 800; color: #6ee7b7;">Jawa Timur (Pusat Truk Kargo)</h4>
+              <p style="font-size: 12px; color: #a7f3d0; margin-top: 2px;">Map khusus tempat pekerjaan Supir Truk berada.</p>
             </div>
-            <span class="chip" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4);">PlaceId: 6911148748</span>
           </div>
+          <button class="btn btn-emerald" style="padding: 10px 20px; font-size: 14px;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaTimur', code: '${activeCode}' })">
+            🚀 Masuk Sekarang
+          </button>
         </div>
 
-        ${UI.Section("🔑 Kode Private Server CDID", `
-          <div class="control-row" style="flex-direction: column; align-items: stretch; gap: 14px; background: rgba(15, 23, 42, 0.6); padding: 18px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <!-- INSTRUMENT CARD: KODE PRIVATE SERVER -->
+        <div class="card-box">
+          <div class="card-head">
+            <h3>🔑 Kode Private Server CDID</h3>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div>
-                <span style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Status Kode Server Terkini:</span>
                 ${hasCode ? `
-                  <div style="display: inline-flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; color: #34d399; font-family: monospace; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); padding: 8px 16px; border-radius: 8px; letter-spacing: 1px;">
+                  <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: #34d399; font-family: var(--mono); background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); padding: 8px 16px; border-radius: var(--radius-sm); letter-spacing: 1px;">
                     🔑 ${activeCode}
-                    <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(16, 185, 129, 0.25); color: #a7f3d0; font-family: var(--font-sans); font-weight: 600;">
-                      Aktif (${bot.codeSource || 'Sync'})
-                    </span>
                   </div>
                 ` : `
-                  <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 8px 16px; border-radius: 8px;">
-                    ⚠️ Belum Ada Kode Server (Klik tombol Generate di bawah atau masukkan manual)
+                  <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--amber); background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 8px 14px; border-radius: var(--radius-sm);">
+                    ⚠️ Belum Ada Kode Server
                   </div>
                 `}
               </div>
 
-              ${hasCode ? `
-                <button class="btn btn-outline" style="padding: 8px 16px; font-size: 12px;" onclick="navigator.clipboard.writeText('${activeCode}'); alert('Kode server disalin: ${activeCode}');">
-                  📋 Salin Kode Server
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-primary" style="padding: 8px 14px; font-size: 12px;" onclick="sendBotCommand('${bot.botId}', 'GENERATE_SERVER_CODE')">
+                  🔄 Buat Kode Baru
                 </button>
-              ` : ''}
+                ${hasCode ? `
+                  <button class="btn btn-outline" style="padding: 8px 14px; font-size: 12px;" onclick="navigator.clipboard.writeText('${activeCode}'); alert('Kode server disalin: ${activeCode}');">
+                    📋 Salin
+                  </button>
+                ` : ''}
+              </div>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
-              <input id="serverCodeInput_${bot.botId}" type="text" value="${activeCode}" placeholder="Masukkan kode private server manual..." style="flex: 1; min-width: 200px; max-width: 280px; padding: 9px 14px; font-size: 13px; font-family: monospace; border-radius: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff;">
-              <button class="btn btn-outline" style="padding: 9px 16px; font-size: 13px;" onclick="const code = document.getElementById('serverCodeInput_${bot.botId}').value.trim(); if(code) sendBotCommand('${bot.botId}', 'SET_SERVER_CODE', { code: code });">
-                💾 Terapkan Kode
-              </button>
-              <button class="btn btn-primary" style="padding: 9px 18px; font-size: 13px;" onclick="sendBotCommand('${bot.botId}', 'GENERATE_SERVER_CODE')">
-                🔄 Buat / Generate Kode Baru
+            <!-- Manual Code Input -->
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+              <input id="serverCodeInput_${bot.botId}" type="text" value="${activeCode}" placeholder="Atau ketik kode manual..." style="flex: 1; padding: 9px 14px; font-size: 13px; font-family: var(--mono); border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border); color: #fff;">
+              <button class="btn btn-outline" style="padding: 9px 16px; font-size: 12px;" onclick="const code = document.getElementById('serverCodeInput_${bot.botId}').value.trim(); if(code) sendBotCommand('${bot.botId}', 'SET_SERVER_CODE', { code: code });">
+                Terapkan
               </button>
             </div>
-            <p style="font-size: 11px; color: var(--text-muted); margin: 0;">
-              💡 <b>Tips:</b> CDID menggunakan Private Server gratis. Jika tombol masuk tidak merespons, klik <b>Generate Kode Baru</b> agar bot mendapatkan kode dari server CDID.
-            </p>
           </div>
-        `)}
-
-        <div class="control-row" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.05)); border: 1px solid rgba(16, 185, 129, 0.4); padding: 20px;">
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="font-size: 34px;">🚚</div>
-            <div>
-              <h3 style="color: #6ee7b7; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
-                Jawa Timur 🇮🇩 (East Java)
-                <span class="brand-tag" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7;">PUSAT TRUCK FARM</span>
-              </h3>
-              <p style="color: #a7f3d0; font-size: 12px; margin-top: 4px;">
-                Map wajib untuk menjalankan East Java Truck Cargo Auto Farm (6-State Server Sync).
-              </p>
-            </div>
-          </div>
-          <button class="btn btn-success" style="padding: 10px 22px; font-size: 14px; box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaTimur', code: '${activeCode}' })">
-            🚀 Masuk Jawa Timur Sekarang
-          </button>
         </div>
 
-                ${UI.Section("Mode Masuk Server", `
-          <div class="control-row" style="background: rgba(15, 23, 42, 0.5); padding: 14px 18px; border-radius: 10px;">
-            <div>
-              <h4 style="font-size: 13px; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
-                🛑 Mode Manual (Standby di Lobi)
-              </h4>
-              <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                Bot tidak akan masuk map secara otomatis. Bot tetap berada di lobi sampai Anda menekan tombol map pilihan di bawah.
-              </p>
-            </div>
-            <span class="chip" style="color: #10b981; border-color: rgba(16, 185, 129, 0.4);">STANDBY AKTIF</span>
+        <!-- MAP SELECTOR GRID -->
+        <div class="card-box">
+          <div class="card-head">
+            <h3>Pilihan Map Lainnya</h3>
           </div>
-        `)}
-        `)}
-
-        ${UI.Section("Daftar Map CDID Lainnya (Klik untuk Masuk)", `
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
-            <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
+            <div class="action-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
               <div>
-                <h4 style="display: flex; align-items: center; gap: 6px;">🏙️ Jakarta 🇮🇩</h4>
-                <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Lokasi Kurir BCA & Cafe Kanji Jawa</p>
+                <h4 style="font-size: 13px;">🏙️ Jakarta</h4>
+                <p style="font-size: 11px; color: var(--text-muted);">Kurir BCA & Cafe</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Jakarta', code: '${activeCode}' })">Masuk Jakarta</button>
+              <button class="btn btn-outline" style="width: 100%;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Jakarta', code: '${activeCode}' })">Masuk Jakarta</button>
             </div>
 
-            <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+            <div class="action-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
               <div>
-                <h4 style="display: flex; align-items: center; gap: 6px;">⛰️ Bandung 🇮🇩</h4>
-                <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Kota Kembang & Tol Pasteur</p>
+                <h4 style="font-size: 13px;">⛰️ Bandung</h4>
+                <p style="font-size: 11px; color: var(--text-muted);">Kota Kembang</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Bandung', code: '${activeCode}' })">Masuk Bandung</button>
+              <button class="btn btn-outline" style="width: 100%;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Bandung', code: '${activeCode}' })">Masuk Bandung</button>
             </div>
 
-            <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+            <div class="action-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
               <div>
-                <h4 style="display: flex; align-items: center; gap: 6px;">🌾 Jawa Barat 🇮🇩</h4>
-                <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Tol Cipali & Pegunungan</p>
+                <h4 style="font-size: 13px;">🌾 Jawa Barat</h4>
+                <p style="font-size: 11px; color: var(--text-muted);">Jalur Tol Cipali</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaBarat', code: '${activeCode}' })">Masuk Jawa Barat</button>
+              <button class="btn btn-outline" style="width: 100%;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaBarat', code: '${activeCode}' })">Masuk Jawa Barat</button>
             </div>
 
-            <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+            <div class="action-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
               <div>
-                <h4 style="display: flex; align-items: center; gap: 6px;">🏛️ Jawa Tengah 🇮🇩</h4>
-                <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Semarang, Solo & Jogja</p>
+                <h4 style="font-size: 13px;">🏛️ Jawa Tengah</h4>
+                <p style="font-size: 11px; color: var(--text-muted);">Semarang & Jogja</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaTengah', code: '${activeCode}' })">Masuk Jawa Tengah</button>
+              <button class="btn btn-outline" style="width: 100%;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaTengah', code: '${activeCode}' })">Masuk Jawa Tengah</button>
             </div>
 
-            <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+            <div class="action-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
               <div>
-                <h4 style="display: flex; align-items: center; gap: 6px;">🌴 Bali 🇮🇩</h4>
-                <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Pantai Kuta & Tol Mandara</p>
+                <h4 style="font-size: 13px;">🌴 Bali</h4>
+                <p style="font-size: 11px; color: var(--text-muted);">Pulau Dewata</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Bali', code: '${activeCode}' })">Masuk Bali</button>
+              <button class="btn btn-outline" style="width: 100%;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Bali', code: '${activeCode}' })">Masuk Bali</button>
             </div>
 
-            <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+            <div class="action-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
               <div>
-                <h4 style="display: flex; align-items: center; gap: 6px;">❄️ Seasonal 🇮🇩</h4>
-                <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Event Musiman CDID</p>
+                <h4 style="font-size: 13px;">❄️ Seasonal</h4>
+                <p style="font-size: 11px; color: var(--text-muted);">Event Musiman</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Seasonal', code: '${activeCode}' })">Masuk Seasonal</button>
+              <button class="btn btn-outline" style="width: 100%;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Seasonal', code: '${activeCode}' })">Masuk Seasonal</button>
             </div>
           </div>
-        `)}
+        </div>
       `;
     }
 
+    // B. CDID AUTO FARM TRUK (JAWA TIMUR)
     function renderCDIDFarm(bot) {
-      const gameCfg = getGameConfig("cdid");
       return `
-        ${UI.Section("Pengaturan CDID Truck Auto Farm", `
-          ${UI.Toggle("Aktifkan CDID Truck Auto Farm", "Eksekusi 6-State (Despawn, HQ, Route, Spawner, Seat, 50s Payout)", bot.isFarming, `sendBotCommand('${bot.botId}', '${bot.isFarming ? 'STOP_FARM' : 'START_FARM'}')`)}
-          ${UI.Slider("Batas Jarak Minimum Rute", "Hanya terima pengiriman kargo bernilai tinggi", 50000, 150000, 5000, bot.minDistance || 100000, "studs",
-            `document.getElementById('rangeLabel_Batas_Jarak_Minimum_Rute').innerText = Number(this.value).toLocaleString() + ' studs'`,
-            `sendBotCommand('${bot.botId}', 'SET_MIN_DISTANCE', { minDistance: this.value })`
-          )}
-        `)}
+        <div class="card-box">
+          <div class="card-head">
+            <h3>Kontrol Auto Farm Truk</h3>
+          </div>
 
-        <div class="metrics-grid">
-          ${UI.MetricTile("Saldo Akun (Live Cash)", gameCfg.formatMoney(bot.currentCash), "#10b981")}
-          ${UI.MetricTile("Total Pendapatan Sesi", "+" + gameCfg.formatMoney(bot.totalEarnings), "#818cf8")}
-          ${UI.MetricTile("Pengiriman Selesai", (bot.tripCount || 0) + " Trips", "#f59e0b")}
-          ${UI.MetricTile("Durasi Sesi", bot.sessionTime || "00:00:00", "#cbd5e1")}
-          ${UI.MetricTile("Status Siklus 6-State", bot.status || "STANDBY", "#6ee7b7")}
-          ${UI.MetricTile("Rute Kargo Aktif", bot.currentRoute || "IDLE", "#93c5fd")}
+          <!-- Master Farm Switch -->
+          <div class="action-row">
+            <div class="action-meta">
+              <h4>Jalankan Auto Farm Truk</h4>
+              <p>Otomatis ambil kargo, bawa armada truk, dan kumpulkan gaji tanpa henti.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" ${bot.isFarming ? 'checked' : ''} onchange="sendBotCommand('${bot.botId}', '${bot.isFarming ? 'STOP_FARM' : 'START_FARM'}')">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- Filter Jarak Minimum -->
+          <div class="action-row">
+            <div class="slider-box">
+              <div class="slider-head">
+                <div class="action-meta">
+                  <h4>Batas Jarak Minimum Rute</h4>
+                  <p>Hanya terima pengiriman kargo bernilai tinggi.</p>
+                </div>
+                <span style="font-size: 13px; font-weight: 700; color: var(--emerald); font-family: var(--mono);" id="minDistVal">
+                  ${Number(bot.minDistance || 100000).toLocaleString()} studs
+                </span>
+              </div>
+              <input type="range" min="50000" max="150000" step="5000" value="${bot.minDistance || 100000}"
+                oninput="document.getElementById('minDistVal').innerText = Number(this.value).toLocaleString() + ' studs'"
+                onchange="sendBotCommand('${bot.botId}', 'SET_MIN_DISTANCE', { minDistance: this.value })">
+            </div>
+          </div>
+        </div>
+
+        <!-- Rute & Status Live -->
+        <div class="card-box">
+          <div class="card-head">
+            <h3>Informasi Pengiriman Saat Ini</h3>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            <div class="action-row" style="flex-direction: column; align-items: flex-start;">
+              <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase;">Rute Tujuan</span>
+              <span style="font-size: 13px; font-weight: 700; color: #93c5fd; margin-top: 2px;">${bot.currentRoute || 'Standby'}</span>
+            </div>
+            <div class="action-row" style="flex-direction: column; align-items: flex-start;">
+              <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase;">Status Kendaraan</span>
+              <span style="font-size: 13px; font-weight: 700; color: #6ee7b7; margin-top: 2px;">${bot.status || 'Standby'}</span>
+            </div>
+          </div>
         </div>
       `;
     }
 
     function renderCDIDNav(bot) {
       return `
-        ${UI.Section("Kontrol Lokasi & Armada Truk", `
-          ${UI.ButtonRow("Teleportasi ke Depo HQ Truk", "Pindahkan karakter instan ke markas kargo Jawa Timur", "Teleport HQ", "btn-outline", `sendBotCommand('${bot.botId}', 'TELEPORT_HQ')`)}
-        `)}
+        <div class="card-box">
+          <div class="card-head">
+            <h3>Lokasi & Navigasi</h3>
+          </div>
+          <div class="action-row">
+            <div class="action-meta">
+              <h4>Pindah ke Markas HQ Truk</h4>
+              <p>Teleportasi instan karakter ke depot kargo Jawa Timur.</p>
+            </div>
+            <button class="btn btn-outline" onclick="sendBotCommand('${bot.botId}', 'TELEPORT_HQ')">Teleport HQ</button>
+          </div>
+        </div>
       `;
     }
 
     function renderDDSFarm(bot) {
       const gameCfg = getGameConfig("dds");
       return `
-        ${UI.Section("Pengaturan Drag Drive Simulator", `
-          ${UI.Toggle("Aktifkan DDS Auto Drag Race", "Mulai antrian balapan otomatis", bot.isFarming, `sendBotCommand('${bot.botId}', '${bot.isFarming ? 'STOP_FARM' : 'START_FARM'}')`)}
-        `)}
-
-        <div class="metrics-grid">
-          ${UI.MetricTile("Koin / Saldo", gameCfg.formatMoney(bot.currentCash), "#f59e0b")}
-          ${UI.MetricTile("Total Pendapatan Sesi", "+" + gameCfg.formatMoney(bot.totalEarnings), "#fbbf24")}
-          ${UI.MetricTile("Balapan Selesai", (bot.tripCount || 0) + " Races", "#38bdf8")}
-          ${UI.MetricTile("Durasi Sesi", bot.sessionTime || "00:00:00", "#cbd5e1")}
+        <div class="card-box">
+          <div class="card-head">
+            <h3>Kontrol Auto Drag Race</h3>
+          </div>
+          <div class="action-row">
+            <div class="action-meta">
+              <h4>Mulai Antrian Drag Race</h4>
+              <p>Otomatis join balapan dan kumpulkan koin.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" ${bot.isFarming ? 'checked' : ''} onchange="sendBotCommand('${bot.botId}', '${bot.isFarming ? 'STOP_FARM' : 'START_FARM'}')">
+              <span class="slider"></span>
+            </label>
+          </div>
         </div>
       `;
     }
 
     function renderSafetyTab(bot) {
       return `
-        ${UI.Section("Sistem Proteksi Kick & Rejoin", `
-          ${UI.ButtonRow("Rejoin Server Saat Ini", "Koneksikan ulang akun ke server baru", "Rejoin Sekarang", "btn-primary", `rejoinBot('${bot.botId}')`)}
-          ${UI.Toggle("Auto-Rejoin Otomatis Saat Kena Kick", "Otomatis sambungkan ulang ke server baru dalam 5 detik saat terlempar kick", bot.autoRejoin !== false, `toggleAutoRejoin('${bot.botId}', this.checked)`)}
-          ${UI.ButtonRow("Status Proteksi Kick Engine", "Mendengarkan 100% dialog error Roblox (Error 267, 273, 277, 268)", "AKTIF (NATIVE)", "btn-outline", "")}
-        `)}
+        <div class="card-box">
+          <div class="card-head">
+            <h3>Proteksi & Rejoin Otomatis</h3>
+          </div>
+
+          <div class="action-row">
+            <div class="action-meta">
+              <h4>Rejoin Otomatis Saat Terkena Kick</h4>
+              <p>Otomatis masuk kembali ke server dalam 5 detik jika terjadi gangguan koneksi.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" ${bot.autoRejoin !== false ? 'checked' : ''} onchange="toggleAutoRejoin('${bot.botId}', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="action-row">
+            <div class="action-meta">
+              <h4>Rejoin Server Sekarang</h4>
+              <p>Segarkan koneksi akun ke instance server baru.</p>
+            </div>
+            <button class="btn btn-primary" onclick="rejoinBot('${bot.botId}')">Rejoin Sekarang</button>
+          </div>
+        </div>
       `;
     }
 
     function renderPerfTab(bot) {
       return `
-        ${UI.Section("Performa & AFK 24/7", `
-          ${UI.Toggle("Low GPU Mode (Disable 3D Rendering)", "Mematikan render 3D game Roblox di perangkat untuk hemat CPU/GPU 85%", bot.lowRender, `sendBotCommand('${bot.botId}', 'TOGGLE_LOW_RENDER')`)}
-          ${UI.ButtonRow("Anti-AFK Protection", "Mencegah Roblox mendiskoneksikan akun karena idle 20 menit", "SELALU AKTIF", "btn-outline", "")}
-        `)}
+        <div class="card-box">
+          <div class="card-head">
+            <h3>Optimasi & Hemat Daya</h3>
+          </div>
+
+          <div class="action-row">
+            <div class="action-meta">
+              <h4>Mode Hemat Layar (Low GPU)</h4>
+              <p>Mematikan render 3D game Roblox di layar perangkat untuk menghemat CPU & GPU hingga 85%.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" ${bot.lowRender ? 'checked' : ''} onchange="sendBotCommand('${bot.botId}', 'TOGGLE_LOW_RENDER')">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
       `;
     }
 
     function renderLogsTab(bot) {
       return `
-        ${UI.Section("Live Console & F9 Stream", `
-          <div class="console-box" id="botConsoleBox">
+        <div class="card-box">
+          <div class="card-head">
+            <h3>Konsol Live Stream</h3>
+          </div>
+          <div class="console-terminal" id="terminalConsole">
             ${renderLogsHTML()}
           </div>
-        `)}
+        </div>
       `;
     }
 
     function renderLogsHTML() {
       if (logsHistory.length === 0) {
-        return '<div style="color: var(--text-muted); font-style: italic;">Belum ada log aktivitas dari client...</div>';
+        return '<div style="color: var(--text-dim); font-style: italic;">Belum ada log tercatat...</div>';
       }
       return logsHistory.map(l => `
-        <div class="log-row">
-          <span class="log-ts">[${l.time}] [${l.source}]</span>
-          <span class="log-${l.level}">${l.msg}</span>
+        <div class="log-line">
+          <span class="log-time">[${l.time}]</span>
+          <span class="log-${l.level}">[${l.source}] ${l.msg}</span>
         </div>
       `).join('');
     }
 
-    // Init WebSocket Gateway on Page Load
+    // Jalankan WebSocket saat halaman dimuat
     initWebSocket();
   </script>
 </body>
