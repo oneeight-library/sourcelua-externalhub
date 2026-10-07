@@ -318,6 +318,14 @@
       font-weight: 800;
       position: relative;
       flex-shrink: 0;
+      overflow: hidden;
+    }
+    .item-avatar img, .hero-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      object-fit: cover;
+      display: block;
     }
     .item-status-dot {
       position: absolute;
@@ -404,6 +412,7 @@
     .hero-avatar {
       width: 48px;
       height: 48px;
+      overflow: hidden;
       border-radius: 14px;
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
       border: 1px solid var(--border);
@@ -1054,7 +1063,8 @@
           }
 
           // Jika terjadi perubahan mode game atau status kick, re-render dengan proteksi scroll
-          if (oldGameId !== existing.gameId || oldIsKicked !== existing.isKicked || oldIsFarming !== existing.isFarming) {
+          const gotNewAvatar = !existing.avatarUrl && data.payload && data.payload.avatarUrl;
+          if (oldGameId !== existing.gameId || oldIsKicked !== existing.isKicked || oldIsFarming !== existing.isFarming || gotNewAvatar) {
             safeRenderFleetNavigators();
             safeRenderMainView();
             return;
@@ -1168,7 +1178,7 @@
         const gameCfg = getGameConfig(b.gameId);
         reelHtml += `
           <div class="fleet-pill ${isSelected ? 'active' : ''} ${b.isKicked ? 'kicked' : ''}" onclick="selectBot('${id}')">
-            <span>${b.isKicked ? '🚨' : gameCfg.icon}</span>
+            ${b.avatarUrl ? `<img src="${b.avatarUrl}" style="width: 18px; height: 18px; border-radius: 999px; object-fit: cover; flex-shrink: 0;" onerror="this.style.display='none'" />` : `<span>${b.isKicked ? '🚨' : gameCfg.icon}</span>`}
             <span>${b.name || 'Bot'}</span>
           </div>
         `;
@@ -1208,7 +1218,7 @@
         sideHtml += `
           <div class="sidebar-item ${isSelected ? 'active' : ''} ${isKicked ? 'kicked' : ''}" onclick="selectBot('${id}')">
             <div class="item-avatar" style="${isKicked ? 'border-color: var(--rose);' : ''}">
-              ${isKicked ? '🚨' : initial}
+              ${b.avatarUrl ? `<img src="${b.avatarUrl}" alt="${b.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><span style="display: none;">${initial}</span>` : (isKicked ? '🚨' : initial)}
               <div class="item-status-dot ${isKicked ? 'kicked' : (b.isFarming ? 'online' : '')}"></div>
             </div>
             <div class="item-info">
@@ -1389,7 +1399,7 @@
             <div class="action-row" style="cursor: pointer; ${isKicked ? 'border-color: rgba(244,63,94,0.35); background: rgba(244,63,94,0.05);' : ''}" onclick="selectBot('${id}')">
               <div style="display: flex; align-items: center; gap: 12px;">
                 <div class="item-avatar" style="width: 42px; height: 42px;">
-                  ${isKicked ? '🚨' : initial}
+                  ${b.avatarUrl ? `<img src="${b.avatarUrl}" alt="${b.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><span style="display: none;">${initial}</span>` : (isKicked ? '🚨' : initial)}
                   <div class="item-status-dot ${isKicked ? 'kicked' : (b.isFarming ? 'online' : '')}"></div>
                 </div>
                 <div>
@@ -1501,7 +1511,9 @@
         <div class="hero-card theme-${isKicked ? 'kicked' : (isLobby ? 'menu' : 'cdid')}">
           <div class="hero-top-row">
             <div class="hero-identity">
-              <div class="hero-avatar">${isKicked ? '🚨' : gameCfg.icon}</div>
+              <div class="hero-avatar">
+                ${bot.avatarUrl ? `<img src="${bot.avatarUrl}" alt="${bot.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><span style="display: none;">${gameCfg.icon}</span>` : (isKicked ? '🚨' : gameCfg.icon)}
+              </div>
               <div class="hero-identity-text">
                 <h2>${bot.name || 'Roblox Player'}</h2>
                 <div class="hero-status-pill">

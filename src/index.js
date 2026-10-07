@@ -1,3 +1,5 @@
+import { robloxService } from "./services/roblox.js";
+import { handleApiRequest } from "./api/router.js";
 ﻿import { getWebDashboardHTML } from "./dashboard.js";
 import { getAgentLuaCode } from "./agent_code.js";
 
@@ -43,6 +45,8 @@ export class HubRoom {
 
   handleBotConnection(ws, url) {
     const name = url.searchParams.get("name") || "RobloxPlayer";
+    const userId = url.searchParams.get("userId") || "";
+    const displayName = url.searchParams.get("displayName") || name;
     const job = url.searchParams.get("job") || "Truck";
     const placeId = url.searchParams.get("placeId") || "110369730911937";
     const gameId = url.searchParams.get("gameId") || "cdid";
@@ -67,6 +71,9 @@ export class HubRoom {
     const botInfo = {
       botId,
       name,
+      userId,
+      displayName,
+      avatarUrl: null,
       job,
       placeId,
       gameId,
@@ -88,6 +95,30 @@ export class HubRoom {
     this.bots.set(botId, { ws, info: botInfo });
 
     ws.send(JSON.stringify({ type: "INIT_ACK", botId, message: "Connected to OneEight External Hub" }));
+
+    // Fetch avatar asynchronously tanpa memblokir koneksi WebSocket
+    (async () => {
+      let resolvedUserId = userId;
+      if (!resolvedUserId && name) {
+        const resolved = await robloxService.resolveUsername(name);
+        if (resolved) {
+          resolvedUserId = resolved.userId;
+          botInfo.userId = resolved.userId;
+          botInfo.displayName = resolved.displayName;
+        }
+      }
+      if (resolvedUserId) {
+        const avatar = await robloxService.getAvatarHeadshot(resolvedUserId, "150x150");
+        if (avatar) {
+          botInfo.avatarUrl = avatar;
+          this.broadcastToControllers({
+            type: "BOT_TELEMETRY",
+            botId,
+            payload: { avatarUrl: avatar, userId: resolvedUserId, displayName: botInfo.displayName }
+          });
+        }
+      }
+    })().catch(() => {});
 
     this.broadcastToControllers({
       type: "BOT_JOINED",
@@ -208,10 +239,14 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/ws" || url.pathname.startsWith("/api/bots")) {
+    if (url.pathname === "/ws") {
       const id = env.HUB_ROOM.idFromName("GLOBAL_HUB");
       const obj = env.HUB_ROOM.get(id);
       return obj.fetch(request);
+    }
+
+    if (url.pathname.startsWith("/api/")) {
+      return handleApiRequest(request, env);
     }
 
     if (url.pathname === "/loader" || url.pathname === "/load") {
