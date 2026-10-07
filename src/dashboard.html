@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OneEight External Hub - Fleet Command Center</title>
+  <title>OneEight External Hub - Modular Fleet Command Center</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -98,85 +98,92 @@
       border-radius: 50%;
       background: var(--warning);
       box-shadow: 0 0 8px currentColor;
-      animation: pulse 2s infinite;
     }
     .pulse-dot.online { background: var(--success); }
-    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } }
+    .pulse-dot.kicked { background: var(--danger); animation: pulseAlert 1.2s infinite; }
+
+    @keyframes pulseAlert {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 1; }
+    }
 
     .app-layout {
+      display: grid;
+      grid-template-columns: 310px 1fr;
       flex: 1;
-      display: flex;
       height: calc(100vh - 64px);
     }
 
-    aside.sidebar {
-      width: 320px;
+    .sidebar {
+      background: rgba(11, 15, 26, 0.7);
       border-right: 1px solid var(--card-border);
-      background: rgba(12, 16, 28, 0.6);
-      backdrop-filter: blur(16px);
+      backdrop-filter: blur(15px);
       display: flex;
       flex-direction: column;
       overflow-y: auto;
     }
     .sidebar-header {
-      padding: 18px 20px 14px;
+      padding: 16px 20px;
       border-bottom: 1px solid var(--card-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .sidebar-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); }
+    .sidebar-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
     .badge-count {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
       padding: 2px 8px;
-      background: rgba(99, 102, 241, 0.2);
       border-radius: 999px;
       font-size: 11px;
       font-weight: 700;
-      color: #a5b4fc;
     }
 
     .fleet-list {
-      padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      flex: 1;
+      padding: 10px;
+      gap: 6px;
     }
-
     .fleet-item {
-      padding: 14px;
+      padding: 12px 14px;
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      cursor: pointer;
+      border: 1px solid transparent;
       display: flex;
       align-items: center;
       gap: 12px;
+      cursor: pointer;
       transition: all 0.2s ease;
-      position: relative;
+      background: rgba(255, 255, 255, 0.02);
     }
     .fleet-item:hover {
       background: rgba(255, 255, 255, 0.05);
-      border-color: var(--card-border-hover);
+      border-color: rgba(255, 255, 255, 0.08);
       transform: translateX(2px);
     }
     .fleet-item.active {
-      background: rgba(99, 102, 241, 0.12);
-      border-color: var(--primary);
-      box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
+    }
+    .fleet-item.kicked {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.4);
     }
     .fleet-avatar {
-      width: 40px;
-      height: 40px;
+      width: 38px;
+      height: 38px;
       border-radius: 10px;
-      background: linear-gradient(135deg, #1e293b, #334155);
+      background: var(--bg-surface);
+      border: 1px solid var(--card-border);
       display: grid;
       place-items: center;
       font-weight: 800;
-      font-size: 15px;
-      color: #cbd5e1;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 14px;
       position: relative;
+      flex-shrink: 0;
     }
     .avatar-status {
       position: absolute;
@@ -189,148 +196,168 @@
       background: var(--warning);
     }
     .avatar-status.online { background: var(--success); }
+    .avatar-status.kicked { background: var(--danger); }
     .fleet-item-info { flex: 1; min-width: 0; }
-    .fleet-item-name {
-      font-size: 14px;
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .fleet-item-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .fleet-item-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+    .fleet-item-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-    main.content-view {
-      flex: 1;
+    .content-view {
       overflow-y: auto;
-      padding: 24px 32px;
+      padding: 24px 28px;
       display: flex;
       flex-direction: column;
-      gap: 22px;
+      gap: 20px;
     }
+
+    /* KICK ALERT BANNER */
+    .kick-banner {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(185, 28, 28, 0.1));
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.25);
+      border-radius: 16px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      animation: pulseAlert 2.5s infinite;
+    }
+    .kick-banner-left { display: flex; align-items: center; gap: 16px; }
+    .kick-banner-icon { font-size: 28px; }
+    .kick-banner-title { font-size: 15px; font-weight: 800; color: #fca5a5; display: flex; align-items: center; gap: 8px; }
+    .kick-banner-desc { font-size: 12px; color: #fecaca; margin-top: 3px; font-family: var(--mono); }
 
     .bot-hero {
       background: var(--bg-card);
       border: 1px solid var(--card-border);
       border-radius: 18px;
-      padding: 22px 28px;
-      backdrop-filter: blur(16px);
+      padding: 22px 26px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 18px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
     }
-    .bot-hero-left { display: flex; align-items: center; gap: 16px; }
+    .bot-hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+    }
+    .bot-hero.theme-cdid::before { background: linear-gradient(90deg, #10b981, #059669); }
+    .bot-hero.theme-dds::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .bot-hero.theme-kicked::before { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+
+    .bot-hero-left { display: flex; align-items: center; gap: 18px; }
     .bot-hero-avatar {
-      width: 54px;
-      height: 54px;
-      background: linear-gradient(135deg, #4f46e5, #3b82f6);
+      width: 58px;
+      height: 58px;
       border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+      border: 1px solid var(--card-border);
       display: grid;
       place-items: center;
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 800;
-      color: white;
-      box-shadow: 0 0 20px var(--primary-glow);
     }
-    .bot-hero-title h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
-    .bot-hero-chips { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .bot-hero-title h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; }
+    .bot-hero-chips { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
     .chip {
-      padding: 3px 10px;
-      border-radius: 6px;
       font-size: 11px;
       font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 6px;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--card-border);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
-    .chip.game { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; }
-    .chip.status { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; font-family: var(--mono); }
+    .chip.status { color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3); }
+    .chip.game { color: #93c5fd; border-color: rgba(59, 130, 246, 0.3); }
+    .chip.kicked { color: #fca5a5; border-color: rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.15); }
 
-    .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .hero-actions { display: flex; align-items: center; gap: 10px; }
 
     .tabs-bar {
       display: flex;
       gap: 8px;
       border-bottom: 1px solid var(--card-border);
-      padding-bottom: 12px;
-      overflow-x: auto;
+      padding-bottom: 4px;
     }
     .tab-btn {
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-muted);
+      padding: 9px 18px;
       background: transparent;
-      border: 1px solid transparent;
+      border: none;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 13px;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+      border-radius: 8px;
       transition: all 0.2s ease;
-      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 7px;
     }
     .tab-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
     .tab-btn.active {
       color: white;
-      background: rgba(99, 102, 241, 0.15);
-      border-color: rgba(99, 102, 241, 0.35);
-      box-shadow: 0 0 14px rgba(99, 102, 241, 0.2);
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+    }
+    .tab-btn.theme-cdid.active {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    .tab-btn.theme-dds.active {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: rgba(245, 158, 11, 0.4);
     }
 
-    .tab-panel { display: none; flex-direction: column; gap: 20px; }
+    .tab-panel { display: none; flex-direction: column; gap: 18px; }
     .tab-panel.active { display: flex; }
 
     .card-section {
       background: var(--bg-card);
       border: 1px solid var(--card-border);
-      border-radius: 18px;
-      padding: 24px;
-      backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 20px 24px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
     }
     .card-title {
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: -0.2px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: #fff;
+      justify-content: space-between;
     }
 
     .control-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 20px;
-      border-radius: 12px;
+      padding: 14px 18px;
       background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      gap: 16px;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      transition: border-color 0.2s;
     }
-    .control-row:hover { border-color: rgba(255, 255, 255, 0.08); }
-    .control-meta h4 { font-size: 14px; font-weight: 700; }
-    .control-meta p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .control-row:hover { border-color: rgba(255, 255, 255, 0.15); }
+    .control-meta h4 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .control-meta p { font-size: 12px; color: var(--text-muted); }
 
     .switch {
       position: relative;
       display: inline-block;
-      width: 50px;
-      height: 28px;
+      width: 48px;
+      height: 26px;
       flex-shrink: 0;
     }
     .switch input { opacity: 0; width: 0; height: 0; }
@@ -338,64 +365,41 @@
       position: absolute;
       cursor: pointer;
       top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(255, 255, 255, 0.15);
-      transition: .3s;
-      border-radius: 28px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background-color: rgba(255, 255, 255, 0.1);
+      transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 34px;
+      border: 1px solid var(--card-border);
     }
     .slider:before {
       position: absolute;
       content: "";
-      height: 20px;
-      width: 20px;
+      height: 18px;
+      width: 18px;
       left: 3px;
       bottom: 3px;
       background-color: white;
-      transition: .3s;
+      transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
       border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
-    input:checked + .slider {
-      background-color: var(--primary);
-      box-shadow: 0 0 14px var(--primary-glow);
-    }
-    input:checked + .slider:before {
-      transform: translateX(22px);
-    }
+    input:checked + .slider { background-color: var(--success); border-color: var(--success); box-shadow: 0 0 12px var(--success-glow); }
+    input:checked + .slider:before { transform: translateX(22px); }
 
-    .range-box {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      width: 100%;
-    }
-    .range-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .range-val {
-      font-family: var(--mono);
-      font-weight: 800;
-      font-size: 14px;
-      color: #818cf8;
-      background: rgba(99, 102, 241, 0.15);
-      padding: 3px 10px;
-      border-radius: 6px;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-    }
+    .range-box { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .range-header { display: flex; justify-content: space-between; align-items: center; }
+    .range-val { font-family: var(--mono); font-weight: 700; color: #a5b4fc; }
     input[type=range] {
-      -webkit-appearance: none;
       width: 100%;
-      height: 8px;
-      border-radius: 4px;
+      height: 6px;
       background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
       outline: none;
+      -webkit-appearance: none;
     }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
+      appearance: none;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background: var(--primary);
       cursor: pointer;
@@ -434,8 +438,10 @@
     }
     .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 14px var(--primary-glow); }
     .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-    .btn-danger { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; }
-    .btn-danger:hover { background: rgba(239, 68, 68, 0.3); color: white; }
+    .btn-success { background: var(--success); color: white; box-shadow: 0 4px 14px var(--success-glow); }
+    .btn-success:hover { background: #059669; }
+    .btn-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.4); color: white; }
     .btn-outline { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: var(--text); }
     .btn-outline:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
 
@@ -457,7 +463,7 @@
     .log-SUCCESS { color: var(--success); }
     .log-INFO { color: #60a5fa; }
     .log-WARN { color: var(--warning); }
-    .log-ERROR { color: var(--danger); }
+    .log-ERROR { color: var(--danger); font-weight: 700; }
   </style>
 </head>
 <body>
@@ -465,8 +471,8 @@
     <div class="brand-wrap">
       <div class="brand-logo">OE</div>
       <div class="brand-info">
-        <h1>ONEEIGHT COMMAND CENTER <span class="brand-tag">v2.0 FLEET</span></h1>
-        <p>External WebSocket Multi-Account Controller</p>
+        <h1>ONEEIGHT COMMAND CENTER <span class="brand-tag">v3.0 MODULAR</span></h1>
+        <p>Universal Multi-Game WebSocket Controller</p>
       </div>
     </div>
     <div class="header-right">
@@ -506,11 +512,150 @@
     let activeTab = "tab_autofarm";
     let logsHistory = [];
 
-    function formatMoney(num) {
+    // =========================================================================
+    // 1. GAME REGISTRY (EXTENSIBLE CONTRACT)
+    // =========================================================================
+    const GameRegistry = {
+      cdid: {
+        id: "cdid",
+        name: "Car Driving Indonesia",
+        icon: "🚚",
+        color: "#10b981",
+        currency: "Rp",
+        formatMoney: (num) => formatRupiah(num),
+        metricUnit: "Trips",
+        tabs: [
+          { id: "tab_autofarm", label: "📦 Auto Farm Truck", render: (bot) => renderCDIDFarm(bot) },
+          { id: "tab_nav", label: "🚗 Navigasi & Kendaraan", render: (bot) => renderCDIDNav(bot) },
+          { id: "tab_safety", label: "🛡️ Safety & Rejoin", render: (bot) => renderSafetyTab(bot) },
+          { id: "tab_perf", label: "⚡ Optimasi & GPU", render: (bot) => renderPerfTab(bot) },
+          { id: "tab_logs", label: "📟 Live Console", render: (bot) => renderLogsTab(bot) }
+        ]
+      },
+      dds: {
+        id: "dds",
+        name: "Drag Drive Simulator",
+        icon: "🏁",
+        color: "#f59e0b",
+        currency: "Coins",
+        formatMoney: (num) => (num || 0).toLocaleString() + " Coins",
+        metricUnit: "Races",
+        tabs: [
+          { id: "tab_autofarm", label: "🏁 Auto Drag Race", render: (bot) => renderDDSFarm(bot) },
+          { id: "tab_safety", label: "🛡️ Safety & Rejoin", render: (bot) => renderSafetyTab(bot) },
+          { id: "tab_perf", label: "⚡ Optimasi & GPU", render: (bot) => renderPerfTab(bot) },
+          { id: "tab_logs", label: "📟 Live Console", render: (bot) => renderLogsTab(bot) }
+        ]
+      },
+      generic: {
+        id: "generic",
+        name: "Roblox Game",
+        icon: "🎮",
+        color: "#6366f1",
+        currency: "Cash",
+        formatMoney: (num) => (num || 0).toLocaleString(),
+        metricUnit: "Cycles",
+        tabs: [
+          { id: "tab_safety", label: "🛡️ Safety & Rejoin", render: (bot) => renderSafetyTab(bot) },
+          { id: "tab_perf", label: "⚡ Optimasi & GPU", render: (bot) => renderPerfTab(bot) },
+          { id: "tab_logs", label: "📟 Live Console", render: (bot) => renderLogsTab(bot) }
+        ]
+      }
+    };
+
+    function getGameConfig(gameId) {
+      return GameRegistry[gameId] || GameRegistry.generic;
+    }
+
+    function formatRupiah(num) {
       if (!num) return "Rp 0";
       return "Rp " + Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
+    // =========================================================================
+    // 2. UI COMPONENT BUILDER API (DECLARATIVE HELPERS)
+    // =========================================================================
+    const UI = {
+      KickAlertBanner: (bot) => {
+        if (!bot.isKicked) return "";
+        return `
+          <div class="kick-banner">
+            <div class="kick-banner-left">
+              <span class="kick-banner-icon">🚨</span>
+              <div>
+                <div class="kick-banner-title">
+                  ROBLOX DISCONNECT / KICK DETECTED!
+                </div>
+                <div class="kick-banner-desc">
+                  Alasan: ${bot.kickReason || "Koneksi terputus dari server"}
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; gap: 8px;">
+              <button class="btn btn-primary" onclick="rejoinBot('${bot.botId}')">Rejoin Server Sekarang</button>
+            </div>
+          </div>
+        `;
+      },
+
+      Section: (title, innerHtml) => `
+        <div class="card-section">
+          <div class="card-title">${title}</div>
+          ${innerHtml}
+        </div>
+      `,
+
+      Toggle: (label, desc, isChecked, onchangeCode) => `
+        <div class="control-row">
+          <div class="control-meta">
+            <h4>${label}</h4>
+            <p>${desc}</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="${onchangeCode}">
+            <span class="slider"></span>
+          </label>
+        </div>
+      `,
+
+      Slider: (label, desc, min, max, step, value, unitLabel, oninputCode, onchangeCode) => `
+        <div class="control-row">
+          <div class="range-box">
+            <div class="range-header">
+              <div class="control-meta">
+                <h4>${label}</h4>
+                <p>${desc}</p>
+              </div>
+              <span class="range-val" id="rangeLabel_${label.replace(/\s+/g, '_')}">${Number(value).toLocaleString()} ${unitLabel}</span>
+            </div>
+            <input type="range" min="${min}" max="${max}" step="${step}" value="${value}"
+              oninput="${oninputCode}" onchange="${onchangeCode}">
+          </div>
+        </div>
+      `,
+
+      ButtonRow: (label, desc, btnText, btnClass, onclickCode) => `
+        <div class="control-row">
+          <div class="control-meta">
+            <h4>${label}</h4>
+            <p>${desc}</p>
+          </div>
+          <button class="btn ${btnClass || 'btn-outline'}" onclick="${onclickCode}">${btnText}</button>
+        </div>
+      `,
+
+      MetricTile: (title, value, colorHex, subtext) => `
+        <div class="metric-tile" style="border-color: ${colorHex ? colorHex + '40' : 'rgba(255,255,255,0.08)'};">
+          <span class="metric-title" style="color: ${colorHex || 'var(--text-muted)'};">${title}</span>
+          <span class="metric-number" style="color: ${colorHex || 'var(--text)'};">${value}</span>
+          ${subtext ? `<span style="font-size: 11px; color: var(--text-muted);">${subtext}</span>` : ''}
+        </div>
+      `
+    };
+
+    // =========================================================================
+    // 3. WEBSOCKET CONTROLLER ENGINE
+    // =========================================================================
     function initWebSocket() {
       const dot = document.getElementById("headerWsDot");
       const statusText = document.getElementById("headerWsStatus");
@@ -548,7 +693,7 @@
         bots.set(data.bot.botId, data.bot);
         renderSidebar();
         renderMainView();
-        addLog(data.bot.name, "Akun baru bergabung ke armada!", "SUCCESS");
+        addLog(data.bot.name, `Akun baru bergabung (${data.bot.gameName || 'Roblox'})!`, "SUCCESS");
       } else if (data.type === "BOT_LEFT") {
         bots.delete(data.botId);
         if (selectedBotId === data.botId) selectedBotId = "ALL";
@@ -562,6 +707,16 @@
           renderSidebar();
           renderMainView();
         }
+      } else if (data.type === "BOT_KICKED") {
+        const existing = bots.get(data.botId);
+        if (existing) {
+          existing.isKicked = true;
+          existing.kickReason = data.reason;
+          existing.status = `KICKED (${data.reason})`;
+          renderSidebar();
+          renderMainView();
+        }
+        addLog(data.botName || "Bot", `ROBLOX KICK: ${data.reason}`, "ERROR");
       } else if (data.type === "BOT_LOG") {
         addLog(data.botName || "Bot", data.log, data.level);
       }
@@ -583,6 +738,32 @@
       }
     }
 
+    function sendBotCommand(botId, action, payload) {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      socket.send(JSON.stringify({
+        type: "COMMAND",
+        targetBotId: botId,
+        action: action,
+        payload: payload || {}
+      }));
+    }
+
+    function sendFleetCommand(action, payload) {
+      sendBotCommand("ALL", action, payload);
+    }
+
+    function rejoinBot(botId) {
+      sendBotCommand(botId, "REJOIN_SERVER");
+      addLog("Controller", "Mengirim perintah Rejoin Server ke bot...", "WARN");
+    }
+
+    function toggleAutoRejoin(botId, enabled) {
+      sendBotCommand(botId, "TOGGLE_AUTO_REJOIN", { enabled });
+    }
+
+    // =========================================================================
+    // 4. RENDERING VIEWS
+    // =========================================================================
     function renderSidebar() {
       const list = document.getElementById("fleetList");
       document.getElementById("fleetBadge").innerText = bots.size + " Bot";
@@ -599,18 +780,28 @@
 
       for (const [id, b] of bots.entries()) {
         const isSelected = selectedBotId === id;
+        const gameCfg = getGameConfig(b.gameId);
         const initial = (b.name || "B").substring(0, 2).toUpperCase();
-        const statusText = b.isFarming ? (b.status || "Farming") : "Standby";
+        const isKicked = b.isKicked;
+        const statusText = isKicked ? "KICKED" : (b.isFarming ? (b.status || "Farming") : "Standby");
 
         html += `
-          <div class="fleet-item ${isSelected ? 'active' : ''}" onclick="selectBot('${id}')">
-            <div class="fleet-avatar">
-              ${initial}
-              <div class="avatar-status ${b.isFarming ? 'online' : ''}"></div>
+          <div class="fleet-item ${isSelected ? 'active' : ''} ${isKicked ? 'kicked' : ''}" onclick="selectBot('${id}')">
+            <div class="fleet-avatar" style="${isKicked ? 'border-color: #ef4444;' : ''}">
+              ${isKicked ? '🚨' : initial}
+              <div class="avatar-status ${isKicked ? 'kicked' : (b.isFarming ? 'online' : '')}"></div>
             </div>
             <div class="fleet-item-info">
-              <div class="fleet-item-name">${b.name || 'Bot'}</div>
-              <div class="fleet-item-sub"><span style="color: #10b981; font-weight: 700;">${b.currentCash > 0 ? formatMoney(b.currentCash) : "Memuat..."}</span></div><div class="fleet-item-sub" style="font-size: 10px;">${b.gameName || "CDID"} • ${statusText}</div>
+              <div class="fleet-item-name">
+                ${b.name || 'Bot'}
+                <span style="font-size: 10px; opacity: 0.8;">${gameCfg.icon}</span>
+              </div>
+              <div class="fleet-item-sub">
+                <span style="color: ${gameCfg.color}; font-weight: 700;">${b.currentCash > 0 ? gameCfg.formatMoney(b.currentCash) : "Memuat..."}</span>
+              </div>
+              <div class="fleet-item-sub" style="font-size: 10px; color: ${isKicked ? '#f87171' : 'var(--text-muted)'};">
+                ${b.gameName || 'Roblox'} • ${statusText}
+              </div>
             </div>
           </div>
         `;
@@ -650,8 +841,10 @@
 
     function renderGlobalOverview(container) {
       let farmingCount = 0;
+      let kickedCount = 0;
       for (const [_, b] of bots.entries()) {
         if (b.isFarming) farmingCount++;
+        if (b.isKicked) kickedCount++;
       }
 
       let botsCardsHtml = "";
@@ -664,28 +857,38 @@
         `;
       } else {
         for (const [id, b] of bots.entries()) {
+          const gameCfg = getGameConfig(b.gameId);
           const initial = (b.name || "B").substring(0, 2).toUpperCase();
+          const isKicked = b.isKicked;
+
           botsCardsHtml += `
-            <div class="control-row" style="cursor: pointer;" onclick="selectBot('${id}')">
+            <div class="control-row" style="cursor: pointer; ${isKicked ? 'border-color: rgba(239, 68, 68, 0.4); background: rgba(239,68,68,0.05);' : ''}" onclick="selectBot('${id}')">
               <div style="display:flex; align-items:center; gap: 14px;">
                 <div class="fleet-avatar" style="width: 42px; height: 42px; font-size: 14px;">
-                  ${initial}
-                  <div class="avatar-status ${b.isFarming ? 'online' : ''}"></div>
+                  ${isKicked ? '🚨' : initial}
+                  <div class="avatar-status ${isKicked ? 'kicked' : (b.isFarming ? 'online' : '')}"></div>
                 </div>
                 <div class="control-meta">
                   <h4 style="display: flex; align-items: center; gap: 8px;">
                     ${b.name || 'Roblox Player'}
-                    <span class="chip status" style="font-size: 10px; padding: 2px 7px;">${b.status || 'STANDBY'}</span>
+                    <span class="chip game">${gameCfg.icon} ${b.gameName || 'Roblox'}</span>
+                    <span class="chip ${isKicked ? 'kicked' : 'status'}">${isKicked ? 'KICKED' : (b.status || 'STANDBY')}</span>
                   </h4>
-                  <p>Saldo: <b style="color: #10b981;">${formatMoney(b.currentCash)}</b> • Sesi: <b style="color: #6ee7b7;">+${formatMoney(b.totalEarnings)}</b> • Selesai: <b>${b.tripCount || 0} Trips</b> (${b.sessionTime || "00:00:00"})</p>
+                  <p>Saldo: <b style="color: ${gameCfg.color};">${gameCfg.formatMoney(b.currentCash)}</b> • Sesi: <b style="color: #6ee7b7;">+${gameCfg.formatMoney(b.totalEarnings)}</b> • Selesai: <b>${b.tripCount || 0} ${gameCfg.metricUnit}</b> (${b.sessionTime || "00:00:00"})</p>
                 </div>
               </div>
               <div style="display: flex; gap: 8px;" onclick="event.stopPropagation();">
-                <button class="btn ${b.isFarming ? 'btn-danger' : 'btn-primary'}" style="padding: 7px 14px; font-size: 12px;" onclick="toggleBotFarm('${id}', ${!b.isFarming})">
-                  ${b.isFarming ? 'Stop' : 'Start'}
-                </button>
+                ${isKicked ? `
+                  <button class="btn btn-primary" style="padding: 7px 14px; font-size: 12px;" onclick="rejoinBot('${id}')">
+                    Rejoin Server
+                  </button>
+                ` : `
+                  <button class="btn ${b.isFarming ? 'btn-danger' : 'btn-primary'}" style="padding: 7px 14px; font-size: 12px;" onclick="sendBotCommand('${id}', '${b.isFarming ? 'STOP_FARM' : 'START_FARM'}')">
+                    ${b.isFarming ? 'Stop' : 'Start'}
+                  </button>
+                `}
                 <button class="btn btn-outline" style="padding: 7px 14px; font-size: 12px;" onclick="selectBot('${id}')">
-                  Buka Panel Kontrol &rarr;
+                  Panel Kontrol &rarr;
                 </button>
               </div>
             </div>
@@ -701,7 +904,8 @@
               <h2>Kontrol Seluruh Armada</h2>
               <div class="bot-hero-chips">
                 <span class="chip game">Global Manager</span>
-                <span class="chip status">${farmingCount} / ${bots.size} Sedang Auto Farm</span>
+                <span class="chip status">${farmingCount} / ${bots.size} Aktif Farm</span>
+                ${kickedCount > 0 ? `<span class="chip kicked">🚨 ${kickedCount} Akun Terkena Kick!</span>` : ''}
               </div>
             </div>
           </div>
@@ -709,12 +913,12 @@
             <button class="btn btn-primary" onclick="sendFleetCommand('START_FARM')">Mulai Semua (Start)</button>
             <button class="btn btn-danger" onclick="sendFleetCommand('STOP_FARM')">Stop Semua</button>
             <button class="btn btn-outline" onclick="sendFleetCommand('TOGGLE_LOW_RENDER')">Toggle Low GPU</button>
-            <button class="btn btn-outline" onclick="sendFleetCommand('TELEPORT_HQ')">Semua ke HQ</button>
+            <button class="btn btn-outline" onclick="sendFleetCommand('REJOIN_SERVER')">Rejoin Semua</button>
           </div>
         </div>
 
         <div class="card-section">
-          <div class="card-title">Daftar Akun Terhubung (Pilih untuk Mengatur Tiap Bot)</div>
+          <div class="card-title">Daftar Akun Terhubung</div>
           <div style="display: flex; flex-direction: column; gap: 10px;">
             ${botsCardsHtml}
           </div>
@@ -730,183 +934,158 @@
     }
 
     function renderBotSpecificView(container, bot) {
+      const gameCfg = getGameConfig(bot.gameId);
+      const isKicked = bot.isKicked;
+
+      // Render tab buttons dynamically based on game config
+      let tabsHtml = "";
+      gameCfg.tabs.forEach(t => {
+        const isActive = activeTab === t.id;
+        tabsHtml += `
+          <button class="tab-btn theme-${bot.gameId} ${isActive ? 'active' : ''}" onclick="setTab('${t.id}')">
+            ${t.label}
+          </button>
+        `;
+      });
+
+      // Find active tab renderer
+      const currentTabDef = gameCfg.tabs.find(t => t.id === activeTab) || gameCfg.tabs[0];
+      const tabContentHtml = currentTabDef.render(bot);
+
       container.innerHTML = `
-        <div class="bot-hero">
+        ${UI.KickAlertBanner(bot)}
+
+        <div class="bot-hero theme-${isKicked ? 'kicked' : (bot.gameId || 'cdid')}">
           <div class="bot-hero-left">
-            <div class="bot-hero-avatar">${(bot.name || "B").substring(0, 2).toUpperCase()}</div>
+            <div class="bot-hero-avatar">${isKicked ? '🚨' : gameCfg.icon}</div>
             <div class="bot-hero-title">
               <h2>${bot.name || 'Roblox Player'}</h2>
               <div class="bot-hero-chips">
-                <span class="chip game">${bot.gameName || 'Car Driving Indonesia'}</span>
-                <span class="chip status">${bot.status || 'CONNECTED'}</span>
-                <span class="chip" style="color: #10b981; font-weight: 700; border-color: rgba(16, 185, 129, 0.4);">Saldo: ${formatMoney(bot.currentCash)}</span><span class="chip" style="color: #6ee7b7; font-weight: 700; border-color: rgba(110, 231, 183, 0.4);">Sesi: +${formatMoney(bot.totalEarnings)}</span><span class="chip" style="font-family: var(--mono);">⏱ ${bot.sessionTime || "00:00:00"}</span>
+                <span class="chip game">${gameCfg.icon} ${bot.gameName || 'Roblox'}</span>
+                <span class="chip ${isKicked ? 'kicked' : 'status'}">${isKicked ? 'KICKED' : (bot.status || 'CONNECTED')}</span>
+                <span class="chip" style="color: ${gameCfg.color}; font-weight: 700; border-color: ${gameCfg.color}40;">
+                  Saldo: ${gameCfg.formatMoney(bot.currentCash)}
+                </span>
+                <span class="chip" style="color: #6ee7b7; font-weight: 700;">
+                  Sesi: +${gameCfg.formatMoney(bot.totalEarnings)}
+                </span>
+                <span class="chip" style="font-family: var(--mono);">⏱ ${bot.sessionTime || "00:00:00"}</span>
               </div>
             </div>
           </div>
           <div class="hero-actions">
-            <button class="btn ${bot.isFarming ? 'btn-danger' : 'btn-primary'}" onclick="toggleBotFarm('${bot.botId}', ${!bot.isFarming})">
-              ${bot.isFarming ? 'Hentikan Farm' : 'Mulai Auto Farm'}
-            </button>
+            ${isKicked ? `
+              <button class="btn btn-primary" onclick="rejoinBot('${bot.botId}')">Rejoin Server</button>
+            ` : `
+              <button class="btn ${bot.isFarming ? 'btn-danger' : 'btn-primary'}" onclick="sendBotCommand('${bot.botId}', '${bot.isFarming ? 'STOP_FARM' : 'START_FARM'}')">
+                ${bot.isFarming ? 'Hentikan Farm' : 'Mulai Auto Farm'}
+              </button>
+            `}
           </div>
         </div>
 
         <div class="tabs-bar">
-          <button class="tab-btn ${activeTab === 'tab_autofarm' ? 'active' : ''}" onclick="setTab('tab_autofarm')">📦 Auto Farm Truck</button>
-          <button class="tab-btn ${activeTab === 'tab_nav' ? 'active' : ''}" onclick="setTab('tab_nav')">🚗 Navigasi & Kendaraan</button>
-          <button class="tab-btn ${activeTab === 'tab_perf' ? 'active' : ''}" onclick="setTab('tab_perf')">⚡ Optimasi & Misc</button>
-          <button class="tab-btn ${activeTab === 'tab_logs' ? 'active' : ''}" onclick="setTab('tab_logs')">📟 Live Console</button>
+          ${tabsHtml}
         </div>
 
-        <div class="tab-panel ${activeTab === 'tab_autofarm' ? 'active' : ''}">
-          <div class="card-section">
-            <div class="card-title">Pengaturan Auto Farm Kargo CDID</div>
-            
-            <div class="control-row">
-              <div class="control-meta">
-                <h4>Aktifkan CDID Truck Auto Farm</h4>
-                <p>Eksekusi 6-State Server-Synchronized (Despawn, HQ, Route, Spawner, Seat, 50s Payout)</p>
-              </div>
-              <label class="switch">
-                <input type="checkbox" ${bot.isFarming ? 'checked' : ''} onchange="toggleBotFarm('${bot.botId}', this.checked)">
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div class="control-row">
-              <div class="range-box">
-                <div class="range-header">
-                  <div class="control-meta">
-                    <h4>Batas Jarak Minimum Rute</h4>
-                    <p>Hanya terima pengiriman bernilai tinggi (menolak rute pendek di bawah nilai ini)</p>
-                  </div>
-                  <span class="range-val" id="minDistLabel">${(bot.minDistance || 100000).toLocaleString()} studs</span>
-                </div>
-                <input type="range" min="50000" max="150000" step="5000" value="${bot.minDistance || 100000}" oninput="updateMinDistPreview(this.value)" onchange="sendMinDistance('${bot.botId}', this.value)">
-              </div>
-            </div>
-          </div>
-
-          <div class="metrics-grid">
-            <div class="metric-tile" style="border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.05);">
-              <span class="metric-title" style="color: #10b981;">Saldo Akun Saat Ini (Live Cash)</span>
-              <span class="metric-number" style="color: #10b981;">${formatMoney(bot.currentCash)}</span>
-            </div>
-            <div class="metric-tile" style="border-color: rgba(99, 102, 241, 0.35); background: rgba(99, 102, 241, 0.05);">
-              <span class="metric-title" style="color: #a5b4fc;">Total Pendapatan Sesi</span>
-              <span class="metric-number" style="color: #818cf8;">+${formatMoney(bot.totalEarnings)}</span>
-            </div>
-            <div class="metric-tile">
-              <span class="metric-title">Pengiriman Selesai</span>
-              <span class="metric-number" style="color: #f59e0b;">${bot.tripCount || 0} Trips</span>
-            </div>
-            <div class="metric-tile">
-              <span class="metric-title">Durasi Sesi Berjalan</span>
-              <span class="metric-number" style="color: #cbd5e1; font-family: var(--mono);">${bot.sessionTime || "00:00:00"}</span>
-            </div>
-            <div class="metric-tile">
-              <span class="metric-title">Status Siklus 6-State</span>
-              <span class="metric-number" style="font-size: 16px; color: #6ee7b7;">${bot.status || "STANDBY"}</span>
-            </div>
-            <div class="metric-tile">
-              <span class="metric-title">Rute Pengantaran Aktif</span>
-              <span class="metric-number" style="font-size: 16px; color: #93c5fd;">${bot.currentRoute || "IDLE"}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-panel ${activeTab === 'tab_nav' ? 'active' : ''}">
-          <div class="card-section">
-            <div class="card-title">Kontrol Lokasi & Armada Truk</div>
-            <div class="control-row">
-              <div class="control-meta">
-                <h4>Teleportasi ke Depo HQ Truk</h4>
-                <p>Pindahkan karakter instan ke markas depo kargo Jawa Timur</p>
-              </div>
-              <button class="btn btn-outline" onclick="sendBotAction('${bot.botId}', 'TELEPORT_HQ')">Teleport HQ</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-panel ${activeTab === 'tab_perf' ? 'active' : ''}">
-          <div class="card-section">
-            <div class="card-title">Performa & AFK 24/7</div>
-            <div class="control-row">
-              <div class="control-meta">
-                <h4>Low GPU Mode (Disable 3D Rendering)</h4>
-                <p>Mematikan render 3D game Roblox di perangkat untuk menghemat CPU/GPU hingga 85%</p>
-              </div>
-              <label class="switch">
-                <input type="checkbox" ${bot.lowRender ? 'checked' : ''} onchange="sendBotAction('${bot.botId}', 'TOGGLE_LOW_RENDER')">
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div class="control-row">
-              <div class="control-meta">
-                <h4>Anti-AFK Protection (20-Min Bypass)</h4>
-                <p>Mencegah Roblox mendiskoneksikan akun karena tidak bergerak</p>
-              </div>
-              <span style="color: #10b981; font-weight: 700; font-size: 13px;">SELALU AKTIF (NATIVE)</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-panel ${activeTab === 'tab_logs' ? 'active' : ''}">
-          <div class="card-section">
-            <div class="card-title">F9 Live Console Output</div>
-            <div class="console-box" id="botConsoleBox">
-              ${renderLogsHTML(bot.name)}
-            </div>
-          </div>
+        <div class="tab-panel active">
+          ${tabContentHtml}
         </div>
       `;
     }
 
-    function renderLogsHTML(filterName) {
-      let filtered = logsHistory;
-      if (filterName) {
-        filtered = logsHistory.filter(l => l.source === filterName || l.source === "System");
+    // =========================================================================
+    // 5. GAME-SPECIFIC TAB RENDERERS (MODULAR)
+    // =========================================================================
+    function renderCDIDFarm(bot) {
+      const gameCfg = getGameConfig("cdid");
+      return `
+        ${UI.Section("Pengaturan CDID Truck Auto Farm", `
+          ${UI.Toggle("Aktifkan CDID Truck Auto Farm", "Eksekusi 6-State (Despawn, HQ, Route, Spawner, Seat, 50s Payout)", bot.isFarming, `sendBotCommand('${bot.botId}', '${bot.isFarming ? 'STOP_FARM' : 'START_FARM'}')`)}
+          ${UI.Slider("Batas Jarak Minimum Rute", "Hanya terima pengiriman kargo bernilai tinggi", 50000, 150000, 5000, bot.minDistance || 100000, "studs",
+            `document.getElementById('rangeLabel_Batas_Jarak_Minimum_Rute').innerText = Number(this.value).toLocaleString() + ' studs'`,
+            `sendBotCommand('${bot.botId}', 'SET_MIN_DISTANCE', { minDistance: this.value })`
+          )}
+        `)}
+
+        <div class="metrics-grid">
+          ${UI.MetricTile("Saldo Akun (Live Cash)", gameCfg.formatMoney(bot.currentCash), "#10b981")}
+          ${UI.MetricTile("Total Pendapatan Sesi", "+" + gameCfg.formatMoney(bot.totalEarnings), "#818cf8")}
+          ${UI.MetricTile("Pengiriman Selesai", (bot.tripCount || 0) + " Trips", "#f59e0b")}
+          ${UI.MetricTile("Durasi Sesi", bot.sessionTime || "00:00:00", "#cbd5e1")}
+          ${UI.MetricTile("Status Siklus 6-State", bot.status || "STANDBY", "#6ee7b7")}
+          ${UI.MetricTile("Rute Kargo Aktif", bot.currentRoute || "IDLE", "#93c5fd")}
+        </div>
+      `;
+    }
+
+    function renderCDIDNav(bot) {
+      return `
+        ${UI.Section("Kontrol Lokasi & Armada Truk", `
+          ${UI.ButtonRow("Teleportasi ke Depo HQ Truk", "Pindahkan karakter instan ke markas kargo Jawa Timur", "Teleport HQ", "btn-outline", `sendBotCommand('${bot.botId}', 'TELEPORT_HQ')`)}
+        `)}
+      `;
+    }
+
+    function renderDDSFarm(bot) {
+      const gameCfg = getGameConfig("dds");
+      return `
+        ${UI.Section("Pengaturan Drag Drive Simulator", `
+          ${UI.Toggle("Aktifkan DDS Auto Drag Race", "Mulai antrian balapan otomatis", bot.isFarming, `sendBotCommand('${bot.botId}', '${bot.isFarming ? 'STOP_FARM' : 'START_FARM'}')`)}
+        `)}
+
+        <div class="metrics-grid">
+          ${UI.MetricTile("Koin / Saldo", gameCfg.formatMoney(bot.currentCash), "#f59e0b")}
+          ${UI.MetricTile("Total Pendapatan Sesi", "+" + gameCfg.formatMoney(bot.totalEarnings), "#fbbf24")}
+          ${UI.MetricTile("Balapan Selesai", (bot.tripCount || 0) + " Races", "#38bdf8")}
+          ${UI.MetricTile("Durasi Sesi", bot.sessionTime || "00:00:00", "#cbd5e1")}
+        </div>
+      `;
+    }
+
+    function renderSafetyTab(bot) {
+      return `
+        ${UI.Section("Sistem Proteksi Kick & Rejoin", `
+          ${UI.ButtonRow("Rejoin Server Saat Ini", "Koneksikan ulang akun ke server baru", "Rejoin Sekarang", "btn-primary", `rejoinBot('${bot.botId}')`)}
+          ${UI.Toggle("Auto-Rejoin Otomatis Saat Kena Kick", "Otomatis sambungkan ulang ke server baru dalam 5 detik saat terlempar kick", bot.autoRejoin !== false, `toggleAutoRejoin('${bot.botId}', this.checked)`)}
+          ${UI.ButtonRow("Status Proteksi Kick Engine", "Mendengarkan 100% dialog error Roblox (Error 267, 273, 277, 268)", "AKTIF (NATIVE)", "btn-outline", "")}
+        `)}
+      `;
+    }
+
+    function renderPerfTab(bot) {
+      return `
+        ${UI.Section("Performa & AFK 24/7", `
+          ${UI.Toggle("Low GPU Mode (Disable 3D Rendering)", "Mematikan render 3D game Roblox di perangkat untuk hemat CPU/GPU 85%", bot.lowRender, `sendBotCommand('${bot.botId}', 'TOGGLE_LOW_RENDER')`)}
+          ${UI.ButtonRow("Anti-AFK Protection", "Mencegah Roblox mendiskoneksikan akun karena idle 20 menit", "SELALU AKTIF", "btn-outline", "")}
+        `)}
+      `;
+    }
+
+    function renderLogsTab(bot) {
+      return `
+        ${UI.Section("Live Console & F9 Stream", `
+          <div class="console-box" id="botConsoleBox">
+            ${renderLogsHTML()}
+          </div>
+        `)}
+      `;
+    }
+
+    function renderLogsHTML() {
+      if (logsHistory.length === 0) {
+        return '<div style="color: var(--text-muted); font-style: italic;">Belum ada log aktivitas dari client...</div>';
       }
-      return filtered.map(l => `
+      return logsHistory.map(l => `
         <div class="log-row">
           <span class="log-ts">[${l.time}] [${l.source}]</span>
           <span class="log-${l.level}">${l.msg}</span>
         </div>
-      `).join("");
+      `).join('');
     }
 
-    function toggleBotFarm(botId, start) {
-      sendBotAction(botId, start ? "START_FARM" : "STOP_FARM");
-    }
-
-    function sendBotAction(botId, action, payload) {
-      if (!socket || socket.readyState !== WebSocket.OPEN) return;
-      socket.send(JSON.stringify({
-        type: "COMMAND",
-        targetBotId: botId,
-        action: action,
-        payload: payload || {}
-      }));
-    }
-
-    function sendFleetCommand(action) {
-      sendBotAction("ALL", action);
-    }
-
-    function updateMinDistPreview(val) {
-      const lbl = document.getElementById("minDistLabel");
-      if (lbl) lbl.innerText = Number(val).toLocaleString() + " studs";
-    }
-
-    function sendMinDistance(botId, val) {
-      sendBotAction(botId, "SET_MIN_DISTANCE", { minDistance: Number(val) });
-    }
-
-    window.onload = () => {
-      initWebSocket();
-      renderSidebar();
-      renderMainView();
-    };
+    // Init WebSocket Gateway on Page Load
+    initWebSocket();
   </script>
 </body>
 </html>

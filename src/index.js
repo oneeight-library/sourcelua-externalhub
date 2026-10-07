@@ -45,6 +45,8 @@ export class HubRoom {
     const name = url.searchParams.get("name") || "RobloxPlayer";
     const job = url.searchParams.get("job") || "Truck";
     const placeId = url.searchParams.get("placeId") || "110369730911937";
+    const gameId = url.searchParams.get("gameId") || "cdid";
+    const gameName = url.searchParams.get("gameName") || "Car Driving Indonesia";
     const botId = `${name}_${Date.now().toString(36)}`;
 
     const botInfo = {
@@ -52,9 +54,11 @@ export class HubRoom {
       name,
       job,
       placeId,
-      gameId: "cdid",
-      gameName: "Car Driving Indonesia",
+      gameId,
+      gameName,
       status: "CONNECTED",
+      isKicked: false,
+      kickReason: null,
       currentRoute: "Menunggu Instruksi",
       tripCount: 0,
       totalEarnings: 0,
@@ -82,6 +86,24 @@ export class HubRoom {
 
         if (data.type === "TELEMETRY") {
           Object.assign(botInfo, data.payload || {});
+          this.broadcastToControllers({
+            type: "BOT_TELEMETRY",
+            botId,
+            payload: botInfo
+          });
+        } else if (data.type === "CLIENT_KICKED") {
+          botInfo.isKicked = true;
+          botInfo.kickReason = data.payload?.reason || "Roblox Disconnected";
+          botInfo.status = `KICKED (${botInfo.kickReason})`;
+          botInfo.isFarming = false;
+          this.broadcastToControllers({
+            type: "BOT_LOG",
+            botId,
+            botName: botInfo.name,
+            log: `ROBLOX KICK / DISCONNECT: ${botInfo.kickReason}`,
+            level: "ERROR",
+            timestamp: Date.now()
+          });
           this.broadcastToControllers({
             type: "BOT_TELEMETRY",
             botId,
