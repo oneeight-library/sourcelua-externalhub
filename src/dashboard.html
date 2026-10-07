@@ -1089,8 +1089,19 @@
           </button>
         </div>
 
-        ${UI.Section("Pengaturan Gerbang Otomatis", `
-          ${UI.Toggle("Auto-Enter Jawa Timur (24/7 Gateway)", "Otomatis meminta kode server dan masuk ke map Jawa Timur dalam 5 detik saat bot mendarat di lobby", bot.autoJoinJatim !== false, `sendBotCommand('${bot.botId}', 'TOGGLE_AUTO_JOIN_JATIM')`)}
+                ${UI.Section("Mode Masuk Server", `
+          <div class="control-row" style="background: rgba(15, 23, 42, 0.5); padding: 14px 18px; border-radius: 10px;">
+            <div>
+              <h4 style="font-size: 13px; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+                🛑 Mode Manual (Standby di Lobi)
+              </h4>
+              <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                Bot tidak akan masuk map secara otomatis. Bot tetap berada di lobi sampai Anda menekan tombol map pilihan di bawah.
+              </p>
+            </div>
+            <span class="chip" style="color: #10b981; border-color: rgba(16, 185, 129, 0.4);">STANDBY AKTIF</span>
+          </div>
+        `)}
         `)}
 
         ${UI.Section("Daftar Map CDID Lainnya (Klik untuk Masuk)", `

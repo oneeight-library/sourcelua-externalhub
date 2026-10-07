@@ -22,7 +22,7 @@ local LocalPlayer = Players.LocalPlayer
 local Context = nil
 local State = {
     Status = "LOBBY_READY",
-    AutoJoinJatim = true,
+    AutoJoinJatim = false,
     CurrentServerCode = "",
     SelectedMap = "JawaTimur",
     AutoJoinTimer = 5,
@@ -352,25 +352,14 @@ function CDIDMenu.Init(coreContext)
         end
     end)
 
-    -- Auto-Enter Jawa Timur jika diaktifkan (Hitung mundur 5 detik)
-    if State.AutoJoinJatim then
-        task.spawn(function()
-            -- Pastikan kode ada sebelum waktu habis
-            if State.CurrentServerCode == "" then
-                requestServerCode()
-            end
-
-            for s = 5, 1, -1 do
-                if not State.AutoJoinJatim then break end
-                State.Status = string.format("AUTO_ENTER_JATIM (%ds)", s)
-                task.wait(1)
-            end
-            if State.AutoJoinJatim then
-                State.Status = "ENTERING_JAWA_TIMUR"
-                joinMap("JawaTimur")
-            end
-        end)
-    end
+    -- Auto-Enter Jawa Timur dinonaktifkan (User memegang kendali penuh)
+    -- Bot tetap standby di lobi dan memindai kode server secara damai
+    task.spawn(function()
+        task.wait(1.5)
+        if State.CurrentServerCode == "" then
+            scanAllSources()
+        end
+    end)
 end
 
 function CDIDMenu.HandleCommand(action, payload)
