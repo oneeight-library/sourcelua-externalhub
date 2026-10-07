@@ -73,7 +73,13 @@ export function useWebSocketHub() {
           if (data.type === "SYNC_BOTS") {
             const map = new Map();
             (data.bots || []).forEach((b) => {
-              map.set(b.id || b.botId, b);
+              // Deduplicate by name to prevent double accounts
+              for (const [id, existing] of map.entries()) {
+                if (existing.name && b.name && existing.name.toLowerCase() === b.name.toLowerCase()) {
+                  map.delete(id);
+                }
+              }
+              map.set(b.botId || b.id, b);
             });
             setBots(map);
 

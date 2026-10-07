@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/ui/card.jsx";
 import { Button } from "@/ui/button.jsx";
 import { Badge } from "@/ui/badge.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
-import { Play, Square, ArrowRight, ShieldAlert, Users } from "lucide-react";
+import { Play, Square, Users } from "lucide-react";
 import { getGameConfig } from "@/config/games.js";
 
 export function FleetOverview({ bots, onSelectBot, onSendCommand, onRejoinBot }) {
@@ -95,10 +95,11 @@ export function FleetOverview({ bots, onSelectBot, onSendCommand, onRejoinBot })
                 return (
                   <div
                     key={id}
-                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
+                    onClick={() => onSelectBot(id)}
+                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer ${
                       b.isKicked 
-                        ? "bg-rose-950/10 border-rose-900/30" 
-                        : "bg-zinc-900/40 border-zinc-800 hover:border-zinc-700"
+                        ? "bg-rose-950/10 border-rose-900/30 hover:border-rose-800/60" 
+                        : "bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/60"
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -132,7 +133,7 @@ export function FleetOverview({ bots, onSelectBot, onSendCommand, onRejoinBot })
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <div className="flex items-center gap-2 shrink-0 ml-3" onClick={(e) => e.stopPropagation()}>
                       {b.isKicked ? (
                         <Button
                           variant="destructive"

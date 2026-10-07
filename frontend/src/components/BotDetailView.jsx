@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/ui/card.jsx";
+import { Card, CardContent } from "@/ui/card.jsx";
 import { Button } from "@/ui/button.jsx";
 import { Badge } from "@/ui/badge.jsx";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs.jsx";
@@ -17,10 +17,13 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
   const isKicked = bot.isKicked;
   const initial = (bot.name || "B").substring(0, 2).toUpperCase();
 
+  // Pastikan tab aktif selalu valid sesuai game bot
+  const currentTab = gameCfg.tabs.some((t) => t.id === activeTab) ? activeTab : gameCfg.tabs[0].id;
+
   return (
     <div className="space-y-6">
       
-      {/* Alert if kicked */}
+      {/* Alert Banner if kicked (Single prominent action, no duplicates!) */}
       {isKicked && (
         <div className="flex items-center justify-between p-4 rounded-xl bg-rose-950/20 border border-rose-900/40 text-rose-300">
           <div className="flex items-center gap-3">
@@ -71,21 +74,6 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex items-center gap-2">
-              {isKicked && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="gap-1.5 h-9 font-semibold text-xs"
-                  onClick={() => onRejoinBot(bot.botId)}
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Rejoin Server
-                </Button>
-              )}
-            </div>
-
           </div>
 
           {/* Stats Bar */}
@@ -123,7 +111,7 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
       </Card>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <Tabs value={currentTab} onValueChange={onTabChange} className="w-full">
         <TabsList className="mb-4">
           {gameCfg.tabs.map((t) => (
             <TabsTrigger key={t.id} value={t.id}>

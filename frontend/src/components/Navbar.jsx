@@ -3,7 +3,7 @@ import { Badge } from "@/ui/badge.jsx";
 import { Button } from "@/ui/button.jsx";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/ui/sheet.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
-import { ChevronDown, Globe, Radio } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { getGameConfig } from "@/config/games.js";
 
 export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus }) {
@@ -59,7 +59,6 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
               </SheetHeader>
 
               <div className="flex flex-col gap-2">
-                {/* Global Option */}
                 <button
                   type="button"
                   onClick={() => { onSelectBot("ALL"); setIsOpen(false); }}
@@ -78,7 +77,6 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
                   </div>
                 </button>
 
-                {/* Bot List */}
                 {Array.from(bots.entries()).map(([id, b]) => {
                   const gameCfg = getGameConfig(b.gameId);
                   const isSelected = selectedBotId === id;
@@ -132,6 +130,46 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
           </div>
 
         </div>
+      </div>
+
+      {/* Mobile Horizontal Reel (Fast swipe between bots on mobile) */}
+      <div className="md:hidden flex items-center gap-2 px-4 py-2 border-t border-zinc-800/60 overflow-x-auto no-scrollbar bg-zinc-950/60">
+        <button
+          type="button"
+          onClick={() => onSelectBot("ALL")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+            selectedBotId === "ALL"
+              ? "bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm"
+              : "bg-zinc-900/60 text-zinc-400 border border-zinc-800/80 hover:text-zinc-200"
+          }`}
+        >
+          <span>🌐</span>
+          <span>Semua Akun</span>
+        </button>
+
+        {Array.from(bots.entries()).map(([id, b]) => {
+          const isSelected = selectedBotId === id;
+          const gameCfg = getGameConfig(b.gameId);
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onSelectBot(id)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                isSelected
+                  ? "bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm"
+                  : "bg-zinc-900/60 text-zinc-400 border border-zinc-800/80 hover:text-zinc-200"
+              }`}
+            >
+              {b.avatarUrl ? (
+                <img src={b.avatarUrl} alt={b.name} className="h-4 w-4 rounded-full object-cover" />
+              ) : (
+                <span>{b.isKicked ? "🚨" : gameCfg.icon}</span>
+              )}
+              <span className="truncate max-w-[90px]">{b.name || "Bot"}</span>
+            </button>
+          );
+        })}
       </div>
     </header>
   );
