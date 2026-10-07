@@ -75,6 +75,12 @@ export function DealershipPage({
   const [modalCar, setModalCar] = React.useState(null);
   const [selectedColor, setSelectedColor] = React.useState(PRESET_COLORS[0]);
   const [buyStatus, setBuyStatus] = React.useState(null);
+  const [visibleCount, setVisibleCount] = React.useState(36);
+
+  // Reset pagination saat dealer atau search query berganti
+  React.useEffect(() => {
+    setVisibleCount(36);
+  }, [selectedDealer, searchQuery]);
 
   // Sync initialDealer if URL prop changes
   React.useEffect(() => {
@@ -143,6 +149,10 @@ export function DealershipPage({
       });
   }, [rawCars, selectedDealer, searchQuery, sortBy]);
 
+  const displayedCars = React.useMemo(() => {
+    return filteredCars.slice(0, visibleCount);
+  }, [filteredCars, visibleCount]);
+
   const playerCash = activeBot?.currentCash || 0;
 
   const handleOpenBuyModal = (car) => {
@@ -190,7 +200,7 @@ export function DealershipPage({
               </Badge>
             </div>
             <p className="text-xs text-zinc-400">
-              Katalog mobil resmi CDID dikelompokkan berdasarkan data Dealership in-game.
+              Menampilkan {filteredCars.length} unit kendaraan resmi dari database game CDID.
             </p>
           </div>
         </div>
@@ -291,7 +301,7 @@ export function DealershipPage({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredCars.map((car) => {
+          {displayedCars.map((car) => {
             const canAfford = playerCash >= car.cost;
             const imgUrl = car.assetId ? `/api/car-thumbnail?id=${car.assetId}` : null;
 
@@ -376,6 +386,19 @@ export function DealershipPage({
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Load More Button jika mobil lebih dari visibleCount */}
+      {filteredCars.length > visibleCount && (
+        <div className="flex justify-center pt-2 pb-6">
+          <Button
+            variant="outline"
+            onClick={() => setVisibleCount((prev) => prev + 36)}
+            className="px-6 py-2.5 rounded-xl border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-200 shadow-lg hover:border-emerald-500/50 transition-all"
+          >
+            Tampilkan Lebih Banyak ({filteredCars.length - visibleCount} mobil tersisa)
+          </Button>
         </div>
       )}
 

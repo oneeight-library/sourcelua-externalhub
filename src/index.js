@@ -1,3 +1,4 @@
+const THUMB_CACHE = new Map(); // assetId -> direct CDN url
 import { robloxService } from "./services/roblox.js";
 import { handleApiRequest } from "./api/router.js";
 ﻿import { getWebDashboardHTML } from "./dashboard.js";
@@ -269,19 +270,41 @@ export default {
     if (url.pathname === "/api/car-thumbnail") {
       const id = url.searchParams.get("id");
       if (!id) return new Response("Missing id", { status: 400 });
+
+      // 1. Cek Cloudflare Edge Cache API (Mencegah hit ke Roblox sepenuhnya)
+      const cache = caches.default;
+      const cacheKey = new Request(url.toString(), request);
       try {
-        const robloxRes = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${id}&size=420x420&format=Png&isCircular=false`);
-        const data = await robloxRes.json();
-        const imgUrl = data.data?.[0]?.imageUrl;
+        const cached = await cache.match(cacheKey);
+        if (cached) return cached;
+      } catch (e) {}
+
+      try {
+        let imgUrl = THUMB_CACHE.get(id);
+
+        // 2. Jika belum ada di memory cache, minta URL CDN ke Roblox
+        if (!imgUrl) {
+          const robloxRes = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${id}&size=420x420&format=Png&isCircular=false`);
+          const data = await robloxRes.json();
+          imgUrl = data.data?.[0]?.imageUrl;
+          if (imgUrl) {
+            THUMB_CACHE.set(id, imgUrl);
+          }
+        }
+
+        // 3. Ambil binary dari CDN murni (tr.rbxcdn.com - tidak memiliki rate limit)
         if (imgUrl) {
           const imgRes = await fetch(imgUrl);
-          return new Response(imgRes.body, {
+          const response = new Response(imgRes.body, {
             headers: {
               "Content-Type": "image/png",
-              "Cache-Control": "public, max-age=604800, s-maxage=604800",
+              "Cache-Control": "public, max-age=2592000, s-maxage=2592000", // Edge cache 30 hari
               "Access-Control-Allow-Origin": "*"
             }
           });
+          // Simpan ke edge cache secara asinkron
+          ctx.waitUntil(cache.put(cacheKey, response.clone()));
+          return response;
         }
       } catch (e) {}
       return new Response("Not Found", { status: 404 });
