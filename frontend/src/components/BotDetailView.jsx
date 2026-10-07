@@ -247,19 +247,19 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Hasil Sesi Ini</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Hasil Sesi Ini</span>
+                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40 font-semibold">
+                        {bot.tripCount || 0} {gameCfg.metricUnit || "Trips"}
+                      </span>
+                    </div>
                     <div className="text-base sm:text-lg font-black text-emerald-400 font-mono mt-0.5">
                       +{gameCfg.formatMoney(bot.totalEarnings)}
                     </div>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Saldo Awal</span>
-                      <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/90 px-1.5 py-0.5 rounded border border-zinc-700/50">
-                        {bot.tripCount || 0} {gameCfg.metricUnit || "Trips"}
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Saldo Awal</span>
                     <div className="text-base sm:text-lg font-black text-zinc-200 font-mono mt-0.5">
                       {gameCfg.formatMoney(bot.startCash || (bot.currentCash ? (bot.currentCash - (bot.totalEarnings || 0)) : 0))}
                     </div>
