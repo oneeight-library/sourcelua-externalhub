@@ -6,7 +6,7 @@ import { getGameConfig } from "@/config/games.js";
 
 export function Sidebar({ bots, selectedBotId, onSelectBot }) {
   return (
-    <aside className="hidden md:flex flex-col w-72 shrink-0 border-r border-zinc-800/80 bg-zinc-950 h-screen select-none">
+    <aside className="hidden md:flex flex-col w-72 shrink-0 border-r border-zinc-800/80 bg-zinc-950 h-full select-none">
       
       {/* Brand Header */}
       <div className="flex items-center gap-3 h-16 px-5 border-b border-zinc-800/80 shrink-0">

@@ -24,7 +24,7 @@ export default function App() {
   } = useWebSocketHub();
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
+    <div className="flex h-screen h-[100dvh] w-screen overflow-hidden bg-zinc-950 text-zinc-100">
       
       {/* 1. Desktop Full-Height Sidebar on the Left Edge */}
       <Sidebar
@@ -46,8 +46,8 @@ export default function App() {
         />
 
         {/* Scrollable Viewport */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-zinc-950/60">
-          <div className="w-full max-w-6xl mx-auto space-y-6">
+        <main className="flex-1 overflow-y-auto p-4 pb-32 sm:p-6 sm:pb-12 lg:p-8 lg:pb-16 bg-zinc-950/60 overscroll-contain">
+          <div className="w-full max-w-6xl mx-auto space-y-6 pb-6">
             {selectedAccountName === "ALL" ? (
               <FleetOverview
                 bots={bots}
