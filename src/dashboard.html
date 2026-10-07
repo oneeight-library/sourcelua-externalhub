@@ -912,7 +912,7 @@
         formatMoney: (num) => formatRupiah(num),
         metricLabel: "Terkirim",
         metricUnit: "Trips",
-        defaultJob: "Supir Truk",
+        defaultJob: "Truk Kargo",
         tabs: [
           { id: "tab_autofarm", label: "📦 Auto Farm Truk", render: (bot) => renderCDIDFarm(bot) },
           { id: "tab_nav", label: "🚗 Lokasi & Armada", render: (bot) => renderCDIDNav(bot) },
@@ -1143,7 +1143,18 @@
         const gameCfg = getGameConfig(b.gameId);
         const initial = (b.name || "B").substring(0, 2).toUpperCase();
         const isKicked = b.isKicked;
-        const statusText = isKicked ? "Terkena Kick" : (b.isFarming ? "Sedang Farm" : "Standby");
+        
+        // Format Nama Game & Jenis Autofarm
+        const gameName = gameCfg.name || b.gameName || "Roblox";
+        const farmType = b.job || gameCfg.defaultJob || "Auto Farm";
+        let subTextHtml = "";
+        if (isKicked) {
+          subTextHtml = `<span style="color: var(--rose); font-weight: 600;">${gameName} • Terputus</span>`;
+        } else if (b.isFarming) {
+          subTextHtml = `<span style="color: #6ee7b7; font-weight: 600;">${gameName} • ${farmType}</span>`;
+        } else {
+          subTextHtml = `<span style="color: var(--text-muted);">${gameName} • Standby</span>`;
+        }
 
         sideHtml += `
           <div class="sidebar-item ${isSelected ? 'active' : ''} ${isKicked ? 'kicked' : ''}" onclick="selectBot('${id}')">
@@ -1157,7 +1168,7 @@
                 <span style="font-size: 10px; opacity: 0.8;">${gameCfg.icon}</span>
               </div>
               <div class="item-cash">${b.currentCash > 0 ? gameCfg.formatMoney(b.currentCash) : "Memuat..."}</div>
-              <div class="item-sub">${statusText}</div>
+              <div class="item-sub">${subTextHtml}</div>
             </div>
           </div>
         `;
@@ -1243,6 +1254,9 @@
                   </h4>
                   <p style="font-size: 12px; font-weight: 700; color: ${gameCfg.color}; font-family: var(--mono); margin-top: 2px;">
                     ${gameCfg.formatMoney(b.currentCash)}
+                  </p>
+                  <p style="font-size: 10px; margin-top: 2px;">
+                    ${isKicked ? `<span style="color: var(--rose); font-weight: 600;">${gameCfg.name || 'Roblox'} • Terputus</span>` : (b.isFarming ? `<span style="color: #6ee7b7; font-weight: 600;">${gameCfg.name || 'Roblox'} • ${b.job || gameCfg.defaultJob || 'Auto Farm'}</span>` : `<span style="color: var(--text-muted);">${gameCfg.name || 'Roblox'} • Standby</span>`)}
                   </p>
                 </div>
               </div>
