@@ -49,8 +49,20 @@ local function getCDIDNetwork()
     return net
 end
 
--- Helper Trigger Native Map Select
+-- Helper Trigger Native Map Select (100% OneEight Hub Compatible)
 local function selectMapNative(mapKey)
+    -- 1. Sync ke Controller UIAnimation CDID (OneEight Hub exact method)
+    pcall(function()
+        local controller = ReplicatedStorage:FindFirstChild("Controller")
+        if controller and controller:FindFirstChild("UIAnimation") then
+            local uiMod = require(controller.UIAnimation)
+            if uiMod then
+                uiMod.SelectedMap = mapKey
+            end
+        end
+    end)
+
+    -- 2. Trigger tombol map di PlayerGui.Hub
     pcall(function()
         local mapWin = LocalPlayer.PlayerGui.Hub.Container.Window:FindFirstChild("MapSelection")
         local targetMapFrame = mapWin and mapWin:FindFirstChild(mapKey)
