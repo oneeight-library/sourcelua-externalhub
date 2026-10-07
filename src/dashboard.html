@@ -1220,12 +1220,14 @@
       // 3. Render Drawer List
       const drawerList = document.getElementById("drawerFleetList");
       if (drawerList) {
-        drawerList.innerHTML = sideHtml.replace(/sidebar-item/g, 'sidebar-item" onclick="toggleMobileDrawer(); selectBot');
+        drawerList.innerHTML = sideHtml;
       }
     }
 
     function selectBot(botId) {
       selectedBotId = botId;
+      const overlay = document.getElementById("mobileDrawerOverlay");
+      if (overlay) overlay.classList.remove("open");
       renderFleetNavigators();
       renderMainView();
     }
