@@ -467,7 +467,7 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                       className="h-8 text-xs font-semibold border-zinc-700 hover:bg-zinc-800"
                       onClick={handleOpenDealership}
                     >
-                      Buka UI Dealer
+                      Buka UI In-Game
                     </Button>
                     <Button
                       variant="secondary"
@@ -478,6 +478,19 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                       TP Showroom
                     </Button>
                   </div>
+                  <Button
+                    variant="emerald"
+                    size="sm"
+                    className="w-full h-8.5 text-xs font-bold gap-1.5 shadow-md"
+                    onClick={() => {
+                      const clean = selectedDealer === "Dealer Utama" ? "dealer" : selectedDealer.toLowerCase().replace(/\s+/g, "_");
+                      window.history.pushState(null, "", `/cdid_${clean}`);
+                      window.dispatchEvent(new PopStateEvent("popstate"));
+                    }}
+                  >
+                    <Car className="h-3.5 w-3.5" />
+                    Buka Showroom Web (/cdid_${selectedDealer === "Dealer Utama" ? "dealer" : selectedDealer.toLowerCase().replace(/\s+/g, "_")})
+                  </Button>
                 </div>
 
                 {/* Quick Map Waypoints */}

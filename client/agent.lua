@@ -1049,6 +1049,51 @@ function SafetyEngine.SetServerLock(enable)
 end
 
 local DealershipEngine = {}
+
+function DealershipEngine.GetCars(dealerTarget)
+    local list = {}
+    local carData = ReplicatedStorage:FindFirstChild("CarData")
+    if not carData then return list end
+
+    dealerTarget = (dealerTarget or ""):lower():gsub("%s+", "")
+
+    for _, car in ipairs(carData:GetChildren()) do
+        local dealerVal = car:FindFirstChild("Dealership")
+        local unobtainable = car:FindFirstChild("Unobtainable")
+        if dealerVal and not unobtainable then
+            local rawDealer = dealerVal.Value
+            local cleanDealer = rawDealer:lower():gsub("%s+", "")
+            if dealerTarget == "" or dealerTarget == "all" or cleanDealer:find(dealerTarget) or dealerTarget:find(cleanDealer) then
+                local img = car:FindFirstChild("CarImage") and car.CarImage.Value or ""
+                local assetId = img:match("id=(%d+)") or img:match("(%d+)$") or ""
+                table.insert(list, {
+                    id = car.Name,
+                    name = car:FindFirstChild("CarName") and car.CarName.Value or car.Name,
+                    cost = car:FindFirstChild("Cost") and car.Cost.Value or 0,
+                    dealer = rawDealer,
+                    assetId = assetId,
+                    topSpeed = car:FindFirstChild("TopSpeed") and car.TopSpeed.Value or 0,
+                    hp = car:FindFirstChild("Horsepower") and car.Horsepower.Value or 0,
+                    year = car:FindFirstChild("CarYear") and car.CarYear.Value or ""
+                })
+            end
+        end
+    end
+
+    table.sort(list, function(a, b) return a.cost < b.cost end)
+    return list
+end
+
+function DealershipEngine.Buy(carId, dealer, color)
+    local color3 = (color and Color3.fromRGB(color.r or 255, color.g or 255, color.b or 255)) or Color3.fromRGB(255, 255, 255)
+    local result = "Failed"
+    pcall(function()
+        local net = require(ReplicatedStorage.Shared.Network)
+        result = net:InvokeServer("Dealership", "Buy", carId, color3, dealer or "")
+    end)
+    return result
+end
+
 function DealershipEngine.Open(dealerName)
     dealerName = dealerName or "Dealer Utama"
     pcall(function()
@@ -1248,6 +1293,29 @@ function CDIDModule.HandleCommand(action, payload)
         local enable = (payload and payload.locked ~= nil) and payload.locked or not State.Safety.ServerLocked
         State.Safety.ServerLocked = enable
         SafetyEngine.SetServerLock(enable)
+        return true
+
+    elseif action == "FETCH_DEALER_CARS" then
+        local dealer = payload and payload.dealer or "all"
+        local cars = DealershipEngine.GetCars(dealer)
+        if Context and Context.SendPacket then
+            Context.SendPacket("DEALER_CARS_DATA", {
+                dealer = dealer,
+                cars = cars
+            })
+        end
+        return true
+
+    elseif action == "BUY_CAR" then
+        if payload and payload.carId then
+            local carId = payload.carId
+            local dealer = payload.dealer or ""
+            local color = payload.color
+            local res = DealershipEngine.Buy(carId, dealer, color)
+            if Context and Context.SendLog then
+                Context.SendLog(string.format("Pembelian mobil '%s' di dealer '%s': %s", carId, dealer, tostring(res)), res == "Success" and "SUCCESS" or "WARN")
+            end
+        end
         return true
 
     elseif action == "OPEN_DEALERSHIP" then

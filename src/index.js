@@ -138,6 +138,13 @@ export class HubRoom {
             botId,
             payload: botInfo
           });
+        } else if (data.type === "DEALER_CARS_DATA") {
+          this.broadcastToControllers({
+            type: "DEALER_CARS_DATA",
+            botId,
+            dealer: data.payload?.dealer || data.dealer,
+            cars: data.payload?.cars || data.cars || []
+          });
         } else if (data.type === "CLIENT_KICKED") {
           botInfo.isKicked = true;
           botInfo.kickReason = data.payload?.reason || "Roblox Disconnected";
@@ -287,7 +294,21 @@ fn()`;
       });
     }
 
-    if (url.pathname === "/" || url.pathname === "/dashboard") {
+    if (url.pathname === "/api/car-thumbnail") {
+      const id = url.searchParams.get("id");
+      if (!id) return new Response("Missing id", { status: 400 });
+      try {
+        const robloxRes = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${id}&size=420x420&format=Png&isCircular=false`);
+        const data = await robloxRes.json();
+        const imgUrl = data.data?.[0]?.imageUrl;
+        if (imgUrl) {
+          return Response.redirect(imgUrl, 302);
+        }
+      } catch (e) {}
+      return new Response("Not Found", { status: 404 });
+    }
+
+    if (url.pathname === "/" || url.pathname === "/dashboard" || url.pathname.startsWith("/cdid_")) {
       return new Response(getWebDashboardHTML(url.origin), {
         headers: { "Content-Type": "text/html; charset=utf-8" }
       });

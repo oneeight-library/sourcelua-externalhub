@@ -3,6 +3,7 @@ import { Navbar } from "@/components/Navbar.jsx";
 import { Sidebar } from "@/components/Sidebar.jsx";
 import { FleetOverview } from "@/components/FleetOverview.jsx";
 import { BotDetailView } from "@/components/BotDetailView.jsx";
+import { DealershipPage } from "@/components/DealershipPage.jsx";
 import { Button } from "@/ui/button.jsx";
 import { useWebSocketHub } from "@/hooks/useWebSocketHub.js";
 
@@ -20,8 +21,25 @@ export default function App() {
     logsHistory,
     clearLogs,
     sendBotCommand,
-    rejoinBot
+    rejoinBot,
+    dealerCatalog,
+    fetchDealerCars,
+    buyCar
   } = useWebSocketHub();
+
+  const [currentPath, setCurrentPath] = React.useState(() => typeof window !== "undefined" ? window.location.pathname : "/");
+
+  React.useEffect(() => {
+    const handleLocationChange = () => setCurrentPath(window.location.pathname);
+    window.addEventListener("popstate", handleLocationChange);
+    return () => window.removeEventListener("popstate", handleLocationChange);
+  }, []);
+
+  const isDealerRoute = currentPath.startsWith("/cdid_");
+  const urlDealerRaw = isDealerRoute ? currentPath.replace(/^\/cdid_/, "").replace(/\//g, "") : null;
+  const initialDealerName = urlDealerRaw && urlDealerRaw !== "dealer"
+    ? urlDealerRaw.charAt(0).toUpperCase() + urlDealerRaw.slice(1)
+    : "Semua Dealer";
 
   return (
     <div className="flex h-screen h-[100dvh] w-screen overflow-hidden bg-zinc-950 text-zinc-100">
@@ -48,7 +66,21 @@ export default function App() {
         {/* Scrollable Viewport */}
         <main className="flex-1 overflow-y-auto p-4 pb-32 sm:p-6 sm:pb-12 lg:p-8 lg:pb-16 bg-zinc-950/60 overscroll-contain">
           <div className="w-full max-w-6xl mx-auto space-y-6 pb-6">
-            {selectedAccountName === "ALL" ? (
+            {isDealerRoute ? (
+              <DealershipPage
+                initialDealer={initialDealerName}
+                bots={bots}
+                activeBot={selectedBot || Array.from(bots.values())[0]}
+                onSelectBot={setSelectedBotId}
+                dealerCatalog={dealerCatalog}
+                onFetchCars={fetchDealerCars}
+                onBuyCar={buyCar}
+                onBackToDashboard={() => {
+                  window.history.pushState(null, "", "/");
+                  setCurrentPath("/");
+                }}
+              />
+            ) : selectedAccountName === "ALL" ? (
               <FleetOverview
                 bots={bots}
                 onSelectBot={setSelectedBotId}

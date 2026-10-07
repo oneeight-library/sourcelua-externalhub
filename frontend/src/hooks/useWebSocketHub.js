@@ -13,6 +13,7 @@ export function useWebSocketHub() {
   });
 
   const [activeTab, setActiveTab] = useState("tab_autofarm");
+  const [dealerCatalog, setDealerCatalog] = useState({});
   const [wsStatus, setWsStatus] = useState("Menghubungkan");
   const [isWsOnline, setIsWsOnline] = useState(false);
 
@@ -66,6 +67,15 @@ export function useWebSocketHub() {
   const rejoinBot = useCallback((botId) => {
     sendBotCommand(botId, "REJOIN_SERVER");
     addLog("Controller", "Mengirim perintah Rejoin Server...", "WARN", botId);
+  }, [sendBotCommand, addLog]);
+
+  const fetchDealerCars = useCallback((botId, dealer = "all") => {
+    sendBotCommand(botId, "FETCH_DEALER_CARS", { dealer });
+  }, [sendBotCommand]);
+
+  const buyCar = useCallback((botId, carId, dealer, color) => {
+    sendBotCommand(botId, "BUY_CAR", { carId, dealer, color });
+    addLog("Controller", `Mengirim perintah beli mobil: ${carId} (${dealer})`, "INFO", botId);
   }, [sendBotCommand, addLog]);
 
   // Resolusi bot terpilih secara tangguh (mencocokkan botId ATAU account username)
@@ -200,6 +210,13 @@ export function useWebSocketHub() {
             });
             addLog(data.botName || "Bot", `ROBLOX KICK: ${data.reason || data.payload?.reason || 'Disconnect'}`, "ERROR", data.botId);
 
+          } else if (data.type === "DEALER_CARS_DATA") {
+            const dealerKey = (data.dealer || "all").toLowerCase().replace(/\s+/g, "");
+            setDealerCatalog((prev) => ({
+              ...prev,
+              [dealerKey]: data.cars || [],
+              lastUpdated: Date.now()
+            }));
           } else if (data.type === "BOT_LOG") {
             addLog(data.botName || "Bot", data.log, data.level, data.botId);
           }
@@ -231,6 +248,9 @@ export function useWebSocketHub() {
     addLog,
     clearLogs,
     sendBotCommand,
-    rejoinBot
+    rejoinBot,
+    dealerCatalog,
+    fetchDealerCars,
+    buyCar
   };
 }
