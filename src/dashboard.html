@@ -1356,16 +1356,8 @@
 
             <div class="hero-actions-bar">
               ${isKicked ? `
-                <button class="btn btn-rose" onclick="rejoinBot('${bot.botId}')">Rejoin</button>
-              ` : (isLobby ? `
-                <button class="btn btn-emerald" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaTimur', code: '${bot.serverCode || ''}' })">
-                  🚀 Masuk Jawa Timur
-                </button>
-              ` : `
-                <button class="btn ${bot.isFarming ? 'btn-rose' : 'btn-emerald'}" onclick="sendBotCommand('${bot.botId}', '${bot.isFarming ? 'STOP_FARM' : 'START_FARM'}')">
-                  ${bot.isFarming ? '⏹ Hentikan Farm' : '▶ Mulai Farm'}
-                </button>
-              `)}
+                <button class="btn btn-rose" onclick="rejoinBot('${bot.botId}')">Rejoin Server</button>
+              ` : ''}
             </div>
           </div>
 
