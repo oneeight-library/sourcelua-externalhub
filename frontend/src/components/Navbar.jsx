@@ -3,7 +3,7 @@ import { Badge } from "@/ui/badge.jsx";
 import { Button } from "@/ui/button.jsx";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/ui/sheet.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Users } from "lucide-react";
 import { getGameConfig } from "@/config/games.js";
 
 export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus }) {

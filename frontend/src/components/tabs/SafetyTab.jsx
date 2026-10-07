@@ -2,7 +2,7 @@ import * as React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/ui/card.jsx";
 import { Button } from "@/ui/button.jsx";
 import { Switch } from "@/ui/switch.jsx";
-import { ShieldCheck, RotateCcw } from "lucide-react";
+import { RotateCcw, ShieldCheck } from "lucide-react";
 
 export function SafetyTab({ bot, onSendCommand, onRejoinBot }) {
   const [autoRejoin, setAutoRejoin] = React.useState(bot.autoRejoin !== false);

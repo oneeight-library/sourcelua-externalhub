@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import * as React from "react";
 import { Badge } from "@/ui/badge.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";

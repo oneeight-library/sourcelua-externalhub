@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/ui/card.jsx";
 import { Button } from "@/ui/button.jsx";
-import { MapPin, Key, RefreshCw, ArrowRight } from "lucide-react";
+import { ArrowRight, Key, MapPin, RefreshCw } from "lucide-react";
 
 export function CDIDMenuTab({ bot, onSendCommand }) {
   const [manualCode, setManualCode] = React.useState("");

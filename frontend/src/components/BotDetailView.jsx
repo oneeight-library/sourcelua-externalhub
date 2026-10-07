@@ -8,21 +8,7 @@ import { Switch } from "@/ui/switch.jsx";
 import { ConsoleTab } from "@/components/tabs/ConsoleTab.jsx";
 import { CDIDMenuTab } from "@/components/tabs/CDIDMenuTab.jsx";
 import { getGameConfig } from "@/config/games.js";
-import { 
-  Play, 
-  Square, 
-  RotateCcw,
-  Clock, 
-  ShieldCheck, 
-  Zap, 
-  Activity, 
-  Coins, 
-  Gauge, 
-  Navigation, 
-  SlidersHorizontal,
-  Sliders,
-  Briefcase
-} from "lucide-react";
+import { Activity, AlertTriangle, Briefcase, Clock, Coins, Gauge, Navigation, Play, RotateCcw, ShieldCheck, Sliders, SlidersHorizontal, Square, Zap } from "lucide-react";
 
 export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, onSendCommand, onRejoinBot }) {
   const gameCfg = getGameConfig(bot.gameId);

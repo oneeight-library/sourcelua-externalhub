@@ -2,7 +2,7 @@ import * as React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/ui/card.jsx";
 import { Button } from "@/ui/button.jsx";
 import { Badge } from "@/ui/badge.jsx";
-import { Play, Square, Navigation, Truck, Zap } from "lucide-react";
+import { Navigation, Play, Square, Truck, Zap } from "lucide-react";
 import { formatRupiah } from "@/lib/utils.js";
 
 export function CDIDFarmTab({ bot, onSendCommand }) {

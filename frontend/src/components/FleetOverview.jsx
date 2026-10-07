@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/ui/card.jsx";
 import { Button } from "@/ui/button.jsx";
 import { Badge } from "@/ui/badge.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
-import { Play, Square, Users } from "lucide-react";
+import { Gamepad2, Play, Square, Users } from "lucide-react";
 import { getGameConfig } from "@/config/games.js";
 
 export function FleetOverview({ bots, onSelectBot, onSendCommand, onRejoinBot }) {
