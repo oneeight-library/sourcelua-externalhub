@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils.js";
 
@@ -6,11 +7,39 @@ const SelectContext = React.createContext(null);
 
 export function Select({ value, onValueChange, children }) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [coords, setCoords] = React.useState({ top: 0, left: 0, width: 0 });
+  const triggerRef = React.useRef(null);
   const containerRef = React.useRef(null);
+
+  const updateCoords = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  };
+
+  React.useEffect(() => {
+    if (isOpen) {
+      updateCoords();
+      window.addEventListener("resize", updateCoords);
+      window.addEventListener("scroll", updateCoords, true);
+    }
+    return () => {
+      window.removeEventListener("resize", updateCoords);
+      window.removeEventListener("scroll", updateCoords, true);
+    };
+  }, [isOpen]);
 
   React.useEffect(() => {
     const handleOutsideClick = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+      if (
+        containerRef.current && !containerRef.current.contains(event.target) &&
+        !event.target.closest('[data-select-content]')
+      ) {
         setIsOpen(false);
       }
     };
@@ -30,7 +59,7 @@ export function Select({ value, onValueChange, children }) {
   }, [isOpen]);
 
   return (
-    <SelectContext.Provider value={{ value, onValueChange, isOpen, setIsOpen }}>
+    <SelectContext.Provider value={{ value, onValueChange, isOpen, setIsOpen, triggerRef, coords }}>
       <div ref={containerRef} className="relative inline-block w-full">
         {children}
       </div>
@@ -39,10 +68,11 @@ export function Select({ value, onValueChange, children }) {
 }
 
 export function SelectTrigger({ className, children, ...props }) {
-  const { isOpen, setIsOpen } = React.useContext(SelectContext);
+  const { isOpen, setIsOpen, triggerRef } = React.useContext(SelectContext);
 
   return (
     <button
+      ref={triggerRef}
       type="button"
       onClick={() => setIsOpen(!isOpen)}
       className={cn(
@@ -68,20 +98,28 @@ export function SelectValue({ placeholder }) {
 }
 
 export function SelectContent({ className, children, ...props }) {
-  const { isOpen } = React.useContext(SelectContext);
+  const { isOpen, coords } = React.useContext(SelectContext);
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
+      data-select-content="true"
+      style={{
+        position: "absolute",
+        top: `${coords.top}px`,
+        left: `${coords.left}px`,
+        width: `${coords.width}px`,
+      }}
       className={cn(
-        "absolute left-0 top-[calc(100%+4px)] z-50 w-full min-w-[8rem] max-h-60 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-md p-1.5 text-zinc-100 shadow-2xl animate-in fade-in-0 zoom-in-95",
+        "z-[9999] max-h-60 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950/98 backdrop-blur-md p-1.5 text-zinc-100 shadow-2xl animate-in fade-in-0 zoom-in-95",
         className
       )}
       {...props}
     >
       {children}
-    </div>
+    </div>,
+    document.body
   );
 }
 
