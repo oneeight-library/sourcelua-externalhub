@@ -38,7 +38,8 @@ import {
   Lock,
   Unlock,
   Sun,
-  EyeOff
+  EyeOff,
+  Store
 } from "lucide-react";
 
 export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, onSendCommand, onRejoinBot }) {
@@ -67,7 +68,6 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
   const [serverLocked, setServerLocked] = React.useState(bot.safety?.ServerLocked || false);
   const [fullbright, setFullbright] = React.useState(bot.lighting?.Fullbright || false);
   const [noFog, setNoFog] = React.useState(bot.lighting?.NoFog || false);
-  const [selectedDealer, setSelectedDealer] = React.useState("Dealer Utama");
 
   const handleSafetyUpdate = (newDetector, newAction, newIgnore) => {
     const d = newDetector !== undefined ? newDetector : playerDetector;
@@ -96,14 +96,6 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
   const handleToggleNoFog = (checked) => {
     setNoFog(checked);
     onSendCommand(bot.botId, "TOGGLE_NO_FOG", { enabled: checked });
-  };
-
-  const handleOpenDealership = () => {
-    onSendCommand(bot.botId, "OPEN_DEALERSHIP", { dealer: selectedDealer });
-  };
-
-  const handleTeleportDealership = () => {
-    onSendCommand(bot.botId, "TELEPORT_DEALERSHIP", { dealer: selectedDealer });
   };
 
   const handleQuickTeleport = (target) => {
@@ -442,55 +434,17 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                     <span className="text-xs font-semibold text-zinc-200">Katalog Dealer CDID</span>
                     <span className="text-[10px] text-zinc-500 font-mono">Buka dari mana saja</span>
                   </div>
-                  <div className="flex gap-2">
-                    <Select value={selectedDealer} onValueChange={setSelectedDealer}>
-                      <SelectTrigger className="flex-1 h-9 border-zinc-800 bg-zinc-900/90 text-xs text-zinc-200">
-                        <SelectValue placeholder="Pilih Dealership..." />
-                      </SelectTrigger>
-                      <SelectContent className="border-zinc-800 bg-zinc-950 text-zinc-200">
-                        <SelectItem value="Dealer Utama">Dealer Utama</SelectItem>
-                        <SelectItem value="Toyota">Toyota</SelectItem>
-                        <SelectItem value="Honda">Honda</SelectItem>
-                        <SelectItem value="Mitsubishi">Mitsubishi</SelectItem>
-                        <SelectItem value="BMW">BMW</SelectItem>
-                        <SelectItem value="Mercedes">Mercedes-Benz</SelectItem>
-                        <SelectItem value="Porsche">Porsche</SelectItem>
-                        <SelectItem value="Hyundai">Hyundai</SelectItem>
-                        <SelectItem value="Wuling">Wuling</SelectItem>
-                        <SelectItem value="Nissan">Nissan</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs font-semibold border-zinc-700 hover:bg-zinc-800"
-                      onClick={handleOpenDealership}
-                    >
-                      Buka UI In-Game
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="h-8 text-xs font-semibold"
-                      onClick={handleTeleportDealership}
-                    >
-                      TP Showroom
-                    </Button>
-                  </div>
                   <Button
                     variant="emerald"
                     size="sm"
-                    className="w-full h-8.5 text-xs font-bold gap-1.5 shadow-md"
+                    className="w-full h-9 text-xs font-bold gap-2 shadow-md bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black tracking-wide"
                     onClick={() => {
-                      const clean = selectedDealer === "Dealer Utama" ? "dealer" : selectedDealer.toLowerCase().replace(/\s+/g, "_");
-                      window.history.pushState(null, "", `/cdid_${clean}`);
+                      window.history.pushState(null, "", "/cdid_dealer");
                       window.dispatchEvent(new PopStateEvent("popstate"));
                     }}
                   >
-                    <Car className="h-3.5 w-3.5" />
-                    Buka Showroom Web (/cdid_${selectedDealer === "Dealer Utama" ? "dealer" : selectedDealer.toLowerCase().replace(/\s+/g, "_")})
+                    <Store className="h-4 w-4" />
+                    Buka Dealership
                   </Button>
                 </div>
 
