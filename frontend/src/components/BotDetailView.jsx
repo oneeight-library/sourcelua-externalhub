@@ -21,7 +21,16 @@ import {
   SlidersHorizontal,
   Briefcase,
   AlertTriangle,
-  Info
+  Info,
+  MapPin,
+  Building2,
+  Wrench,
+  Fuel,
+  ShieldAlert,
+  Lock,
+  Unlock,
+  Sun,
+  EyeOff
 } from "lucide-react";
 
 export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, onSendCommand, onRejoinBot }) {
@@ -41,6 +50,56 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
   const handleToggleLowRender = (checked) => {
     setLowRender(checked);
     onSendCommand(bot.botId, "TOGGLE_LOW_RENDER", { enabled: checked });
+  };
+
+  // State Fitur Baru Portingan OneEight
+  const [playerDetector, setPlayerDetector] = React.useState(bot.safety?.PlayerDetectorEnabled || false);
+  const [emergencyAction, setEmergencyAction] = React.useState(bot.safety?.EmergencyAction || "Warn Only");
+  const [ignoreFriends, setIgnoreFriends] = React.useState(bot.safety?.IgnoreFriends !== false);
+  const [serverLocked, setServerLocked] = React.useState(bot.safety?.ServerLocked || false);
+  const [fullbright, setFullbright] = React.useState(bot.lighting?.Fullbright || false);
+  const [noFog, setNoFog] = React.useState(bot.lighting?.NoFog || false);
+  const [selectedDealer, setSelectedDealer] = React.useState("Dealer Utama");
+
+  const handleSafetyUpdate = (newDetector, newAction, newIgnore) => {
+    const d = newDetector !== undefined ? newDetector : playerDetector;
+    const a = newAction !== undefined ? newAction : emergencyAction;
+    const ig = newIgnore !== undefined ? newIgnore : ignoreFriends;
+    if (newDetector !== undefined) setPlayerDetector(newDetector);
+    if (newAction !== undefined) setEmergencyAction(newAction);
+    if (newIgnore !== undefined) setIgnoreFriends(newIgnore);
+    onSendCommand(bot.botId, "SET_SAFETY_CONFIG", {
+      playerDetector: d,
+      emergencyAction: a,
+      ignoreFriends: ig
+    });
+  };
+
+  const handleToggleServerLock = (checked) => {
+    setServerLocked(checked);
+    onSendCommand(bot.botId, "TOGGLE_SERVER_LOCK", { locked: checked });
+  };
+
+  const handleToggleFullbright = (checked) => {
+    setFullbright(checked);
+    onSendCommand(bot.botId, "TOGGLE_FULLBRIGHT", { enabled: checked });
+  };
+
+  const handleToggleNoFog = (checked) => {
+    setNoFog(checked);
+    onSendCommand(bot.botId, "TOGGLE_NO_FOG", { enabled: checked });
+  };
+
+  const handleOpenDealership = () => {
+    onSendCommand(bot.botId, "OPEN_DEALERSHIP", { dealer: selectedDealer });
+  };
+
+  const handleTeleportDealership = () => {
+    onSendCommand(bot.botId, "TELEPORT_DEALERSHIP", { dealer: selectedDealer });
+  };
+
+  const handleQuickTeleport = (target) => {
+    onSendCommand(bot.botId, "QUICK_TELEPORT", { target });
   };
 
   // Hitung durasi aktif farming yang bisa dipause
@@ -357,20 +416,172 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
               </CardContent>
             </Card>
 
-            {/* Section 2: Proteksi & Rejoin Otomatis */}
+            {/* Section 2: Utilitas & Teleportasi Peta CDID */}
             <Card className="border-zinc-800">
-              <CardHeader className="p-4 pb-2 border-b border-zinc-800/60">
+              <CardHeader className="p-4 pb-2 border-b border-zinc-800/60 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                  Proteksi Koneksi & Server
+                  <Building2 className="h-4 w-4 text-cyan-400" />
+                  Remote Dealership & Teleport
                 </CardTitle>
+                <Badge variant="secondary" className="text-[9px] uppercase font-mono tracking-wider">
+                  OneEight Util
+                </Badge>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                {/* Dealership Controller */}
+                <div className="space-y-2 p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-zinc-200">Katalog Dealer CDID</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">Buka dari mana saja</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedDealer}
+                      onChange={(e) => setSelectedDealer(e.target.value)}
+                      className="flex-1 h-9 px-3 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-zinc-700"
+                    >
+                      <option value="Dealer Utama">Dealer Utama</option>
+                      <option value="Toyota">Toyota</option>
+                      <option value="Honda">Honda</option>
+                      <option value="Mitsubishi">Mitsubishi</option>
+                      <option value="BMW">BMW</option>
+                      <option value="Mercedes">Mercedes-Benz</option>
+                      <option value="Porsche">Porsche</option>
+                      <option value="Hyundai">Hyundai</option>
+                      <option value="Wuling">Wuling</option>
+                      <option value="Nissan">Nissan</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs font-semibold border-zinc-700 hover:bg-zinc-800"
+                      onClick={handleOpenDealership}
+                    >
+                      Buka UI Dealer
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="h-8 text-xs font-semibold"
+                      onClick={handleTeleportDealership}
+                    >
+                      TP Showroom
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Quick Map Waypoints */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">
+                    Teleportasi Lokasi Cepat
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs font-medium border-zinc-800 hover:bg-zinc-850 gap-1.5"
+                      onClick={() => handleQuickTeleport("bengkel")}
+                    >
+                      <Wrench className="h-3 w-3 text-amber-400" />
+                      Bengkel
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs font-medium border-zinc-800 hover:bg-zinc-850 gap-1.5"
+                      onClick={() => handleQuickTeleport("dealer")}
+                    >
+                      <Building2 className="h-3 w-3 text-cyan-400" />
+                      Dealer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs font-medium border-zinc-800 hover:bg-zinc-850 gap-1.5"
+                      onClick={() => handleQuickTeleport("rest_area")}
+                    >
+                      <Fuel className="h-3 w-3 text-emerald-400" />
+                      Rest Area
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section 3: Proteksi & Keamanan Server */}
+            <Card className="border-zinc-800">
+              <CardHeader className="p-4 pb-2 border-b border-zinc-800/60 flex flex-row items-center justify-between">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 text-emerald-400" />
+                  Proteksi Akun & Anti-Staff
+                </CardTitle>
+                <Badge variant={serverLocked ? "emerald" : "outline"} className="text-[9px] font-mono">
+                  {serverLocked ? "VIP LOCKED" : "VIP OPEN"}
+                </Badge>
               </CardHeader>
               <CardContent className="p-4 space-y-3">
                 
+                {/* Player Detector Switch */}
+                <div className="p-3 rounded-xl bg-zinc-900/40 border border-zinc-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold text-xs text-zinc-200">Deteksi Orang Asing (Anti-Staff)</div>
+                      <div className="text-[11px] text-zinc-400">Peringatan / proteksi instan jika ada stranger masuk</div>
+                    </div>
+                    <Switch
+                      checked={playerDetector}
+                      onCheckedChange={(checked) => handleSafetyUpdate(checked, undefined, undefined)}
+                    />
+                  </div>
+
+                  {playerDetector && (
+                    <div className="pt-2 border-t border-zinc-800/70 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-400">Aksi Evakuasi:</span>
+                        <div className="flex gap-1.5">
+                          {["Warn Only", "Kick", "Server Hop"].map((act) => (
+                            <button
+                              key={act}
+                              onClick={() => handleSafetyUpdate(undefined, act, undefined)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                                emergencyAction === act
+                                  ? "bg-emerald-500 text-black font-bold"
+                                  : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                              }`}
+                            >
+                              {act}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[11px] text-zinc-400">Abaikan Teman (Whitelist)</span>
+                        <Switch
+                          checked={ignoreFriends}
+                          onCheckedChange={(checked) => handleSafetyUpdate(undefined, undefined, checked)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* VIP Server Lock Toggle */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                  <div>
+                    <div className="font-semibold text-xs text-zinc-200">Kunci Server (VIP Server Lock)</div>
+                    <div className="text-[11px] text-zinc-400">Cegah pemain baru join ke private server CDID</div>
+                  </div>
+                  <Switch checked={serverLocked} onCheckedChange={handleToggleServerLock} />
+                </div>
+
+                {/* Auto Rejoin & Force Rejoin */}
                 <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
                   <div>
                     <div className="font-semibold text-xs text-zinc-200">Auto Rejoin Saat Kick</div>
-                    <div className="text-[11px] text-zinc-400">Otomatis masuk kembali ke server jika terkena disconnect</div>
+                    <div className="text-[11px] text-zinc-400">Koneksi ulang otomatis saat terkena DC</div>
                   </div>
                   <Switch checked={autoRejoin} onCheckedChange={handleToggleAutoRejoin} />
                 </div>
@@ -394,21 +605,43 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
               </CardContent>
             </Card>
 
-            {/* Section 3: Optimasi Performa & Hemat GPU */}
+            {/* Section 4: Optimasi Performa & Pencahayaan */}
             <Card className="border-zinc-800">
               <CardHeader className="p-4 pb-2 border-b border-zinc-800/60">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
                   <Zap className="h-4 w-4 text-amber-400" />
-                  Optimasi Performa & GPU
+                  Optimasi Performa & Visual
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-4">
+              <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
                   <div>
                     <div className="font-semibold text-xs text-zinc-200">Mode Hemat Layar (Black Screen)</div>
                     <div className="text-[11px] text-zinc-400">Mematikan 3D rendering layar untuk menghemat CPU & GPU</div>
                   </div>
                   <Switch checked={lowRender} onCheckedChange={handleToggleLowRender} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                  <div>
+                    <div className="font-semibold text-xs text-zinc-200 flex items-center gap-1.5">
+                      <Sun className="h-3.5 w-3.5 text-amber-400" />
+                      Mode Fullbright (Selalu Siang)
+                    </div>
+                    <div className="text-[11px] text-zinc-400">Mencerahkan map dan menghilangkan bayangan gelap</div>
+                  </div>
+                  <Switch checked={fullbright} onCheckedChange={handleToggleFullbright} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                  <div>
+                    <div className="font-semibold text-xs text-zinc-200 flex items-center gap-1.5">
+                      <EyeOff className="h-3.5 w-3.5 text-blue-400" />
+                      Hapus Kabut (No Fog)
+                    </div>
+                    <div className="text-[11px] text-zinc-400">Menghilangkan kabut tebal agar jarak pandang jernih</div>
+                  </div>
+                  <Switch checked={noFog} onCheckedChange={handleToggleNoFog} />
                 </div>
               </CardContent>
             </Card>
