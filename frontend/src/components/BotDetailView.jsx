@@ -43,14 +43,17 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
     onSendCommand(bot.botId, "TOGGLE_LOW_RENDER", { enabled: checked });
   };
 
-  // Hitung Estimasi Rata-Rata Penghasilan per Jam (Avg / Hour)
-  const sessionSeconds = bot.sessionSeconds || 0;
+  // Durasi Job Aktif (Pause jika autofarm berhenti, resume saat jalan)
+  const farmActiveTime = bot.farmActiveTime || (isFarming ? (bot.sessionTime || "00:00:00") : "00:00:00");
+  const farmActiveSeconds = bot.farmActiveSeconds || (isFarming ? (bot.sessionSeconds || 0) : 0);
+
+  // Estimasi Rata-Rata per Jam berbasis durasi farm aktif (sangat presisi!)
   const totalEarnings = bot.totalEarnings || 0;
   let avgPerHourStr = "Menghitung...";
-  if (sessionSeconds >= 45 && totalEarnings > 0) {
-    const hourly = Math.floor((totalEarnings / sessionSeconds) * 3600);
+  if (farmActiveSeconds >= 30 && totalEarnings > 0) {
+    const hourly = Math.floor((totalEarnings / farmActiveSeconds) * 3600);
     avgPerHourStr = gameCfg.formatMoney(hourly) + " / Jam";
-  } else if (totalEarnings === 0 && sessionSeconds >= 60) {
+  } else if (totalEarnings === 0 && farmActiveSeconds >= 45) {
     avgPerHourStr = "Rp 0 / Jam";
   }
 
@@ -136,9 +139,16 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                 <Coins className="h-4 w-4 text-emerald-400" />
                 Keuangan & Metrik Sesi
               </CardTitle>
-              <Badge variant="secondary" className="text-[10px] font-mono font-bold flex items-center gap-1.5 px-2 py-0.5 border border-zinc-800">
-                <Clock className="h-3 w-3 text-zinc-400" />
-                <span>{bot.sessionTime || "00:00:00"}</span>
+              <Badge 
+                variant={isFarming ? "emerald" : "secondary"} 
+                className="text-[10px] font-mono font-bold flex items-center gap-1.5 px-2 py-0.5 border"
+                title={isFarming ? "Durasi Job Berjalan" : "Durasi Job Dijeda (Pause)"}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${isFarming ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                <span>{farmActiveTime}</span>
+                <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-sans font-semibold">
+                  {isFarming ? "Aktif" : "Pause"}
+                </span>
               </Badge>
             </CardHeader>
             <CardContent className="p-4">
