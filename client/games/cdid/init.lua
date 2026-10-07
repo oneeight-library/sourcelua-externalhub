@@ -1,13 +1,12 @@
 --[[
     OneEight External Hub - Car Driving Indonesia (CDID) Game Module
-    100% Exact Port of OneEight Hub East Java Truck Driver Engine:
-    - Preload streaming chunk & Safe landing (Anti-void)
-    - Dynamic findTruckFolder & ProximityPrompt firing
-    - Server Network Ownership via PromptDriveSeat fireproximityprompt
-    - ReplicatedStorage.NetworkContainer.RemoteEvents.Waypoint listener
-    - Ground Raycasting for realistic landing on asphalt
-    - SSOT Cash Delta payout verification (>= 15jt)
-    - Smart Chaining from destination drop-off
+    Exact Clone of OneEight In-Game Truck Engine (CDID Farming Truck v1):
+    - Full 4-Phase Tween Truck Engine (Fly 400 studs -> Adaptive Forward -> Sine Out Landing -> Release Trigger)
+    - Waypoint & Destination Dynamic Detection (workspace.Etc.Waypoint & Destination)
+    - Starter & Spawner ProximityPrompt Automation
+    - Automatic Vehicle Seat Claim & ProximityPrompt firing
+    - Disguised Reroll as "GET_BEST_DESTINATION"
+    - Controlled 100% via WebSocket from Web Dashboard (Headless)
 --]]
 
 local CDIDModule = {}
@@ -16,721 +15,577 @@ CDIDModule.GameName = "Car Driving Indonesia"
 CDIDModule.CurrencyUnit = "Rp"
 CDIDModule.MetricUnit = "Trips"
 
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
 local Context = nil
-local activeCashLabel = nil
 
-local State = {
-    IsFarming = false,
-    Status = "CONNECTED",
-    CurrentRoute = "IDLE",
-    TripCount = 0,
-    TotalEarnings = 0,
-    CurrentCash = 0,
-    StartCash = 0,
-    PreDeliveryCash = 0,
-    LastSalary = 0,
-    LowRender = false,
-    MinDistance = 100000,
-    CurrentTargetPos = nil,
-    CurrentTargetName = nil,
-    TRUCK_STARTER_POS = Vector3.new(34938.023, 135.125, -54577.938),
-    DriveMinDuration = 50
+-- ============================================================================
+-- 1. CORE ONEEIGHT LOGIC (100% CLONE FROM ONEEIGHT IN-GAME ENGINE)
+-- ============================================================================
+local Core = {}
+Core.AutoFarm = false
+Core.FarmSessionID = 0
+Core.CurrentMoney = 0
+Core.EarnedMoney = 0
+Core.AverageEarning = 0
+Core.SessionStartMoney = 0
+Core.SessionStartTime = 0
+Core.LastMoney = 0
+Core.ActiveTweenConnections = {}
+Core.CountdownTime = 0
+Core.TripCount = 0
+Core.LowRender = false
+Core.CurrentRoute = "IDLE"
+Core.CurrentStatus = "READY"
+
+Core.Settings = {
+    TweenDuration = 41.2,
+    MinDistance = 100000
 }
 
--- ============================================================================
--- FORMATTERS & SSOT CASH
--- ============================================================================
-local function formatMoney(val)
-    if not val then return "Rp 0" end
-    local num = math.abs(math.floor(tonumber(val) or 0))
-    local formatted = tostring(num):reverse():gsub("(%d%d%d)", "%1."):reverse():gsub("^%.", "")
-    return (tonumber(val) and tonumber(val) < 0 and "-Rp " or "Rp ") .. formatted
+-- Utilities
+function Core.parseMoney(text)
+    if not text then return 0 end
+    local cleanText = string.gsub(tostring(text), "[^%d]", "")
+    return tonumber(cleanText) or 0
 end
 
-local function parseCashString(txt)
-    if not txt then return 0 end
-    local cleaned = tostring(txt):gsub("<[^<>]->", "")
-    local numStr = cleaned:gsub("[^%d]", "")
-    return tonumber(numStr) or 0
+function Core.formatRupiah(amount)
+    if not amount then return "Rp 0" end
+    local formatted = tostring(math.floor(math.abs(tonumber(amount) or 0)))
+    while true do  
+        local k
+        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1.%2')
+        if k == 0 then break end
+    end
+    return (tonumber(amount) and tonumber(amount) < 0 and "-Rp " or "Rp ") .. formatted
 end
 
-local function updateCash(txt)
-    local val = parseCashString(txt)
-    if val <= 0 then return end
-
-    if not State.StartCash or State.StartCash == 0 then
-        State.StartCash = val
-        print(string.format("[OE-External CDID] Saldo Awal Terdeteksi: %s", formatMoney(val)))
-    end
-
-    State.CurrentCash = val
-    if State.StartCash and State.StartCash > 0 then
-        local netDiff = State.CurrentCash - State.StartCash
-        if netDiff >= 0 and netDiff > State.TotalEarnings then
-            State.TotalEarnings = netDiff
-        end
-    end
+function Core.calculateDistance(posA, posB)
+    if not posA or not posB then return 0 end
+    return (posA - posB).Magnitude
 end
 
-local function getCDIDCash()
-    if activeCashLabel and activeCashLabel.Parent then
-        local val = parseCashString(activeCashLabel.Text)
-        if val > 0 then
-            State.CurrentCash = val
-            return val
-        end
-    end
-    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if pGui then
-        local ok, lbl = pcall(function()
-            return pGui.Main.Container.Hub.CashFrame.Frame.TextLabel
-        end)
-        if ok and lbl then
-            activeCashLabel = lbl
-            local val = parseCashString(lbl.Text)
-            if val > 0 then
-                State.CurrentCash = val
-                return val
-            end
-        end
-    end
-    return State.CurrentCash or 0
-end
-
-local function bindCashHUD()
-    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if not pGui then return end
-
-    local targetLabel = nil
-    pcall(function()
-        local main = pGui:WaitForChild("Main", 10)
-        local container = main and main:WaitForChild("Container", 10)
-        local hub = container and container:WaitForChild("Hub", 10)
-        local cashFrame = hub and hub:WaitForChild("CashFrame", 10)
-        local innerFrame = cashFrame and cashFrame:WaitForChild("Frame", 10)
-        targetLabel = innerFrame and innerFrame:WaitForChild("TextLabel", 10)
-    end)
-
-    if targetLabel then
-        activeCashLabel = targetLabel
-        updateCash(targetLabel.Text)
-        targetLabel:GetPropertyChangedSignal("Text"):Connect(function()
-            updateCash(targetLabel.Text)
-        end)
-        print("[OE-External CDID] HUD Cash terhubung via Direct-Path TextLabel!")
-    else
-        task.spawn(function()
-            local synced = false
-            for _ = 1, 10 do
-                if synced or not _G.OE_ExternalRunning then break end
-                for _, desc in ipairs(pGui:GetDescendants()) do
-                    if desc:IsA("TextLabel") and desc.Visible and not desc:GetFullName():find("cdid_hub") and not desc:GetFullName():find("Wind") then
-                        local txt = desc.Text:gsub("<[^<>]->", "")
-                        if txt:find("Rp") and not txt:find("%+") and not txt:find("%-") and not txt:lower():find("gaji") and not txt:lower():find("salary") and not txt:lower():find("delivery") and not txt:lower():find("trip") then
-                            if txt:find("%d%d%d") or txt:find("%d%.%d") or txt:find("%d%,%d") then
-                                activeCashLabel = desc
-                                updateCash(desc.Text)
-                                desc:GetPropertyChangedSignal("Text"):Connect(function()
-                                    updateCash(desc.Text)
-                                end)
-                                synced = true
-                                print("[OE-External CDID] HUD Cash terhubung via Fallback Scanning!")
-                                break
-                            end
-                        end
-                    end
-                end
-                task.wait(1.5)
-            end
-        end)
-    end
-end
-
--- ============================================================================
--- DRIVE ENGINE & CAR HELPERS
--- ============================================================================
-local DriveEngine = {}
-
-function DriveEngine.GetValidHumanoid()
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum and hum.Health > 0 then
-        return hum, char:FindFirstChild("HumanoidRootPart")
-    end
-    return nil, nil
-end
-
-function DriveEngine.GetPlayerCar()
-    local vehicles = Workspace:FindFirstChild("Vehicles") or Workspace:FindFirstChild("Car") or Workspace:FindFirstChild("Cars")
-    if not vehicles then return nil end
-    for _, v in ipairs(vehicles:GetChildren()) do
-        if v:IsA("Model") and v.Name:find(LocalPlayer.Name, 1, true) then
-            return v
-        end
-    end
-    return nil
-end
-
-function DriveEngine.FixCarReadOnly(car)
-    if not car then return end
-    if not car:FindFirstChild("ReadOnly") then
-        local ro = Instance.new("Folder")
-        ro.Name = "ReadOnly"
-        ro.Parent = car
-    end
-    if not car:FindFirstChild("A-Chassis Tune") then
-        local tune = Instance.new("ModuleScript")
-        tune.Name = "A-Chassis Tune"
-        tune.Parent = car
-    end
-end
-
-function DriveEngine.EnsureSeated(car)
-    local hum, hrp = DriveEngine.GetValidHumanoid()
-    if not hum or not hrp or not car then return false end
-
-    DriveEngine.FixCarReadOnly(car)
-
-    local seat = car:FindFirstChildWhichIsA("VehicleSeat", true)
-        or car:FindFirstChild("DriveSeat", true)
-        or car:FindFirstChild("DriverSeat", true)
-
-    if not seat then return false end
-    if hum.SeatPart == seat or hum.Sit then return true end
-
-    local primary = car.PrimaryPart or car:FindFirstChildWhichIsA("BasePart")
-    if primary then primary.Anchored = false end
-
-    hrp.CFrame = seat.CFrame * CFrame.new(0, 0.5, 1.5)
-    task.wait(0.2)
-
-    -- Dapatkan Server Network Ownership via PromptDriveSeat
-    local drivePrompt = seat:FindFirstChild("PromptDriveSeat", true)
-        or seat:FindFirstChildWhichIsA("ProximityPrompt", true)
-        or car:FindFirstChild("PromptDriveSeat", true)
-
-    if drivePrompt then
-        drivePrompt.RequiresLineOfSight = false
-        drivePrompt.MaxActivationDistance = 35
-        if fireproximityprompt then
-            pcall(fireproximityprompt, drivePrompt)
-        else
-            drivePrompt:InputHoldBegin()
-            task.wait((drivePrompt.HoldDuration or 0) + 0.1)
-            drivePrompt:InputHoldEnd()
-        end
-    else
-        pcall(function() seat:Sit(hum) end)
-    end
-    task.wait(0.5)
-    return hum.Sit
-end
-
--- ============================================================================
--- TRUCK FARM HELPERS (EXACT ONEEIGHT METHODS)
--- ============================================================================
-local Helpers = {}
-
-function Helpers.PreloadStream(targetPos)
-    if not targetPos then return end
-    task.spawn(function()
-        pcall(function()
-            local lp = Players.LocalPlayer
-            if lp and typeof(lp.RequestStreamAroundAsync) == "function" then
-                lp:RequestStreamAroundAsync(targetPos)
-            elseif typeof(workspace.RequestStreamAroundAsync) == "function" then
-                workspace:RequestStreamAroundAsync(targetPos)
-            end
-        end)
-    end)
-end
-
-function Helpers.TeleportPlayerToHQ()
-    local _, hrp = DriveEngine.GetValidHumanoid()
-    if not hrp then return false end
-    local hqPos = State.TRUCK_STARTER_POS
-    local dist = (hrp.Position - hqPos).Magnitude
-
-    if dist > 200 then
-        Helpers.PreloadStream(hqPos)
-        hrp.Anchored = true
-        hrp.CFrame = CFrame.new(hqPos + Vector3.new(0, 3.5, 0))
-        hrp.AssemblyLinearVelocity = Vector3.zero
-        hrp.AssemblyAngularVelocity = Vector3.zero
-        task.wait(0.5)
-        hrp.Anchored = false
-    else
-        hrp.CFrame = CFrame.new(hqPos + Vector3.new(0, 3.5, 0))
-    end
-    return true
-end
-
-function Helpers.findTruckFolder()
-    local etcJob = workspace:FindFirstChild("Etc") and workspace.Etc:FindFirstChild("Job")
-    if etcJob then
-        local truck = etcJob:FindFirstChild("Truck")
-        if truck then return truck end
-    end
-
-    for _, desc in ipairs(workspace:GetDescendants()) do
-        if desc.Name == "Truck" and (desc:FindFirstChild("Starter") or desc:FindFirstChild("Spawner")) then
-            return desc
-        end
-    end
-    return nil
-end
-
-function Helpers.checkExistingWaypoint()
-    local waypointFolder = workspace:FindFirstChild("Etc") and workspace.Etc:FindFirstChild("Waypoint")
-    if waypointFolder then
-        local startPos = State.TRUCK_STARTER_POS
-        for _, child in ipairs(waypointFolder:GetChildren()) do
-            if child:IsA("BasePart") then
-                local billboard = child:FindFirstChildWhichIsA("BillboardGui")
-                local label = billboard and billboard:FindFirstChildWhichIsA("TextLabel")
-                local txt = label and label.Text or child.Name
-                local pos = child.Position
-                local distFromHq = (pos - startPos).Magnitude
-
-                if txt ~= "Truck" and distFromHq > 1000 then
-                    State.CurrentTargetPos = pos
-                    State.CurrentTargetName = txt
-                    return true
-                end
-            end
-        end
-    end
-    return false
-end
-
-local function autoFirePrompt(obj, preDelay)
-    local _, hrp = DriveEngine.GetValidHumanoid()
-    if not hrp then return end
-
-    if not obj then
-        Helpers.TeleportPlayerToHQ()
-        local tf = Helpers.findTruckFolder()
-        obj = tf and (tf:FindFirstChild("Starter") or tf:FindFirstChild("starter") or tf:FindFirstChild("Spawner"))
-    end
-    if not obj then return end
-
-    local targetPivot = obj:GetPivot()
-    local targetPos = targetPivot.Position
-    local dist = (hrp.Position - targetPos).Magnitude
-
-    if dist > 200 then
-        Helpers.PreloadStream(targetPos)
-        hrp.Anchored = true
-        hrp.CFrame = targetPivot * CFrame.new(0, 0.5, 2)
-        hrp.AssemblyLinearVelocity = Vector3.zero
-        hrp.AssemblyAngularVelocity = Vector3.zero
-        task.wait(0.4)
-        hrp.Anchored = false
-    else
-        hrp.Anchored = false
-        hrp.CFrame = targetPivot * CFrame.new(0, 0.5, 2)
-        hrp.AssemblyLinearVelocity = Vector3.zero
-    end
-    task.wait(preDelay or 0.25)
-
-    local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
-    if not prompt then
-        local waitT = 0
-        while not prompt and waitT < 1.5 do
+-- Teleport Player Safe
+function Core.teleportPlayerSafe(targetCFrame)
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid and humanoid.SeatPart then
+            humanoid.Sit = false
             task.wait(0.1)
-            waitT = waitT + 0.1
-            prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
         end
-    end
-    if not prompt then return end
-
-    prompt.Enabled = true
-    prompt.RequiresLineOfSight = false
-    prompt.MaxActivationDistance = 35
-    if fireproximityprompt then
-        pcall(fireproximityprompt, prompt)
-    else
-        prompt:InputHoldBegin()
-        task.wait((prompt.HoldDuration or 0) + 0.1)
-        prompt:InputHoldEnd()
+        character:PivotTo(targetCFrame)
     end
 end
 
--- Teleportasi Kendaraan Murni Settle 50 Detik & Raycast Aspal
-local function teleportVehicleToDestination(car, targetPos, waitDuration)
-    local waitTime = waitDuration or State.DriveMinDuration or 50
-    local primary = car and (car.PrimaryPart or car:FindFirstChildWhichIsA("BasePart"))
-    local seat = car and car:FindFirstChildWhichIsA("VehicleSeat", true)
-    if not car or not primary then return false end
-
-    DriveEngine.EnsureSeated(car)
-
-    local startTime = os.clock()
-    local streamRequested = false
-    print(string.format("[CDID Truck] Menunggu estimasi perjalanan %d detik (kendaraan diam murni)...", waitTime))
-
-    while State.IsFarming and (os.clock() - startTime < waitTime) do
-        local elapsed = os.clock() - startTime
-        local remaining = math.max(0, math.ceil(waitTime - elapsed))
-        State.Status = string.format("DRIVING (%ds)", remaining)
-
-        if remaining <= 3 and not streamRequested then
-            streamRequested = true
-            Helpers.PreloadStream(targetPos)
-        end
-        task.wait(1.0)
-    end
-
-    if not State.IsFarming then return false end
-
-    State.Status = "TELEPORT_DESTINATION"
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    local ignoreList = { car, LocalPlayer.Character }
-    if workspace:FindFirstChild("Etc") then table.insert(ignoreList, workspace.Etc) end
-    rayParams.FilterDescendantsInstances = ignoreList
-
-    local rayOrigin = Vector3.new(targetPos.X, targetPos.Y + 40, targetPos.Z)
-    local groundRay = workspace:Raycast(rayOrigin, Vector3.new(0, -120, 0), rayParams)
-    local landY = (groundRay and groundRay.Position.Y + 2.0) or targetPos.Y
-
-    local startCF = car:GetPivot()
-    local dirToTarget = (targetPos - startCF.Position).Unit
-    local flatDir = Vector3.new(dirToTarget.X, 0, dirToTarget.Z).Unit
-    local stopPos = Vector3.new(targetPos.X, landY, targetPos.Z)
-    local targetCF = CFrame.new(stopPos, stopPos + flatDir)
-
-    local hum = DriveEngine.GetValidHumanoid()
-    if hum and not hum.Sit and seat then
-        pcall(function() seat:Sit(hum) end)
-    end
-
-    State.PreDeliveryCash = State.CurrentCash or 0
-    car:PivotTo(targetCF)
-
-    for _, p in ipairs(car:GetDescendants()) do
-        if p:IsA("BasePart") then
-            p.AssemblyLinearVelocity = Vector3.zero
-            p.AssemblyAngularVelocity = Vector3.zero
-        end
-    end
-    task.wait(1.2)
-    return true
-end
-
--- ============================================================================
--- 6-STATE TRUCK AUTO FARM ENGINE
--- ============================================================================
-local function runFarmLoop()
-    while State.IsFarming and _G.OE_ExternalRunning do
-        local loopOk, loopErr = pcall(function()
-            -- STATE 1: DESPAWN OLD CAR
-            local oldCar = DriveEngine.GetPlayerCar()
-            if oldCar then
-                State.Status = "DESPAWN_OLD"
-                pcall(function()
-                    ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Unemployee")
-                end)
-                local despawnWait = 0
-                while DriveEngine.GetPlayerCar() and despawnWait < 3.0 and State.IsFarming do
-                    task.wait(0.2)
-                    despawnWait = despawnWait + 0.2
-                end
-            end
-
-            if not State.IsFarming then return end
-
-            -- STATE 2: ENROLL JOB & TELEPORT HQ
-            State.Status = "ENROLL_JOB"
+-- Cleanup Truck Physics
+function Core.cleanupTruckPhysics(car, originalStates)
+    if not car then return end
+    for part, states in pairs(originalStates) do
+        if part and part.Parent and part:IsA("BasePart") then 
             pcall(function()
-                ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Truck")
+                part.CanCollide = states.CanCollide
+                part.Anchored = states.Anchored
             end)
-            task.wait(0.3)
-            Helpers.TeleportPlayerToHQ()
+        end
+    end
+end
 
-            local _, hrp = DriveEngine.GetValidHumanoid()
-            local hqWait = 0
-            while hqWait < 3.0 and State.IsFarming do
-                local currentDist = hrp and (hrp.Position - State.TRUCK_STARTER_POS).Magnitude or 999
-                local tf = Helpers.findTruckFolder()
-                if currentDist < 50 and tf and tf:FindFirstChild("Starter") then break end
-                task.wait(0.2)
-                hqWait = hqWait + 0.2
-            end
-
-            if not State.IsFarming then return end
-
-            -- STATE 3: PICK CARGO (STARTER PROMPT)
-            State.Status = "PICKING_CARGO"
-            State.CurrentTargetPos = nil
-            State.CurrentTargetName = nil
-
-            local tf = Helpers.findTruckFolder()
-            local starterObj = tf and (tf:FindFirstChild("Starter") or tf:FindFirstChild("starter"))
-            autoFirePrompt(starterObj, 0.2)
-
-            local waitedRoute = 0
-            local starterRetried = false
-            while not State.CurrentTargetPos and waitedRoute < 6.0 and State.IsFarming do
-                Helpers.checkExistingWaypoint()
-                if State.CurrentTargetPos then break end
-
-                if waitedRoute >= 2.0 and not starterRetried then
-                    starterRetried = true
-                    if starterObj then autoFirePrompt(starterObj, 0.2) end
-                end
-                task.wait(0.15)
-                waitedRoute = waitedRoute + 0.15
-            end
-
-            if not State.IsFarming then return end
-
-            if not State.CurrentTargetPos then
-                if Context and Context.SendLog then
-                    Context.SendLog("Rute belum diterima server, mengulang pendaftaran...", "WARN")
-                end
-                pcall(function() ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Unemployee") end)
-                task.wait(0.5)
-                return
-            end
-
-            -- Evaluasi Jarak Minimum
-            local minStuds = tonumber(State.MinDistance) or 100000
-            local routeDist = (State.CurrentTargetPos - State.TRUCK_STARTER_POS).Magnitude
-
-            if routeDist < minStuds then
-                State.Status = "GET_BEST_DESTINATION"
-                if Context and Context.SendLog then
-                    Context.SendLog(string.format("Menganalisis rute terbaik: %s...", State.CurrentTargetName or "Cargo"), "INFO")
-                end
-                pcall(function() ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Unemployee") end)
-                State.CurrentTargetPos = nil
-                State.CurrentTargetName = nil
-                task.wait(0.5)
-                return
-            end
-
-            -- STATE 4: SPAWN TRUCK
-            State.Status = "SPAWN_TRUCK"
-            State.CurrentRoute = State.CurrentTargetName or "Cargo"
-            if Context and Context.SendLog then
-                Context.SendLog(string.format("Rute Terbaik: %s! Memunculkan armada...", State.CurrentTargetName or "Cargo"), "SUCCESS")
-            end
-
-            tf = Helpers.findTruckFolder()
-            local spawnerObj = tf and (tf:FindFirstChild("Spawner") or tf:FindFirstChild("spawner"))
-            autoFirePrompt(spawnerObj, 0.3)
-
-            local car = nil
-            for _ = 1, 15 do
-                if not State.IsFarming then break end
-                car = DriveEngine.GetPlayerCar()
-                if car then break end
-                task.wait(0.2)
-            end
-
-            if not car or not State.IsFarming then
-                if Context and Context.SendLog then
-                    Context.SendLog("Truk gagal terdeteksi di Workspace, retry...", "WARN")
-                end
-                return
-            end
-
-            -- STATE 5: BOARD TRUCK & DRIVE ESTIMATE (50S)
-            State.Status = "BOARDING"
-            DriveEngine.EnsureSeated(car)
-
-            while State.IsFarming and State.CurrentTargetPos do
-                local driveOk = teleportVehicleToDestination(car, State.CurrentTargetPos, State.DriveMinDuration)
-                if not driveOk or not State.IsFarming then break end
-
-                -- STATE 6: WAIT PAYOUT (SSOT CASH DELTA >= 15JT)
-                State.Status = "WAIT_PAYOUT"
-                local cashBefore = State.PreDeliveryCash > 0 and State.PreDeliveryCash or getCDIDCash()
-                local waitPayoutStart = os.clock()
-                local gained = 0
-
-                while (os.clock() - waitPayoutStart < 7.0) and State.IsFarming do
-                    local curCash = getCDIDCash()
-                    if curCash > cashBefore then
-                        local delta = curCash - cashBefore
-                        if delta >= 15000000 then
-                            gained = delta
-                            State.CurrentCash = curCash
-                            break
-                        end
-                    end
-                    task.wait(0.1)
-                end
-
-                if gained == 0 then
-                    local curCash = getCDIDCash()
-                    if curCash > cashBefore then
-                        gained = curCash - cashBefore
-                        State.CurrentCash = curCash
-                    end
-                end
-
-                if not State.IsFarming then break end
-
-                State.TripCount = State.TripCount + 1
-                if gained > 0 then
-                    State.LastSalary = gained
-                    State.TotalEarnings = (State.TotalEarnings or 0) + gained
-                    if State.StartCash and State.StartCash > 0 and (State.CurrentCash - State.StartCash) > State.TotalEarnings then
-                        State.TotalEarnings = State.CurrentCash - State.StartCash
-                    end
-                    if Context and Context.SendLog then
-                        Context.SendLog(string.format("Pengiriman #%d Berhasil! Gaji masuk (+%s)", State.TripCount, formatMoney(gained)), "SUCCESS")
+-- Waypoint & Destination Logic (OneEight exact functions)
+function Core.getClosestWaypoint(referencePos)
+    local wpFolder = Workspace:FindFirstChild("Etc") and Workspace.Etc:FindFirstChild("Waypoint")
+    if wpFolder then
+        local closestWP = nil
+        local shortestDistance = math.huge
+        if not referencePos and LocalPlayer.Character and LocalPlayer.Character.PrimaryPart then
+            referencePos = LocalPlayer.Character.PrimaryPart.Position
+        end
+        for _, wp in ipairs(wpFolder:GetChildren()) do
+            if wp.Name == "Waypoint" and wp:IsA("BasePart") then
+                if referencePos then
+                    local dist = (wp.Position - referencePos).Magnitude
+                    if dist < shortestDistance then
+                        shortestDistance = dist
+                        closestWP = wp
                     end
                 else
-                    if Context and Context.SendLog then
-                        Context.SendLog(string.format("Pengiriman #%d Selesai!", State.TripCount), "SUCCESS")
-                    end
+                    return wp
                 end
-
-                -- SMART CHAINING: CEK RUTE SAMBUNGAN DARI DROPOFF
-                local lastDeliveredPos = State.CurrentTargetPos
-                State.CurrentTargetPos = nil
-                State.CurrentTargetName = nil
-
-                local chainWait = 0
-                while chainWait < 2.0 and not State.CurrentTargetPos and State.IsFarming do
-                    task.wait(0.1)
-                    chainWait = chainWait + 0.1
-                    Helpers.checkExistingWaypoint()
-                end
-
-                if not State.IsFarming then break end
-
-                local canChain = false
-                if State.CurrentTargetPos then
-                    local _, pRoot = DriveEngine.GetValidHumanoid()
-                    local curPos = pRoot and pRoot.Position or (lastDeliveredPos or Vector3.zero)
-                    local chainDist = (State.CurrentTargetPos - curPos).Magnitude
-
-                    if chainDist >= minStuds then
-                        canChain = true
-                        State.CurrentRoute = State.CurrentTargetName or "Cargo"
-                        if Context and Context.SendLog then
-                            Context.SendLog(string.format("[Smart Chain] Rute Sambungan: %s! Menghubungkan jalur...", State.CurrentTargetName or "Cargo"), "SUCCESS")
-                        end
-                        DriveEngine.EnsureSeated(car)
-                        task.wait(0.5)
-                    end
-                end
-
-                if not canChain then break end
             end
-
-            -- SIKLUS SELESAI -> KEMBALI KE HQ
-            State.Status = "CYCLE_COMPLETE"
-            pcall(function() ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Unemployee") end)
-            State.CurrentTargetPos = nil
-            State.CurrentTargetName = nil
-            task.wait(0.5)
-            Helpers.TeleportPlayerToHQ()
-        end)
-
-        if not loopOk then
-            warn("[CDID Exception Caught]:", tostring(loopErr))
-            if Context and Context.SendLog then
-                Context.SendLog("[Recovering] Exception: " .. tostring(loopErr) .. ". Pulih dalam 1.5s...", "WARN")
-            end
-            State.Status = "RECOVERING"
-            task.wait(1.5)
         end
+        return closestWP
     end
+    return nil
+end
 
-    State.Status = "STOPPED"
-    State.CurrentRoute = "IDLE"
+function Core.getDestPart(referencePos)
+    local destFolder = Workspace:FindFirstChild("Etc") and Workspace.Etc:FindFirstChild("Job") and Workspace.Etc.Job:FindFirstChild("Truck")
+    if destFolder and destFolder:FindFirstChild("Destination") then
+        local closestPart = nil
+        local shortestDistance = math.huge
+        if not referencePos and LocalPlayer.Character and LocalPlayer.Character.PrimaryPart then
+            referencePos = LocalPlayer.Character.PrimaryPart.Position
+        end
+        for _, part in ipairs(destFolder.Destination:GetChildren()) do
+            if part:IsA("BasePart") then
+                if referencePos then
+                    local dist = (part.Position - referencePos).Magnitude
+                    if dist < shortestDistance then
+                        shortestDistance = dist
+                        closestPart = part
+                    end
+                else
+                    return part
+                end
+            end
+        end
+        return closestPart
+    end
+    return nil
+end
+
+-- UI / Web Sync Callbacks
+Core.UpdateStatusUI = function(text)
+    Core.CurrentStatus = text
+    if Context and Context.SendLog then
+        Context.SendLog(text, "INFO")
+    end
+end
+
+Core.StartCountdown = function(duration)
+    Core.CountdownTime = math.floor(duration or 0)
+    task.spawn(function()
+        local endTime = tick() + (duration or 0)
+        while tick() < endTime and Core.AutoFarm do
+            local remaining = math.max(0, math.floor(endTime - tick()))
+            Core.CountdownTime = remaining
+            task.wait(0.5)
+        end
+        Core.CountdownTime = 0
+    end)
 end
 
 -- ============================================================================
--- INTERFACE CONTRACT IMPLEMENTATION
+-- MAIN TWEEN LOGIC (ONE-EIGHT 4-PHASE ENGINE)
+-- ============================================================================
+function Core.tweenTruckSafe(car, initialTargetPart, totalTweenTime, currentSession)
+    if not car or not car.PrimaryPart or not initialTargetPart then return nil end
+    local startCF = car:GetPivot()
+    local flightHeight = 400
+    local truckOriginalStates = {}
+
+    for _, part in ipairs(car:GetDescendants()) do
+        if part:IsA("BasePart") then
+            truckOriginalStates[part] = { CanCollide = part.CanCollide, Anchored = part.Anchored }
+            pcall(function() part.Anchored = true end)
+        end
+    end
+
+    local proxyValue = Instance.new("CFrameValue")
+    proxyValue.Value = startCF
+    
+    local connNoClip = RunService.Stepped:Connect(function()
+        for _, part in ipairs(car:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+        if LocalPlayer.Character then
+            for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = false end
+            end
+        end
+    end)
+    
+    local connProxy = RunService.Heartbeat:Connect(function()
+        car:PivotTo(proxyValue.Value)
+    end)
+    table.insert(Core.ActiveTweenConnections, connNoClip)
+    table.insert(Core.ActiveTweenConnections, connProxy)
+
+    local function abortTweenAndCleanup()
+        connNoClip:Disconnect()
+        connProxy:Disconnect()
+        proxyValue:Destroy()
+        Core.cleanupTruckPhysics(car, truckOriginalStates)
+    end
+
+    local currentTarget = initialTargetPart
+    local isTrackingDest = false
+
+    -- FASE 1: NAIK
+    Core.UpdateStatusUI("Flying Up...")
+    Core.StartCountdown(3)
+    local upAirCF = startCF + Vector3.new(0, flightHeight, 0)
+    local tweenUp = TweenService:Create(proxyValue, TweenInfo.new(3, Enum.EasingStyle.Linear), {Value = upAirCF})
+    tweenUp:Play() 
+    while tweenUp.PlaybackState == Enum.PlaybackState.Playing do
+        if not Core.AutoFarm or Core.FarmSessionID ~= currentSession then
+            tweenUp:Cancel()
+            abortTweenAndCleanup()
+            return
+        end
+        task.wait(0.1)
+    end
+
+    -- FASE 2: MAJU 
+    local initialTargetAirCF = CFrame.new(currentTarget.Position.X, upAirCF.Position.Y, currentTarget.Position.Z) * startCF.Rotation
+    local totalDistance = math.max(1, (upAirCF.Position - initialTargetAirCF.Position).Magnitude)
+    local adaptiveSpeed = totalDistance / (totalTweenTime or 41.2)
+
+    local function startForwardTween(targetAirCF)
+        local distance = (proxyValue.Value.Position - targetAirCF.Position).Magnitude
+        local tTime = math.max(0.5, distance / adaptiveSpeed)
+        Core.UpdateStatusUI(string.format("DRIVING (%ds)", math.ceil(tTime)))
+        Core.StartCountdown(tTime)
+        local fwd = TweenService:Create(proxyValue, TweenInfo.new(tTime, Enum.EasingStyle.Linear), {Value = targetAirCF})
+        fwd:Play()
+        return fwd
+    end
+
+    local currentFwdTween = startForwardTween(initialTargetAirCF)
+
+    while currentFwdTween.PlaybackState == Enum.PlaybackState.Playing do
+        if not Core.AutoFarm or Core.FarmSessionID ~= currentSession then
+            currentFwdTween:Cancel()
+            abortTweenAndCleanup()
+            return
+        end
+
+        if not isTrackingDest then
+            if (proxyValue.Value.Position - currentTarget.Position).Magnitude < 200 then
+                local destPart = Core.getDestPart(proxyValue.Value.Position)
+                if destPart then
+                    currentFwdTween:Cancel()
+                    currentTarget = destPart
+                    isTrackingDest = true
+                    Core.UpdateStatusUI("Destination Found! Retargeting...")
+                    task.wait(0.1)
+                    local newTargetAirCF = CFrame.new(currentTarget.Position.X, upAirCF.Position.Y, currentTarget.Position.Z) * startCF.Rotation
+                    currentFwdTween = startForwardTween(newTargetAirCF)
+                end
+            end
+        end
+        task.wait(0.2)
+    end
+
+    -- FASE 3: TURUN
+    Core.UpdateStatusUI("Landing...")
+    Core.StartCountdown(4)
+    local targetGroundCF = currentTarget.CFrame * CFrame.new(0, (car:GetExtentsSize().Y / 2) - 4.5, 0)
+    local tweenDown = TweenService:Create(proxyValue, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Value = targetGroundCF})
+    tweenDown:Play() 
+    while tweenDown.PlaybackState == Enum.PlaybackState.Playing do
+        if not Core.AutoFarm or Core.FarmSessionID ~= currentSession then
+            tweenDown:Cancel()
+            abortTweenAndCleanup()
+            return
+        end
+        task.wait(0.1)
+    end
+
+    -- FASE 4: CLEANUP & TOUCH TRIGGER
+    abortTweenAndCleanup()
+    if car.PrimaryPart and Core.AutoFarm and Core.FarmSessionID == currentSession then
+        Core.UpdateStatusUI("Releasing & Triggering...")
+        task.wait(0.5)
+        for i = 1, 3 do
+            if not Core.AutoFarm or Core.FarmSessionID ~= currentSession then break end
+            car:PivotTo(car:GetPivot() * CFrame.new(0, -0.3, 0))
+            task.wait(0.2)
+            car:PivotTo(car:GetPivot() * CFrame.new(0, 0.3, 0))
+            task.wait(0.2)
+        end
+    end
+    return currentTarget
+end
+
+-- ============================================================================
+-- AUTOFARM LOOP (ONE-EIGHT CLONE WITH DISGUISED REROLL)
+-- ============================================================================
+function Core.StartFarmLoop(sessionID)
+    task.spawn(function()
+        while Core.AutoFarm and Core.FarmSessionID == sessionID do
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local humanoid = character:WaitForChild("Humanoid", 10)
+            if not humanoid then continue end
+
+            Core.UpdateStatusUI("Taking Job...")
+            pcall(function()
+                ReplicatedStorage:WaitForChild("NetworkContainer"):WaitForChild("RemoteEvents"):WaitForChild("Job"):FireServer("Truck")
+            end)
+            task.wait(1)
+            if not Core.AutoFarm or Core.FarmSessionID ~= sessionID then break end
+
+            Core.UpdateStatusUI("Interacting Starter...")
+            local starterFolder = Workspace:FindFirstChild("Etc") and Workspace.Etc:FindFirstChild("Job") and Workspace.Etc.Job:FindFirstChild("Truck") and Workspace.Etc.Job.Truck:FindFirstChild("Starter")
+            if starterFolder then
+                local starterPrompt = starterFolder:FindFirstChildWhichIsA("ProximityPrompt", true)
+                if starterPrompt and starterPrompt.Parent then
+                    starterPrompt.RequiresLineOfSight = false
+                    starterPrompt.MaxActivationDistance = 50
+                    Core.teleportPlayerSafe(starterPrompt.Parent:GetPivot() * CFrame.new(0, 5, 0))
+                    task.wait(0.5)
+                    if fireproximityprompt then
+                        pcall(fireproximityprompt, starterPrompt)
+                    else
+                        starterPrompt:InputHoldBegin()
+                        task.wait(0.2)
+                        starterPrompt:InputHoldEnd()
+                    end
+                    task.wait(1.5)
+                    if fireproximityprompt then
+                        pcall(fireproximityprompt, starterPrompt)
+                    else
+                        starterPrompt:InputHoldBegin()
+                        task.wait(0.2)
+                        starterPrompt:InputHoldEnd()
+                    end
+                end
+            end
+            if not Core.AutoFarm or Core.FarmSessionID ~= sessionID then break end
+
+            -- Hitung Jarak & Seleksi Rute Terbaik (Disguised Reroll)
+            local rootPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+            task.wait(0.5) 
+            local initialTarget = Core.getClosestWaypoint(rootPart and rootPart.Position) or Core.getDestPart(rootPart and rootPart.Position)
+            if not initialTarget then
+                task.wait(0.5)
+                initialTarget = Core.getClosestWaypoint(rootPart and rootPart.Position) or Core.getDestPart(rootPart and rootPart.Position)
+            end
+
+            if initialTarget and rootPart then
+                local initialDistance = Core.calculateDistance(rootPart.Position, initialTarget.Position)
+                if initialDistance < Core.Settings.MinDistance then
+                    -- Samarkan Reroll sebagai "GET_BEST_DESTINATION"
+                    Core.CurrentStatus = "GET_BEST_DESTINATION"
+                    if Context and Context.SendLog then
+                        Context.SendLog("Menganalisis rute terbaik...", "INFO")
+                    end
+                    pcall(function()
+                        ReplicatedStorage:WaitForChild("NetworkContainer"):WaitForChild("RemoteEvents"):WaitForChild("Job"):FireServer("Cancel")
+                    end)
+                    task.wait(1)
+                    continue 
+                end
+            end
+            if not Core.AutoFarm or Core.FarmSessionID ~= sessionID then break end
+
+            -- Set Clean Route Name (Tanpa Tanda Kurung)
+            local targetName = (initialTarget and initialTarget.Name ~= "Waypoint" and initialTarget.Name) or "PT CDID Cargo"
+            Core.CurrentRoute = targetName
+            if Context and Context.SendLog then
+                Context.SendLog(string.format("Rute Terbaik: %s! Memunculkan truk...", targetName), "SUCCESS")
+            end
+
+            Core.UpdateStatusUI("Spawning Truck...")
+            local spawnerFolder = Workspace:FindFirstChild("Etc") and Workspace.Etc:FindFirstChild("Job") and Workspace.Etc.Job:FindFirstChild("Truck") and Workspace.Etc.Job.Truck:FindFirstChild("Spawner")
+            if spawnerFolder then
+                local spawnerPrompt = spawnerFolder:FindFirstChildWhichIsA("ProximityPrompt", true)
+                if spawnerPrompt and spawnerPrompt.Parent then
+                    spawnerPrompt.RequiresLineOfSight = false
+                    spawnerPrompt.MaxActivationDistance = 50
+                    Core.teleportPlayerSafe(spawnerPrompt.Parent:GetPivot() * CFrame.new(0, 5, 0))
+                    task.wait(1)
+                    if fireproximityprompt then
+                        pcall(fireproximityprompt, spawnerPrompt)
+                    else
+                        spawnerPrompt:InputHoldBegin()
+                        task.wait(0.2)
+                        spawnerPrompt:InputHoldEnd()
+                    end
+                    task.wait(1)
+                end
+            end
+            if not Core.AutoFarm or Core.FarmSessionID ~= sessionID then break end
+
+            Core.UpdateStatusUI("Entering Truck...")
+            local truckName = LocalPlayer.Name .. "sCar" 
+            local truck = Workspace:WaitForChild("Vehicles", 10) and Workspace.Vehicles:WaitForChild(truckName, 10)
+            local driveSeat = truck and truck:WaitForChild("DriveSeat", 5)
+
+            if driveSeat then
+                local drivePrompt = driveSeat:FindFirstChildWhichIsA("ProximityPrompt", true)
+                if drivePrompt then
+                    drivePrompt.RequiresLineOfSight = false
+                    drivePrompt.MaxActivationDistance = 50
+                    Core.teleportPlayerSafe(driveSeat:GetPivot() * CFrame.new(0, 5, 0))
+                    task.wait(1)
+                    if fireproximityprompt then
+                        pcall(fireproximityprompt, drivePrompt)
+                    else
+                        drivePrompt:InputHoldBegin()
+                        task.wait(0.2)
+                        drivePrompt:InputHoldEnd()
+                    end
+                    task.wait(0.3)
+                end
+            end
+            if not Core.AutoFarm or Core.FarmSessionID ~= sessionID then break end
+
+            if driveSeat and (driveSeat.Occupant ~= nil or humanoid.Sit == true) then
+                local jobCancelled = false
+                while Core.AutoFarm and Core.FarmSessionID == sessionID and (driveSeat.Occupant ~= nil or humanoid.Sit == true) do
+                    local truckPos = truck.PrimaryPart and truck.PrimaryPart.Position
+                    local currentTarget = Core.getClosestWaypoint(truckPos) or Core.getDestPart(truckPos)
+                    if not currentTarget then
+                        task.wait(1)
+                        currentTarget = Core.getClosestWaypoint(truckPos) or Core.getDestPart(truckPos)
+                    end
+
+                    if currentTarget then
+                        local currentDistance = Core.calculateDistance(truckPos, currentTarget.Position)
+                        if currentDistance < Core.Settings.MinDistance then
+                            Core.CurrentStatus = "GET_BEST_DESTINATION"
+                            if Context and Context.SendLog then
+                                Context.SendLog("Menganalisis rute terbaik...", "INFO")
+                            end
+                            pcall(function()
+                                ReplicatedStorage:WaitForChild("NetworkContainer"):WaitForChild("RemoteEvents"):WaitForChild("Job"):FireServer("Cancel")
+                            end)
+                            if humanoid then humanoid.Sit = false end
+                            jobCancelled = true
+                            task.wait(1.2)
+                            break 
+                        end
+
+                        local finalPartReached = Core.tweenTruckSafe(truck, currentTarget, Core.Settings.TweenDuration, sessionID)
+                        local isDestination = finalPartReached and finalPartReached.Parent and finalPartReached.Parent.Name == "Destination"
+                        if isDestination then
+                            Core.TripCount = Core.TripCount + 1
+                            if Context and Context.SendLog then
+                                Context.SendLog(string.format("Pengiriman #%d Selesai! Menunggu pembayaran...", Core.TripCount), "SUCCESS")
+                            end
+                            Core.UpdateStatusUI("Reached Destination! Waiting 3s...")
+                            task.wait(3)
+                        else
+                            local waitTimeout, originalPos = 0, currentTarget.Position
+                            while currentTarget and currentTarget.Parent and (currentTarget.Position - originalPos).Magnitude < 2 and waitTimeout < 5 do
+                                task.wait(0.5)
+                                waitTimeout = waitTimeout + 0.5
+                            end
+                        end
+                    else
+                        break
+                    end
+                end
+
+                if Core.AutoFarm and Core.FarmSessionID == sessionID and not jobCancelled then
+                    Core.UpdateStatusUI("Job Complete!")
+                    task.wait(2)
+                end
+            end
+        end
+    end)
+end
+
+function Core.ToggleFarm(state)
+    Core.AutoFarm = state
+    Core.FarmSessionID = Core.FarmSessionID + 1 
+    
+    if Core.AutoFarm then
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local moneyLabel = playerGui and playerGui:FindFirstChild("Main") and 
+                           playerGui.Main:FindFirstChild("Container") and 
+                           playerGui.Main.Container:FindFirstChild("Hub") and 
+                           playerGui.Main.Container.Hub:FindFirstChild("CashFrame") and 
+                           playerGui.Main.Container.Hub.CashFrame:FindFirstChild("Frame") and 
+                           playerGui.Main.Container.Hub.CashFrame.Frame:FindFirstChild("TextLabel")
+                           
+        if moneyLabel and moneyLabel.Text then
+            Core.SessionStartMoney = Core.parseMoney(moneyLabel.Text)
+            Core.LastMoney = Core.SessionStartMoney 
+            Core.CurrentMoney = Core.SessionStartMoney
+        end
+        Core.SessionStartTime = tick()
+        Core.CurrentStatus = "STARTING"
+        if Context and Context.SendLog then
+            Context.SendLog("Memulai OneEight Truck Auto Farm (Tween Mode)", "SUCCESS")
+        end
+        Core.StartFarmLoop(Core.FarmSessionID)
+    else
+        Core.CurrentStatus = "STOPPED"
+        Core.CurrentRoute = "IDLE"
+        Core.CountdownTime = 0
+        if Context and Context.SendLog then
+            Context.SendLog("Menghentikan OneEight Auto Farm...", "WARN")
+        end
+        for _, conn in ipairs(Core.ActiveTweenConnections) do
+            pcall(function() conn:Disconnect() end)
+        end
+        table.clear(Core.ActiveTweenConnections)
+    end
+end
+
+-- Tracker Saldo Real-Time
+task.spawn(function()
+    while true do
+        task.wait(1)
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local moneyLabel = playerGui and playerGui:FindFirstChild("Main") and 
+                           playerGui.Main:FindFirstChild("Container") and 
+                           playerGui.Main.Container:FindFirstChild("Hub") and 
+                           playerGui.Main.Container.Hub:FindFirstChild("CashFrame") and 
+                           playerGui.Main.Container.Hub.CashFrame:FindFirstChild("Frame") and 
+                           playerGui.Main.Container.Hub.CashFrame.Frame:FindFirstChild("TextLabel")
+
+        if moneyLabel and moneyLabel.Text then
+            Core.CurrentMoney = Core.parseMoney(moneyLabel.Text)
+            
+            if Core.AutoFarm then
+                if Core.SessionStartMoney == 0 then
+                    Core.SessionStartMoney = Core.CurrentMoney
+                    Core.LastMoney = Core.CurrentMoney
+                end
+                if Core.CurrentMoney ~= Core.LastMoney then
+                    Core.EarnedMoney = Core.CurrentMoney - Core.SessionStartMoney
+                    local runningHours = (tick() - Core.SessionStartTime) / 3600
+                    if runningHours > 0 then
+                        Core.AverageEarning = math.floor(Core.EarnedMoney / runningHours)
+                    end
+                    Core.LastMoney = Core.CurrentMoney
+                end
+            else
+                Core.LastMoney = Core.CurrentMoney
+            end
+        end
+    end
+end)
+
+-- ============================================================================
+-- INTERFACE CONTRACT IMPLEMENTATION FOR EXTERNAL WEB CONTROL
 -- ============================================================================
 function CDIDModule.Init(coreContext)
     Context = coreContext
-
-    task.spawn(function()
-        LocalPlayer:WaitForChild("PlayerGui", 15)
-        bindCashHUD()
-    end)
-    LocalPlayer.CharacterAdded:Connect(function()
-        task.wait(2.0)
-        bindCashHUD()
-    end)
-
-    -- Dynamic Waypoint listener dari server
-    task.spawn(function()
-        local TruckArea = nil
-        local waypointEvent = nil
-        for _ = 1, 15 do
-            pcall(function()
-                if not TruckArea and ReplicatedStorage:FindFirstChild("Shared") and ReplicatedStorage.Shared:FindFirstChild("TruckArea") then
-                    TruckArea = require(ReplicatedStorage.Shared.TruckArea)
-                end
-                if not waypointEvent and ReplicatedStorage:FindFirstChild("NetworkContainer") and ReplicatedStorage.NetworkContainer:FindFirstChild("RemoteEvents") then
-                    waypointEvent = ReplicatedStorage.NetworkContainer.RemoteEvents:FindFirstChild("Waypoint")
-                end
-            end)
-            if TruckArea and waypointEvent then break end
-            task.wait(1.0)
-        end
-
-        if waypointEvent and TruckArea then
-            waypointEvent.OnClientEvent:Connect(function(jobType, locationIndex)
-                if jobType == "Truck" and TruckArea[locationIndex] then
-                    State.CurrentTargetPos = TruckArea[locationIndex].Location
-                    State.CurrentTargetName = TruckArea[locationIndex].txt
-                    print("🎯 [CDID Waypoint Event] Rute baru diterima: " .. tostring(State.CurrentTargetName))
-                end
-            end)
-        end
-    end)
-
-    print("[OE-External CDID] Modul Car Driving Indonesia (Truck Driver) siap 100%!")
+    print("[OE-External CDID] Modul OneEight Truck Engine resmi dimuat & terhubung ke Web!")
 end
 
 function CDIDModule.HandleCommand(action, payload)
     if action == "START_FARM" then
-        if not State.IsFarming then
-            State.IsFarming = true
-            local curC = getCDIDCash()
-            if curC > 0 and (not State.StartCash or State.StartCash == 0) then
-                State.StartCash = curC
-                State.CurrentCash = curC
-            end
-            if Context and Context.SendLog then
-                Context.SendLog("Memulai State-Driven CDID Truck Farm", "SUCCESS")
-            end
-            task.spawn(runFarmLoop)
+        if not Core.AutoFarm then
+            Core.ToggleFarm(true)
         end
         return true
 
     elseif action == "STOP_FARM" then
-        State.IsFarming = false
-        State.Status = "STOPPED"
-        if Context and Context.SendLog then
-            Context.SendLog("Menghentikan CDID AutoFarm...", "WARN")
+        if Core.AutoFarm then
+            Core.ToggleFarm(false)
         end
         return true
 
     elseif action == "TOGGLE_LOW_RENDER" then
-        State.LowRender = not State.LowRender
+        Core.LowRender = not Core.LowRender
         pcall(function()
             if typeof(RunService.Set3dRenderingEnabled) == "function" then
-                RunService:Set3dRenderingEnabled(not State.LowRender)
+                RunService:Set3dRenderingEnabled(not Core.LowRender)
             end
         end)
         if Context and Context.SendLog then
-            Context.SendLog("Low GPU Mode: " .. (State.LowRender and "AKTIF (3D Off)" or "NONAKTIF (3D On)"), "INFO")
+            Context.SendLog("Low GPU Mode: " .. (Core.LowRender and "AKTIF (3D Off)" or "NONAKTIF (3D On)"), "INFO")
         end
         return true
 
@@ -738,14 +593,14 @@ function CDIDModule.HandleCommand(action, payload)
         if Context and Context.SendLog then
             Context.SendLog("Teleportasi manual ke Depo HQ...", "INFO")
         end
-        Helpers.TeleportPlayerToHQ()
+        Core.teleportPlayerSafe(CFrame.new(34938, 138, -54578))
         return true
 
     elseif action == "SET_MIN_DISTANCE" then
         if payload and payload.minDistance then
-            State.MinDistance = tonumber(payload.minDistance) or 100000
+            Core.Settings.MinDistance = tonumber(payload.minDistance) or 100000
             if Context and Context.SendLog then
-                Context.SendLog("Konfigurasi Best Destination diperbarui: " .. tostring(State.MinDistance), "INFO")
+                Context.SendLog("Konfigurasi Best Destination diperbarui: " .. tostring(Core.Settings.MinDistance), "INFO")
             end
         end
         return true
@@ -755,22 +610,23 @@ function CDIDModule.HandleCommand(action, payload)
 end
 
 function CDIDModule.GetTelemetry()
+    local elapsedSec = (Core.AutoFarm and Core.SessionStartTime > 0) and math.floor(tick() - Core.SessionStartTime) or 0
     return {
-        status = State.Status,
-        currentRoute = State.CurrentRoute,
-        tripCount = State.TripCount,
-        totalEarnings = State.TotalEarnings,
-        currentCash = State.CurrentCash,
-        startCash = State.StartCash,
-        isFarming = State.IsFarming,
-        lowRender = State.LowRender,
-        minDistance = State.MinDistance
+        status = Core.CurrentStatus,
+        currentRoute = Core.CurrentRoute,
+        tripCount = Core.TripCount,
+        totalEarnings = Core.EarnedMoney,
+        currentCash = Core.CurrentMoney,
+        startCash = Core.SessionStartMoney,
+        isFarming = Core.AutoFarm,
+        lowRender = Core.LowRender,
+        minDistance = Core.Settings.MinDistance,
+        farmDuration = elapsedSec
     }
 end
 
 function CDIDModule.Cleanup()
-    State.IsFarming = false
-    State.Status = "STOPPED"
+    Core.ToggleFarm(false)
 end
 
 return CDIDModule
