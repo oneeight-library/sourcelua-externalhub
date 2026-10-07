@@ -1018,13 +1018,13 @@
         bots.set(data.bot.botId, data.bot);
         renderFleetNavigators();
         renderMainView();
-        addLog(data.bot.name, `Akun terhubung (${data.bot.gameName || 'Roblox'})`, "SUCCESS");
+        addLog(data.bot.name, `Akun terhubung (${data.bot.gameName || 'Roblox'})`, "SUCCESS", data.bot.botId);
       } else if (data.type === "BOT_LEFT") {
         bots.delete(data.botId);
         if (selectedBotId === data.botId) selectedBotId = "ALL";
         renderFleetNavigators();
         renderMainView();
-        addLog(data.name || "Bot", "Akun offline", "WARN");
+        addLog(data.name || "Bot", "Akun offline", "WARN", data.botId);
       } else if (data.type === "BOT_TELEMETRY") {
         const existing = bots.get(data.botId);
         if (existing) {
@@ -1080,27 +1080,34 @@
           renderFleetNavigators();
           renderMainView();
         }
-        addLog(data.botName || "Bot", `ROBLOX KICK: ${data.reason}`, "ERROR");
+        addLog(data.botName || "Bot", `ROBLOX KICK: ${data.reason}`, "ERROR", data.botId);
       } else if (data.type === "BOT_LOG") {
-        addLog(data.botName || "Bot", data.log, data.level);
+        addLog(data.botName || "Bot", data.log, data.level, data.botId);
       }
     }
 
-    function addLog(source, msg, level) {
+    function addLog(source, msg, level, botId = null) {
       const d = new Date();
       const timeStr = d.toTimeString().split(" ")[0];
-      logsHistory.push({ time: timeStr, source, msg, level: level || "INFO" });
-      if (logsHistory.length > 80) logsHistory.shift();
+      logsHistory.push({ time: timeStr, source, msg, level: level || "INFO", botId });
+      if (logsHistory.length > 120) logsHistory.shift();
 
       const consoleBox = document.getElementById("terminalConsole");
-      if (consoleBox) {
-        const isNearBottom = (consoleBox.scrollHeight - consoleBox.scrollTop - consoleBox.clientHeight) < 40;
-        const div = document.createElement("div");
-        div.className = "log-line";
-        div.innerHTML = `<span class="log-time">[${timeStr}]</span> <span class="log-${level}">[${source}] ${msg}</span>`;
-        consoleBox.appendChild(div);
-        if (isNearBottom) {
-          consoleBox.scrollTop = consoleBox.scrollHeight;
+      if (consoleBox && selectedBotId !== "ALL" && activeTab === "tab_logs") {
+        const curBot = bots.get(selectedBotId);
+        const isMatch = (botId && botId === selectedBotId) || (curBot && curBot.name && source.toLowerCase() === curBot.name.toLowerCase());
+        if (isMatch) {
+          if (consoleBox.innerHTML.includes("Belum ada log")) {
+            consoleBox.innerHTML = "";
+          }
+          const isNearBottom = (consoleBox.scrollHeight - consoleBox.scrollTop - consoleBox.clientHeight) < 40;
+          const div = document.createElement("div");
+          div.className = "log-line";
+          div.innerHTML = `<span class="log-time">[${timeStr}]</span> <span class="log-${level || 'INFO'}">[${source}] ${msg}</span>`;
+          consoleBox.appendChild(div);
+          if (isNearBottom) {
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+          }
         }
       }
     }
@@ -1121,7 +1128,7 @@
 
     function rejoinBot(botId) {
       sendBotCommand(botId, "REJOIN_SERVER");
-      addLog("Controller", "Mengirim perintah Rejoin Server...", "WARN");
+      addLog("Controller", "Mengirim perintah Rejoin Server...", "WARN", botId);
     }
 
     function toggleAutoRejoin(botId, enabled) {
@@ -1442,14 +1449,6 @@
           </div>
         </div>
 
-        <div class="card-box">
-          <div class="card-head">
-            <h3>Aktivitas Live</h3>
-          </div>
-          <div class="console-terminal" id="terminalConsole">
-            ${renderLogsHTML()}
-          </div>
-        </div>
       `;
     }
 
@@ -1828,26 +1827,47 @@
     function renderLogsTab(bot) {
       return `
         <div class="card-box">
-          <div class="card-head">
-            <h3>Konsol Live Stream</h3>
+          <div class="card-head" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>Konsol Live: ${bot.name || 'Akun'}</h3>
+            <button class="btn btn-outline" style="padding: 4px 12px; font-size: 11px;" onclick="clearLogs('${bot.botId}')">Bersihkan Log</button>
           </div>
           <div class="console-terminal" id="terminalConsole">
-            ${renderLogsHTML()}
+            ${renderLogsHTML(bot.botId, bot.name)}
           </div>
         </div>
       `;
     }
 
-    function renderLogsHTML() {
-      if (logsHistory.length === 0) {
-        return '<div style="color: var(--text-dim); font-style: italic;">Belum ada log tercatat...</div>';
+    function renderLogsHTML(targetBotId, targetBotName) {
+      const filtered = logsHistory.filter(l => {
+        if (!targetBotId) return true;
+        return l.botId === targetBotId || (targetBotName && l.source && l.source.toLowerCase() === targetBotName.toLowerCase());
+      });
+
+      if (filtered.length === 0) {
+        return `<div style="color: var(--text-dim); font-style: italic; padding: 12px 0;">Belum ada aktivitas log untuk akun ${targetBotName || 'ini'}...</div>`;
       }
-      return logsHistory.map(l => `
+      return filtered.map(l => `
         <div class="log-line">
           <span class="log-time">[${l.time}]</span>
           <span class="log-${l.level}">[${l.source}] ${l.msg}</span>
         </div>
       `).join('');
+    }
+
+    function clearLogs(targetBotId) {
+      if (!targetBotId || targetBotId === "ALL") {
+        logsHistory = [];
+      } else {
+        const b = bots.get(targetBotId);
+        const name = b ? (b.name || "").toLowerCase() : "";
+        logsHistory = logsHistory.filter(l => l.botId !== targetBotId && (!name || (l.source || "").toLowerCase() !== name));
+      }
+      const consoleBox = document.getElementById("terminalConsole");
+      if (consoleBox) {
+        const curBot = bots.get(selectedBotId);
+        consoleBox.innerHTML = renderLogsHTML(selectedBotId, curBot ? curBot.name : "");
+      }
     }
 
     // Jalankan WebSocket saat halaman dimuat
