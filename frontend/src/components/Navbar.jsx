@@ -43,6 +43,7 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setIsOpen(true)}
                 className="md:hidden flex items-center gap-2 h-9 px-3 bg-zinc-900/60 border-zinc-800 text-xs font-semibold"
               >
                 <span className="truncate max-w-[130px]">{currentLabel}</span>
