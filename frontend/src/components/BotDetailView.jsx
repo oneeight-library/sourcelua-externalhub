@@ -4,6 +4,13 @@ import { Button } from "@/ui/button.jsx";
 import { Badge } from "@/ui/badge.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
 import { Switch } from "@/ui/switch.jsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui/select.jsx";
 import { ConsoleTab } from "@/components/tabs/ConsoleTab.jsx";
 import { CDIDMenuTab } from "@/components/tabs/CDIDMenuTab.jsx";
 import { getGameConfig } from "@/config/games.js";
@@ -435,22 +442,23 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                     <span className="text-[10px] text-zinc-500 font-mono">Buka dari mana saja</span>
                   </div>
                   <div className="flex gap-2">
-                    <select
-                      value={selectedDealer}
-                      onChange={(e) => setSelectedDealer(e.target.value)}
-                      className="flex-1 h-9 px-3 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-zinc-700"
-                    >
-                      <option value="Dealer Utama">Dealer Utama</option>
-                      <option value="Toyota">Toyota</option>
-                      <option value="Honda">Honda</option>
-                      <option value="Mitsubishi">Mitsubishi</option>
-                      <option value="BMW">BMW</option>
-                      <option value="Mercedes">Mercedes-Benz</option>
-                      <option value="Porsche">Porsche</option>
-                      <option value="Hyundai">Hyundai</option>
-                      <option value="Wuling">Wuling</option>
-                      <option value="Nissan">Nissan</option>
-                    </select>
+                    <Select value={selectedDealer} onValueChange={setSelectedDealer}>
+                      <SelectTrigger className="flex-1 h-9 border-zinc-800 bg-zinc-900/90 text-xs text-zinc-200">
+                        <SelectValue placeholder="Pilih Dealership..." />
+                      </SelectTrigger>
+                      <SelectContent className="border-zinc-800 bg-zinc-950 text-zinc-200">
+                        <SelectItem value="Dealer Utama">Dealer Utama</SelectItem>
+                        <SelectItem value="Toyota">Toyota</SelectItem>
+                        <SelectItem value="Honda">Honda</SelectItem>
+                        <SelectItem value="Mitsubishi">Mitsubishi</SelectItem>
+                        <SelectItem value="BMW">BMW</SelectItem>
+                        <SelectItem value="Mercedes">Mercedes-Benz</SelectItem>
+                        <SelectItem value="Porsche">Porsche</SelectItem>
+                        <SelectItem value="Hyundai">Hyundai</SelectItem>
+                        <SelectItem value="Wuling">Wuling</SelectItem>
+                        <SelectItem value="Nissan">Nissan</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <Button
