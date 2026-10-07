@@ -11,7 +11,8 @@ import { getGameConfig } from "@/config/games.js";
 import { 
   Play, 
   Square, 
-  RotateCcw, 
+  RotateCcw,
+  Clock, 
   ShieldCheck, 
   Zap, 
   Activity, 
@@ -41,6 +42,17 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
     setLowRender(checked);
     onSendCommand(bot.botId, "TOGGLE_LOW_RENDER", { enabled: checked });
   };
+
+  // Hitung Estimasi Rata-Rata Penghasilan per Jam (Avg / Hour)
+  const sessionSeconds = bot.sessionSeconds || 0;
+  const totalEarnings = bot.totalEarnings || 0;
+  let avgPerHourStr = "Menghitung...";
+  if (sessionSeconds >= 45 && totalEarnings > 0) {
+    const hourly = Math.floor((totalEarnings / sessionSeconds) * 3600);
+    avgPerHourStr = gameCfg.formatMoney(hourly) + " / Jam";
+  } else if (totalEarnings === 0 && sessionSeconds >= 60) {
+    avgPerHourStr = "Rp 0 / Jam";
+  }
 
   return (
     <div className="space-y-6">
@@ -124,8 +136,9 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                 <Coins className="h-4 w-4 text-emerald-400" />
                 Keuangan & Metrik Sesi
               </CardTitle>
-              <Badge variant="secondary" className="text-[10px] font-mono font-bold">
-                {bot.sessionTime || "00:00:00"}
+              <Badge variant="secondary" className="text-[10px] font-mono font-bold flex items-center gap-1.5 px-2 py-0.5 border border-zinc-800">
+                <Clock className="h-3 w-3 text-zinc-400" />
+                <span>{bot.sessionTime || "00:00:00"}</span>
               </Badge>
             </CardHeader>
             <CardContent className="p-4">
@@ -155,9 +168,9 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Durasi Sesi</span>
-                  <div className="text-sm sm:text-base font-extrabold text-zinc-100 font-mono mt-0.5">
-                    {bot.sessionTime || "00:00:00"}
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Avg / Jam (Estimasi)</span>
+                  <div className="text-sm sm:text-base font-extrabold text-emerald-400 font-mono mt-0.5 truncate" title={avgPerHourStr}>
+                    {avgPerHourStr}
                   </div>
                 </div>
 
