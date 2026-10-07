@@ -3,11 +3,45 @@ import { Badge } from "@/ui/badge.jsx";
 import { Button } from "@/ui/button.jsx";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/ui/sheet.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
-import { ChevronDown, Users } from "lucide-react";
+import { ChevronDown, Users, Terminal, Check } from "lucide-react";
 import { getGameConfig } from "@/config/games.js";
 
 export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus }) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [copiedLoader, setCopiedLoader] = React.useState(false);
+
+  const handleCopyLoader = () => {
+    const origin = typeof window !== "undefined" && window.location.origin 
+      ? window.location.origin 
+      : "https://externalhub.oneeight-project18.workers.dev";
+    const loaderCode = `loadstring(game:HttpGet("${origin}/loader"))()`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(loaderCode).then(() => {
+        setCopiedLoader(true);
+        setTimeout(() => setCopiedLoader(false), 2000);
+      }).catch(() => fallbackCopy(loaderCode));
+    } else {
+      fallbackCopy(loaderCode);
+    }
+  };
+
+  const fallbackCopy = (text) => {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopiedLoader(true);
+      setTimeout(() => setCopiedLoader(false), 2000);
+    } catch (e) {
+      console.error("Gagal menyalin loader:", e);
+    }
+  };
 
   const selectedBot = bots.get(selectedBotId);
   const gameCfg = selectedBot ? getGameConfig(selectedBot.gameId) : null;
@@ -44,7 +78,32 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          
+          {/* Tombol Salin Loader */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopyLoader}
+            className={`flex items-center gap-1.5 h-9 px-2.5 sm:px-3 text-xs font-semibold transition-all border-zinc-800 shadow-sm ${
+              copiedLoader
+                ? "bg-emerald-950/50 border-emerald-500/50 text-emerald-300"
+                : "bg-zinc-900/60 hover:bg-zinc-800/90 text-zinc-200 hover:text-white"
+            }`}
+            title="Klik untuk salin script loader ke executor Roblox"
+          >
+            {copiedLoader ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="text-[11px] sm:text-xs">Tersalin!</span>
+              </>
+            ) : (
+              <>
+                <Terminal className="h-3.5 w-3.5 text-indigo-400" />
+                <span className="text-[11px] sm:text-xs font-semibold">Salin Loader</span>
+              </>
+            )}
+          </Button>
           
           {/* Mobile Account Switcher Trigger */}
           <div className="md:hidden">
@@ -132,9 +191,9 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
           </div>
 
           {/* WebSocket Status Indicator */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-800/80 bg-zinc-900/60">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border border-zinc-800/80 bg-zinc-900/60 shrink-0">
             <span className={`h-2 w-2 rounded-full ${isWsOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse' : 'bg-rose-500'}`} />
-            <span className="text-xs font-semibold text-zinc-300">{wsStatus}</span>
+            <span className="text-xs font-semibold text-zinc-300 hidden md:inline">{wsStatus}</span>
           </div>
 
         </div>
