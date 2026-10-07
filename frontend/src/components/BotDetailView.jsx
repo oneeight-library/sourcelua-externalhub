@@ -282,30 +282,19 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   
-                  <div className="col-span-2 p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
+                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                     <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Status Rute</span>
-                    <span className="text-xs font-bold text-zinc-100 mt-0.5 block truncate">
-                      {bot.currentRoute || "Menunggu Instruksi"}
+                    <span 
+                      className="text-xs font-bold text-zinc-100 mt-0.5 block truncate"
+                      title={(bot.currentRoute || "Menunggu Instruksi").replace(/\s*\(.*?\)/g, "").trim()}
+                    >
+                      {(bot.currentRoute || "Menunggu Instruksi").replace(/\s*\(.*?\)/g, "").trim()}
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
-                    <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Kecepatan</span>
-                    <span className="text-xs font-bold text-zinc-100 font-mono mt-0.5 block">
-                      {bot.speed || 0} KP/H
-                    </span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
-                    <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Jarak Sisa</span>
-                    <span className="text-xs font-bold text-zinc-100 font-mono mt-0.5 block">
-                      {bot.distRemaining || "0m"}
-                    </span>
-                  </div>
-
-                  <div className="col-span-2 p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                     <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Status Gerak</span>
                     <span className="text-xs font-bold text-emerald-400 mt-0.5 block truncate">
                       {bot.status || "Standby"}

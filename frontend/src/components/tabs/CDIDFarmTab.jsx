@@ -38,7 +38,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
             <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
               <span className="text-[10px] font-semibold uppercase text-zinc-400 block">Status Rute</span>
-              <span className="text-xs font-bold text-zinc-100 truncate block mt-0.5">{bot.currentRoute || "Menunggu Instruksi"}</span>
+              <span className="text-xs font-bold text-zinc-100 truncate block mt-0.5">{(bot.currentRoute || "Menunggu Instruksi").replace(/\s*\(.*?\)/g, "").trim()}</span>
             </div>
             <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
               <span className="text-[10px] font-semibold uppercase text-zinc-400 block">Total Pengiriman</span>
