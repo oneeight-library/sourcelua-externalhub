@@ -192,9 +192,10 @@ Modules["games/cdid"] = function()
     100% Exact Faithful Clone of Official OneEight Hub Truck Engine:
     - Settle Wait: Exactly 50 Seconds (DriveMinDuration = 50)
     - Anti-Stream Pause: GuiService.GameplayPausedNotificationEnabled = false
-    - Preload Streaming: RequestStreamAroundAsync 12s before teleport
-    - Exact DriveEngine with A-Chassis ReadOnly Fix & PromptDriveSeat
-    - Raycast asphalt detection with 120 studs limit and safe snap
+    - Preload Streaming: RequestStreamAroundAsync 3s before teleport
+    - Exact DriveEngine with A-Chassis ReadOnly Fix, PromptDriveSeat & 3s confirm loop
+    - 0.6s Network Ownership buffer before State 6 driving
+    - Raycast asphalt detection with 120 studs limit and clean flat CFrame landing
     - SSOT Cash Delta payout detection (>= 15,000,000)
     - Smart Chaining with minStuds evaluation
     - Disguised reroll as GET_BEST_DESTINATION
@@ -257,7 +258,7 @@ local State = {
 }
 
 -- ============================================================================
--- FORMATTERS & SSOT CASH
+-- FORMATTERS & SSOT CASH (100% PERSIS ONEEIGHT HELPERS & UI)
 -- ============================================================================
 local function formatMoney(val)
     if not val then return "Rp 0" end
@@ -291,57 +292,36 @@ local function updateCash(txt)
     end
 end
 
-local function getCDIDCash()
-    if activeCashLabel and activeCashLabel.Parent then
-        local val = parseCashString(activeCashLabel.Text)
-        if val > 0 then
-            State.CurrentCash = val
-            return val
-        end
-    end
-    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if pGui then
-        local ok, lbl = pcall(function()
-            return pGui.Main.Container.Hub.CashFrame.Frame.TextLabel
-        end)
-        if ok and lbl then
-            activeCashLabel = lbl
-            local val = parseCashString(lbl.Text)
-            if val > 0 then
-                State.CurrentCash = val
-                return val
-            end
-        end
-    end
-    return State.CurrentCash or 0
-end
-
 local function bindCashHUD()
-    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if not pGui then return end
+    task.spawn(function()
+        local pGui = LocalPlayer:WaitForChild("PlayerGui", 15)
+        if pGui then
+            local main = pGui:WaitForChild("Main", 15)
+            local container = main and main:WaitForChild("Container", 15)
+            local hub = container and container:WaitForChild("Hub", 15)
+            local cashFrame = hub and hub:WaitForChild("CashFrame", 15)
+            local innerFrame = cashFrame and cashFrame:WaitForChild("Frame", 15)
+            local targetLabel = innerFrame and innerFrame:WaitForChild("TextLabel", 15)
 
-    local targetLabel = nil
-    pcall(function()
-        targetLabel = pGui.Main.Container.Hub.CashFrame.Frame.TextLabel
-    end)
+            if not targetLabel then
+                for _, desc in ipairs(pGui:GetDescendants()) do
+                    if desc:IsA("TextLabel") and desc.Name == "TextLabel" and desc.Parent and desc.Parent.Name == "Frame" and desc.Parent.Parent and desc.Parent.Parent.Name == "CashFrame" then
+                        targetLabel = desc
+                        break
+                    end
+                end
+            end
 
-    if not targetLabel then
-        for _, desc in ipairs(pGui:GetDescendants()) do
-            if desc:IsA("TextLabel") and desc.Name == "TextLabel" and desc.Parent and desc.Parent.Name == "Frame" and desc.Parent.Parent and desc.Parent.Parent.Name == "CashFrame" then
-                targetLabel = desc
-                break
+            if targetLabel then
+                activeCashLabel = targetLabel
+                updateCash(targetLabel.Text)
+                targetLabel:GetPropertyChangedSignal("Text"):Connect(function()
+                    updateCash(targetLabel.Text)
+                end)
+                print("[OE-External CDID] Berhasil mengaitkan HUD saldo pemain (SSOT)!")
             end
         end
-    end
-
-    if targetLabel then
-        activeCashLabel = targetLabel
-        updateCash(targetLabel.Text)
-        targetLabel:GetPropertyChangedSignal("Text"):Connect(function()
-            updateCash(targetLabel.Text)
-        end)
-        print("[OE-External CDID] Berhasil mengaitkan HUD saldo pemain!")
-    end
+    end)
 end
 
 -- ============================================================================
@@ -419,12 +399,22 @@ function DriveEngine.EnsureSeated(car)
     else
         pcall(function() seat:Sit(hum) end)
     end
-    task.wait(0.5)
+
+    task.delay(1.0, function()
+        if hum and not hum.Sit and seat then
+            pcall(function() seat:Sit(hum) end)
+        end
+    end)
+
+    local timeout = os.clock()
+    while not hum.Sit and (os.clock() - timeout < 3.0) do
+        task.wait(0.1)
+    end
     return hum.Sit
 end
 
 -- ============================================================================
--- TRUCK FARM HELPERS (100% EXACT ONEEIGHT METHODS + ANTI STREAM PAUSE)
+-- TRUCK FARM HELPERS (100% EXACT ONEEIGHT METHODS)
 -- ============================================================================
 local Helpers = {}
 
@@ -449,14 +439,12 @@ function Helpers.TeleportPlayerToHQ()
     local dist = (hrp.Position - hqPos).Magnitude
 
     if dist > 200 then
-        -- Unduh chunk HQ terlebih dahulu
         Helpers.PreloadStream(hqPos)
         hrp.Anchored = true
-        task.wait(0.3)
         hrp.CFrame = CFrame.new(hqPos + Vector3.new(0, 3.5, 0))
         hrp.AssemblyLinearVelocity = Vector3.zero
         hrp.AssemblyAngularVelocity = Vector3.zero
-        task.wait(0.8)
+        task.wait(0.5)
         hrp.Anchored = false
     else
         hrp.Anchored = false
@@ -558,7 +546,7 @@ local function autoFirePrompt(obj, preDelay)
 end
 
 -- ============================================================================
--- VEHICLE TELEPORT (PURE 50S IDLE WAIT & RAYCAST ASPHALT DETECTION)
+-- VEHICLE TELEPORT (100% PERSIS METODE ONEEIGHT TANPA JITTER/TOUCHINTEREST)
 -- ============================================================================
 local function teleportVehicleToDestination(car, targetPos, waitDuration)
     local waitTime = (waitDuration ~= nil) and waitDuration or (State.DriveMinDuration or 50)
@@ -569,8 +557,7 @@ local function teleportVehicleToDestination(car, targetPos, waitDuration)
     DriveEngine.EnsureSeated(car)
 
     local startTime = os.clock()
-    local streamRequested1 = false
-    local streamRequested2 = false
+    local streamRequested = false
 
     print(string.format("[CDID Truck] ⏳ Menunggu estimasi perjalanan %d detik (kendaraan diam murni, no movement)...", waitTime))
 
@@ -579,13 +566,9 @@ local function teleportVehicleToDestination(car, targetPos, waitDuration)
         local remaining = math.max(0, math.ceil(waitTime - elapsed))
         State.Status = string.format("DRIVING (%ds)", remaining)
 
-        -- 🌐 Preload Streaming 12 Detik & 4 Detik Sebelum Selesai (Anti Stream Pause)
-        if remaining <= 12 and not streamRequested1 then
-            streamRequested1 = true
-            Helpers.PreloadStream(targetPos)
-        end
-        if remaining <= 4 and not streamRequested2 then
-            streamRequested2 = true
+        -- 🌐 Preload Streaming Non-Blocking 3 Detik Sebelum Selesai (Persis OneEight)
+        if remaining <= 3 and not streamRequested then
+            streamRequested = true
             Helpers.PreloadStream(targetPos)
         end
 
@@ -598,22 +581,13 @@ local function teleportVehicleToDestination(car, targetPos, waitDuration)
     local rayParams = RaycastParams.new()
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
     local ignoreList = { car, LocalPlayer.Character }
-    if workspace:FindFirstChild("Etc") then table.insert(ignoreList, workspace.Etc) end
+    if workspace:FindFirstChild("Etc") then
+        table.insert(ignoreList, workspace.Etc)
+    end
     rayParams.FilterDescendantsInstances = ignoreList
 
     local rayOrigin = Vector3.new(targetPos.X, targetPos.Y + 40, targetPos.Z)
     local groundRay = workspace:Raycast(rayOrigin, Vector3.new(0, -120, 0), rayParams)
-
-    -- Jika aspal belum ter-stream, tunggu toleransi maksimal 1.5s
-    if not groundRay then
-        local retryRay = 0
-        while not groundRay and retryRay < 1.5 do
-            task.wait(0.2)
-            retryRay = retryRay + 0.2
-            groundRay = workspace:Raycast(rayOrigin, Vector3.new(0, -120, 0), rayParams)
-        end
-    end
-
     local landY = (groundRay and groundRay.Position.Y + 2.0) or targetPos.Y
 
     local startCF = car:GetPivot()
@@ -622,64 +596,40 @@ local function teleportVehicleToDestination(car, targetPos, waitDuration)
     local stopPos = Vector3.new(targetPos.X, landY, targetPos.Z)
     local targetCF = CFrame.new(stopPos, stopPos + flatDir)
 
+    -- Pastikan karakter tetap duduk saat teleportasi
     local hum = DriveEngine.GetValidHumanoid()
     if hum and not hum.Sit and seat then
         pcall(function() seat:Sit(hum) end)
     end
 
+    -- Snapshot saldo tepat sebelum mendarat di dropoff kargo tujuan
     State.PreDeliveryCash = State.CurrentCash or 0
+
+    -- Teleportasi instan seluruh model mobil + karakter langsung ke aspal jalanan tujuan
     car:PivotTo(targetCF)
 
-    -- Cari Destination Trigger Part di workspace.Etc.Job.Truck.Destination
-    local destFolder = workspace:FindFirstChild("Etc") and workspace.Etc:FindFirstChild("Job") and workspace.Etc.Job:FindFirstChild("Truck") and workspace.Etc.Job.Truck:FindFirstChild("Destination")
-    local foundDestPart = nil
-    if destFolder then
-        for _, p in ipairs(destFolder:GetChildren()) do
-            if p:IsA("BasePart") and (p.Position - targetPos).Magnitude < 300 then
-                foundDestPart = p
-                break
-            end
-        end
-    end
-
-    -- Pemicu Touched ke server via firetouchinterest & micro-pergerakan fisik
-    local primaryPart = car.PrimaryPart or car:FindFirstChildWhichIsA("BasePart")
-    if foundDestPart and primaryPart then
-        if firetouchinterest then
-            pcall(function()
-                firetouchinterest(primaryPart, foundDestPart, 0)
-                task.wait(0.05)
-                firetouchinterest(primaryPart, foundDestPart, 1)
-            end)
-        end
-    end
-
-    -- Micro-jitter fisik: gerakkan sedikit -0.3 dan +0.3 stud agar physics engine Roblox memicu .Touched di server
-    for i = 1, 3 do
-        if not State.IsFarming then break end
-        car:PivotTo(car:GetPivot() * CFrame.new(0, -0.3, 0))
-        task.wait(0.15)
-        car:PivotTo(car:GetPivot() * CFrame.new(0, 0.3, 0))
-        task.wait(0.15)
-    end
-
+    -- Netralkan gaya inersia pasca teleport
     for _, p in ipairs(car:GetDescendants()) do
         if p:IsA("BasePart") then
             p.AssemblyLinearVelocity = Vector3.zero
             p.AssemblyAngularVelocity = Vector3.zero
         end
     end
-    task.wait(1.0)
+
+    -- Jeda settle pasca teleportasi (1.2s) murni fisik alami agar validasi server selesai
+    task.wait(1.2)
     return true
 end
 
 -- ============================================================================
--- 6-STATE TRUCK AUTO FARM ENGINE (100% PERSIS ONEEIGHT AUTOFARM.LUA)
+-- 6-STATE TRUCK AUTO FARM ENGINE (100% EXACT ONEEIGHT STATE-DRIVEN LOOP)
 -- ============================================================================
 local function runFarmLoop()
     while State.IsFarming and _G.OE_ExternalRunning do
         local loopOk, loopErr = pcall(function()
-            -- STATE 1: DESPAWN OLD CAR
+            -- ================================================================
+            -- STATE 1: BERSIHKAN STATUS & KENDARAAN LAMA (Despawn Sync)
+            -- ================================================================
             local oldCar = DriveEngine.GetPlayerCar()
             if oldCar then
                 State.Status = "DESPAWN_OLD"
@@ -706,7 +656,9 @@ local function runFarmLoop()
 
             if not State.IsFarming then return end
 
-            -- STATE 2: ENROLL JOB & TELEPORT HQ
+            -- ================================================================
+            -- STATE 2: DAFTAR JOB TRUCK & TELEPORT KE DEPO HQ
+            -- ================================================================
             State.Status = "ENROLL_JOB"
             pcall(function()
                 ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Truck")
@@ -726,7 +678,9 @@ local function runFarmLoop()
 
             if not State.IsFarming then return end
 
-            -- STATE 3: PICK CARGO (STARTER PROMPT)
+            -- ================================================================
+            -- STATE 3: AMBIL MUATAN & SINKRONISASI WAYPOINT RUTE
+            -- ================================================================
             State.Status = "PICKING_CARGO"
             State.CurrentTargetPos = nil
             State.CurrentTargetName = nil
@@ -776,11 +730,13 @@ local function runFarmLoop()
                 return
             end
 
-            -- STATE 4: SPAWN TRUCK
+            -- ================================================================
+            -- STATE 4: MUNCULKAN ARMADA TRUK (Spawner Sync)
+            -- ================================================================
             State.Status = "SPAWN_TRUCK"
             State.CurrentRoute = cleanRoute(State.CurrentTargetName)
             if Context and Context.SendLog then
-                Context.SendLog(string.format("Rute Terbaik: %s! Memunculkan armada...", cleanRoute(State.CurrentTargetName)), "SUCCESS")
+                Context.SendLog(string.format("Rute Cocok: %s! Memunculkan armada...", cleanRoute(State.CurrentTargetName)), "SUCCESS")
             end
 
             tf = Helpers.findTruckFolder()
@@ -788,66 +744,95 @@ local function runFarmLoop()
             autoFirePrompt(spawnerObj, 0.3)
 
             local car = nil
-            for _ = 1, 15 do
-                if not State.IsFarming then break end
+            local carWait = 0
+            while not car and carWait < 8.0 and State.IsFarming do
                 car = DriveEngine.GetPlayerCar()
                 if car then break end
-                task.wait(0.2)
+                task.wait(0.4)
+                carWait = carWait + 0.4
+                if carWait == 3.2 and spawnerObj then
+                    autoFirePrompt(spawnerObj, 0.25)
+                end
             end
 
             if not car or not State.IsFarming then
                 if Context and Context.SendLog then
-                    Context.SendLog("Truk gagal terdeteksi di Workspace, retry...", "WARN")
+                    Context.SendLog("Truk gagal terdeteksi di Workspace, mereset...", "WARN")
                 end
+                pcall(function() ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Unemployee") end)
+                State.CurrentTargetPos = nil
+                State.CurrentTargetName = nil
+                task.wait(0.8)
                 return
             end
 
-            -- STATE 5: BOARD TRUCK & DRIVE (50 DETIK SESUAI ONEEIGHT)
+            -- ================================================================
+            -- STATE 5: DUDUK DI KURSI DRIVER & BUFFER NETWORK OWNERSHIP (Persis OneEight)
+            -- ================================================================
             State.Status = "BOARDING"
-            DriveEngine.EnsureSeated(car)
+            task.wait(0.3)
 
+            local seated = false
+            local seatWait = 0
+            while not seated and seatWait < 5.0 and State.IsFarming do
+                seated = DriveEngine.EnsureSeated(car)
+                if seated then break end
+                task.wait(0.5)
+                seatWait = seatWait + 0.5
+            end
+
+            if not State.IsFarming then return end
+
+            if not seated then
+                if Context and Context.SendLog then
+                    Context.SendLog("Gagal menaiki kursi supir. Mereset armada...", "WARN")
+                end
+                pcall(function() ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Unemployee") end)
+                State.CurrentTargetPos = nil
+                State.CurrentTargetName = nil
+                task.wait(0.8)
+                return
+            end
+
+            -- Buffer validasi network ownership server (100% Persis OneEight)
+            task.wait(0.6)
+
+            -- ================================================================
+            -- STATE 6: PERJALANAN, GAJI, & SMART CHAINING
+            -- ================================================================
             while State.IsFarming and State.CurrentTargetPos do
                 local driveOk = teleportVehicleToDestination(car, State.CurrentTargetPos, State.DriveMinDuration)
                 if not driveOk or not State.IsFarming then break end
 
-                -- STATE 6: WAIT PAYOUT (SSOT CASH DELTA >= 15JT)
+                -- Tunggu konfirmasi penerimaan gaji kargo dari server (Single Source of Truth)
                 State.Status = "WAIT_PAYOUT"
-                local cashBefore = State.PreDeliveryCash > 0 and State.PreDeliveryCash or getCDIDCash()
+                local cashBefore = State.PreDeliveryCash or State.CurrentCash or 0
                 local waitPayoutStart = os.clock()
-                local gained = 0
+                local cargoGained = 0
 
                 while (os.clock() - waitPayoutStart < 7.0) and State.IsFarming do
-                    local curCash = getCDIDCash()
+                    local curCash = State.CurrentCash or 0
                     if curCash > cashBefore then
                         local delta = curCash - cashBefore
                         if delta >= 15000000 then
-                            gained = delta
-                            State.CurrentCash = curCash
+                            cargoGained = delta
                             break
                         end
                     end
                     task.wait(0.1)
                 end
 
-                if gained == 0 then
-                    local curCash = getCDIDCash()
-                    if curCash > cashBefore then
-                        gained = curCash - cashBefore
-                        State.CurrentCash = curCash
-                    end
-                end
-
                 if not State.IsFarming then break end
 
-                if gained > 0 then
+                if cargoGained > 0 then
                     State.TripCount = State.TripCount + 1
-                    State.LastSalary = gained
-                    State.TotalEarnings = (State.TotalEarnings or 0) + gained
+                    State.LastSalary = cargoGained
+                    State.TotalEarnings = (State.TotalEarnings or 0) + cargoGained
                     if State.StartCash and State.StartCash > 0 and (State.CurrentCash - State.StartCash) > State.TotalEarnings then
                         State.TotalEarnings = State.CurrentCash - State.StartCash
                     end
                     if Context and Context.SendLog then
-                        Context.SendLog(string.format("Pengiriman #%d Berhasil! Gaji masuk (+%s)", State.TripCount, formatMoney(gained)), "SUCCESS")
+                        Context.SendLog(string.format("Pengiriman #%d Berhasil! Gaji masuk (+%s)", State.TripCount, formatMoney(cargoGained)), "SUCCESS")
                     end
                 else
                     if Context and Context.SendLog then
@@ -855,7 +840,9 @@ local function runFarmLoop()
                     end
                 end
 
-                -- SMART CHAINING: CEK RUTE SAMBUNGAN DARI DROPOFF
+                task.wait(0.3)
+
+                -- SMART CHAINING: Cek apakah ada rute sambungan baru dari server
                 local lastDeliveredPos = State.CurrentTargetPos
                 State.CurrentTargetPos = nil
                 State.CurrentTargetName = nil
@@ -875,21 +862,27 @@ local function runFarmLoop()
                     local curPos = pRoot and pRoot.Position or (lastDeliveredPos or Vector3.zero)
                     local chainDist = (State.CurrentTargetPos - curPos).Magnitude
 
+                    print(string.format("[CDID Smart Chain] Rute Sambungan: %s | Jarak: %.2f studs | Min: %.2f", tostring(State.CurrentTargetName), chainDist, minStuds))
+
                     if chainDist >= minStuds then
                         canChain = true
                         State.CurrentRoute = cleanRoute(State.CurrentTargetName)
                         if Context and Context.SendLog then
-                            Context.SendLog(string.format("[Smart Chain] Rute Sambungan: %s! Menghubungkan jalur...", cleanRoute(State.CurrentTargetName)), "SUCCESS")
+                            Context.SendLog(string.format("[Smart Chain] Rute Sambungan: %s (%.0f km)!", cleanRoute(State.CurrentTargetName), chainDist / 1000), "SUCCESS")
                         end
                         DriveEngine.EnsureSeated(car)
                         task.wait(0.5)
                     end
                 end
 
-                if not canChain then break end
+                if not canChain then
+                    State.CurrentTargetPos = nil
+                    State.CurrentTargetName = nil
+                    break
+                end
             end
 
-            -- SIKLUS SELESAI -> KEMBALI KE HQ
+            -- SIKLUS SELESAI -> RESIGN & KEMBALI KE HQ
             State.Status = "CYCLE_COMPLETE"
             pcall(function() ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Unemployee") end)
             State.CurrentTargetPos = nil
@@ -918,16 +911,13 @@ end
 function CDIDModule.Init(coreContext)
     Context = coreContext
 
-    task.spawn(function()
-        LocalPlayer:WaitForChild("PlayerGui", 15)
-        bindCashHUD()
-    end)
+    bindCashHUD()
     LocalPlayer.CharacterAdded:Connect(function()
-        task.wait(2.0)
+        task.wait(1.5)
         bindCashHUD()
     end)
 
-    -- Dynamic Waypoint listener dari server
+    -- Dynamic Waypoint listener dari server (Persis OneEight ui.lua)
     task.spawn(function()
         local TruckArea = nil
         local waypointEvent = nil
@@ -963,11 +953,6 @@ function CDIDModule.HandleCommand(action, payload)
         if not State.IsFarming then
             State.IsFarming = true
             State.FarmStartTime = os.clock()
-            local curC = getCDIDCash()
-            if curC > 0 and (not State.StartCash or State.StartCash == 0) then
-                State.StartCash = curC
-                State.CurrentCash = curC
-            end
             if Context and Context.SendLog then
                 Context.SendLog("Memulai OneEight State-Driven CDID Truck Farm (50s)", "SUCCESS")
             end
