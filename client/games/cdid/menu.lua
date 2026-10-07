@@ -251,6 +251,11 @@ local function joinMap(mapKey, serverCode)
     selectMapNative(mapKey)
     task.wait(0.3)
 
+    -- Tutup websocket lama secara bersih agar tidak ada duplikat di backend
+    if _G.OE_ExternalSocket then
+        pcall(function() _G.OE_ExternalSocket:Close() end)
+    end
+
     -- Pemicu 1: Remote CDID Network (Utama - Persis OneEight Hub)
     local net = getCDIDNetwork()
     if net and net.FireServer and codeToUse and codeToUse ~= "" then

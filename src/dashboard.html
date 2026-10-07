@@ -700,14 +700,29 @@
     function handleSocketMessage(data) {
       if (data.type === "SYNC_BOTS") {
         bots.clear();
-        (data.bots || []).forEach(b => bots.set(b.id || b.botId, b));
+        (data.bots || []).forEach(b => {
+          // Hapus bot lama jika ada username yang sama
+          for (const [id, existing] of bots.entries()) {
+            if (existing.name && b.name && existing.name.toLowerCase() === b.name.toLowerCase()) {
+              bots.delete(id);
+            }
+          }
+          bots.set(b.id || b.botId, b);
+        });
         renderSidebar();
         renderMainView();
       } else if (data.type === "BOT_JOINED") {
+        // Hapus duplikat username jika akun berpindah map / teleport
+        for (const [id, existing] of bots.entries()) {
+          if (existing.name && data.bot.name && existing.name.toLowerCase() === data.bot.name.toLowerCase()) {
+            bots.delete(id);
+            if (selectedBotId === id) selectedBotId = data.bot.botId;
+          }
+        }
         bots.set(data.bot.botId, data.bot);
         renderSidebar();
         renderMainView();
-        addLog(data.bot.name, `Akun baru bergabung (${data.bot.gameName || 'Roblox'})!`, "SUCCESS");
+        addLog(data.bot.name, `Akun terhubung (${data.bot.gameName || 'Roblox'})!`, "SUCCESS");
       } else if (data.type === "BOT_LEFT") {
         bots.delete(data.botId);
         if (selectedBotId === data.botId) selectedBotId = "ALL";

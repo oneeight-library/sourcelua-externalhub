@@ -49,6 +49,21 @@ export class HubRoom {
     const gameName = url.searchParams.get("gameName") || "Car Driving Indonesia";
     const botId = `${name}_${Date.now().toString(36)}`;
 
+    // 1. PENTING: Bersihkan koneksi lama dengan username yang sama (mencegah double bot saat teleport/reconnect)
+    for (const [existingId, existingBot] of this.bots.entries()) {
+      if (existingBot.info && existingBot.info.name && existingBot.info.name.toLowerCase() === name.toLowerCase()) {
+        try {
+          existingBot.ws.close(1000, "Session replaced by new connection");
+        } catch (e) {}
+        this.bots.delete(existingId);
+        this.broadcastToControllers({
+          type: "BOT_LEFT",
+          botId: existingId,
+          name: name
+        });
+      }
+    }
+
     const botInfo = {
       botId,
       name,
