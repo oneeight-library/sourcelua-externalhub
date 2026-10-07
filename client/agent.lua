@@ -630,13 +630,46 @@ local function teleportVehicleToDestination(car, targetPos, waitDuration)
     State.PreDeliveryCash = State.CurrentCash or 0
     car:PivotTo(targetCF)
 
+    -- Cari Destination Trigger Part di workspace.Etc.Job.Truck.Destination
+    local destFolder = workspace:FindFirstChild("Etc") and workspace.Etc:FindFirstChild("Job") and workspace.Etc.Job:FindFirstChild("Truck") and workspace.Etc.Job.Truck:FindFirstChild("Destination")
+    local foundDestPart = nil
+    if destFolder then
+        for _, p in ipairs(destFolder:GetChildren()) do
+            if p:IsA("BasePart") and (p.Position - targetPos).Magnitude < 300 then
+                foundDestPart = p
+                break
+            end
+        end
+    end
+
+    -- Pemicu Touched ke server via firetouchinterest & micro-pergerakan fisik
+    local primaryPart = car.PrimaryPart or car:FindFirstChildWhichIsA("BasePart")
+    if foundDestPart and primaryPart then
+        if firetouchinterest then
+            pcall(function()
+                firetouchinterest(primaryPart, foundDestPart, 0)
+                task.wait(0.05)
+                firetouchinterest(primaryPart, foundDestPart, 1)
+            end)
+        end
+    end
+
+    -- Micro-jitter fisik: gerakkan sedikit -0.3 dan +0.3 stud agar physics engine Roblox memicu .Touched di server
+    for i = 1, 3 do
+        if not State.IsFarming then break end
+        car:PivotTo(car:GetPivot() * CFrame.new(0, -0.3, 0))
+        task.wait(0.15)
+        car:PivotTo(car:GetPivot() * CFrame.new(0, 0.3, 0))
+        task.wait(0.15)
+    end
+
     for _, p in ipairs(car:GetDescendants()) do
         if p:IsA("BasePart") then
             p.AssemblyLinearVelocity = Vector3.zero
             p.AssemblyAngularVelocity = Vector3.zero
         end
     end
-    task.wait(1.2)
+    task.wait(1.0)
     return true
 end
 
@@ -806,8 +839,8 @@ local function runFarmLoop()
 
                 if not State.IsFarming then break end
 
-                State.TripCount = State.TripCount + 1
                 if gained > 0 then
+                    State.TripCount = State.TripCount + 1
                     State.LastSalary = gained
                     State.TotalEarnings = (State.TotalEarnings or 0) + gained
                     if State.StartCash and State.StartCash > 0 and (State.CurrentCash - State.StartCash) > State.TotalEarnings then
@@ -818,7 +851,7 @@ local function runFarmLoop()
                     end
                 else
                     if Context and Context.SendLog then
-                        Context.SendLog(string.format("Pengiriman #%d Selesai!", State.TripCount), "SUCCESS")
+                        Context.SendLog(string.format("Pengiriman belum terhitung server (gaji tidak terdeteksi). Tidak menambah trip.", State.TripCount), "WARN")
                     end
                 end
 
