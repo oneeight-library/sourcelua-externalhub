@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   Info,
   MapPin,
+  Car,
   Building2,
   Wrench,
   Fuel,
