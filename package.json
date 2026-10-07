@@ -1,1 +1,9 @@
-{"name":"oe-hub-external","version":"1.0.0"}
+{
+  "name": "oe-hub-external",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build:frontend": "npm --prefix frontend run build && node ./scripts/sync_dashboard.js",
+    "deploy": "npm run build:frontend && wrangler deploy"
+  }
+}
