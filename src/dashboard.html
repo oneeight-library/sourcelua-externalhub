@@ -1012,6 +1012,9 @@
     // 5. GAME-SPECIFIC TAB RENDERERS (MODULAR)
     // =========================================================================
     function renderCDIDMenuPortal(bot) {
+      const activeCode = bot.serverCode || "";
+      const hasCode = activeCode.length > 0;
+
       return `
         <div class="card-section" style="border-color: rgba(59, 130, 246, 0.4); background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(15, 23, 42, 0.8));">
           <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -1027,6 +1030,47 @@
           </div>
         </div>
 
+        ${UI.Section("🔑 Kode Private Server CDID", `
+          <div class="control-row" style="flex-direction: column; align-items: stretch; gap: 14px; background: rgba(15, 23, 42, 0.6); padding: 18px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <span style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Status Kode Server Terkini:</span>
+                ${hasCode ? `
+                  <div style="display: inline-flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; color: #34d399; font-family: monospace; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); padding: 8px 16px; border-radius: 8px; letter-spacing: 1px;">
+                    🔑 ${activeCode}
+                    <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(16, 185, 129, 0.25); color: #a7f3d0; font-family: var(--font-sans); font-weight: 600;">
+                      Aktif (${bot.codeSource || 'Sync'})
+                    </span>
+                  </div>
+                ` : `
+                  <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 8px 16px; border-radius: 8px;">
+                    ⚠️ Belum Ada Kode Server (Klik tombol Generate di bawah atau masukkan manual)
+                  </div>
+                `}
+              </div>
+
+              ${hasCode ? `
+                <button class="btn btn-outline" style="padding: 8px 16px; font-size: 12px;" onclick="navigator.clipboard.writeText('${activeCode}'); alert('Kode server disalin: ${activeCode}');">
+                  📋 Salin Kode Server
+                </button>
+              ` : ''}
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+              <input id="serverCodeInput_${bot.botId}" type="text" value="${activeCode}" placeholder="Masukkan kode private server manual..." style="flex: 1; min-width: 200px; max-width: 280px; padding: 9px 14px; font-size: 13px; font-family: monospace; border-radius: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff;">
+              <button class="btn btn-outline" style="padding: 9px 16px; font-size: 13px;" onclick="const code = document.getElementById('serverCodeInput_${bot.botId}').value.trim(); if(code) sendBotCommand('${bot.botId}', 'SET_SERVER_CODE', { code: code });">
+                💾 Terapkan Kode
+              </button>
+              <button class="btn btn-primary" style="padding: 9px 18px; font-size: 13px;" onclick="sendBotCommand('${bot.botId}', 'GENERATE_SERVER_CODE')">
+                🔄 Buat / Generate Kode Baru
+              </button>
+            </div>
+            <p style="font-size: 11px; color: var(--text-muted); margin: 0;">
+              💡 <b>Tips:</b> CDID menggunakan Private Server gratis. Jika tombol masuk tidak merespons, klik <b>Generate Kode Baru</b> agar bot mendapatkan kode dari server CDID.
+            </p>
+          </div>
+        `)}
+
         <div class="control-row" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.05)); border: 1px solid rgba(16, 185, 129, 0.4); padding: 20px;">
           <div style="display: flex; align-items: center; gap: 16px;">
             <div style="font-size: 34px;">🚚</div>
@@ -1040,13 +1084,13 @@
               </p>
             </div>
           </div>
-          <button class="btn btn-success" style="padding: 10px 22px; font-size: 14px;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaTimur' })">
+          <button class="btn btn-success" style="padding: 10px 22px; font-size: 14px; box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaTimur', code: '${activeCode}' })">
             🚀 Masuk Jawa Timur Sekarang
           </button>
         </div>
 
         ${UI.Section("Pengaturan Gerbang Otomatis", `
-          ${UI.Toggle("Auto-Enter Jawa Timur (24/7 Gateway)", "Otomatis memilih dan masuk ke map Jawa Timur dalam 5 detik saat bot mendarat di lobby", bot.autoJoinJatim !== false, `sendBotCommand('${bot.botId}', 'TOGGLE_AUTO_JOIN_JATIM')`)}
+          ${UI.Toggle("Auto-Enter Jawa Timur (24/7 Gateway)", "Otomatis meminta kode server dan masuk ke map Jawa Timur dalam 5 detik saat bot mendarat di lobby", bot.autoJoinJatim !== false, `sendBotCommand('${bot.botId}', 'TOGGLE_AUTO_JOIN_JATIM')`)}
         `)}
 
         ${UI.Section("Daftar Map CDID Lainnya (Klik untuk Masuk)", `
@@ -1056,7 +1100,7 @@
                 <h4 style="display: flex; align-items: center; gap: 6px;">🏙️ Jakarta 🇮🇩</h4>
                 <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Lokasi Kurir BCA & Cafe Kanji Jawa</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Jakarta' })">Masuk Jakarta</button>
+              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Jakarta', code: '${activeCode}' })">Masuk Jakarta</button>
             </div>
 
             <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
@@ -1064,7 +1108,7 @@
                 <h4 style="display: flex; align-items: center; gap: 6px;">⛰️ Bandung 🇮🇩</h4>
                 <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Kota Kembang & Tol Pasteur</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Bandung' })">Masuk Bandung</button>
+              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Bandung', code: '${activeCode}' })">Masuk Bandung</button>
             </div>
 
             <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
@@ -1072,7 +1116,7 @@
                 <h4 style="display: flex; align-items: center; gap: 6px;">🌾 Jawa Barat 🇮🇩</h4>
                 <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Tol Cipali & Pegunungan</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaBarat' })">Masuk Jawa Barat</button>
+              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaBarat', code: '${activeCode}' })">Masuk Jawa Barat</button>
             </div>
 
             <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
@@ -1080,7 +1124,7 @@
                 <h4 style="display: flex; align-items: center; gap: 6px;">🏛️ Jawa Tengah 🇮🇩</h4>
                 <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Semarang, Solo & Jogja</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaTengah' })">Masuk Jawa Tengah</button>
+              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'JawaTengah', code: '${activeCode}' })">Masuk Jawa Tengah</button>
             </div>
 
             <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
@@ -1088,7 +1132,7 @@
                 <h4 style="display: flex; align-items: center; gap: 6px;">🌴 Bali 🇮🇩</h4>
                 <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Pantai Kuta & Tol Mandara</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Bali' })">Masuk Bali</button>
+              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Bali', code: '${activeCode}' })">Masuk Bali</button>
             </div>
 
             <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
@@ -1096,7 +1140,7 @@
                 <h4 style="display: flex; align-items: center; gap: 6px;">❄️ Seasonal 🇮🇩</h4>
                 <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Event Musiman CDID</p>
               </div>
-              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Seasonal' })">Masuk Seasonal</button>
+              <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="sendBotCommand('${bot.botId}', 'JOIN_MAP', { mapKey: 'Seasonal', code: '${activeCode}' })">Masuk Seasonal</button>
             </div>
           </div>
         `)}

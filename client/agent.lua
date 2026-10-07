@@ -968,11 +968,12 @@ end
 Modules["games/cdid_menu"] = function()
 --[[
     OneEight External Hub - CDID Main Menu & Server Gateway Module
-    Active when player is in CDID Main Menu / Lobby (PlaceId: 6911148748).
-    Handles:
-    - Quick map selection & teleport to Jawa Timur, Jakarta, etc.
-    - Free Private Server generation & Public join
-    - Auto-Enter Jawa Timur (crucial for unattended 24/7 farming)
+    100% Exact Port of OneEight Hub Server Manager:
+    - Realtime multi-source private server code detection (UI, GC Replica, NetworkEvent)
+    - Free private server code generation (Network:FireServer("PrivateServer", "Create"))
+    - Native map selection & controller synchronization (UIAnimation.SelectedMap)
+    - Full bidirectional server code sync with Web Dashboard
+    - Auto-Enter Jawa Timur with auto-code fallback & queue_on_teleport
 --]]
 
 local CDIDMenu = {}
@@ -992,7 +993,8 @@ local State = {
     AutoJoinJatim = true,
     CurrentServerCode = "",
     SelectedMap = "JawaTimur",
-    AutoJoinTimer = 5
+    AutoJoinTimer = 5,
+    CodeSource = "None"
 }
 
 local CDID_MAPS = {
@@ -1006,31 +1008,162 @@ local CDID_MAPS = {
 }
 
 -- Native CDID Network Helper
+local CDID_Network = nil
+local CDID_UIAnimation = nil
+
 local function getCDIDNetwork()
-    local net = nil
+    if CDID_Network then return CDID_Network end
     pcall(function()
         local shared = ReplicatedStorage:FindFirstChild("Shared")
         if shared and shared:FindFirstChild("Network") then
-            net = require(shared.Network)
+            CDID_Network = require(shared.Network)
         end
     end)
-    return net
+    return CDID_Network
 end
 
--- Helper Trigger Native Map Select (100% OneEight Hub Compatible)
+local function getRealUIAnimation()
+    local success, result = pcall(function()
+        for _, v in ipairs(getgc(true)) do
+            if type(v) == "table" and rawget(v, "SelectedMap") and rawget(v, "WindowModule") then
+                return v
+            end
+        end
+    end)
+    return success and result or nil
+end
+
+-- ============================================================================
+-- VALIDASI & PENERAPAN KODE SERVER (ONE-EIGHT HUB ALGORITHM)
+-- ============================================================================
+local function isValidServerCode(text)
+    if not text or type(text) ~= "string" then return false end
+    local clean = text:gsub("%s+", "")
+    if clean == "" or clean == "ServerLabel" or clean == "nil" or clean == "InsertHere" then return false end
+    local lower = clean:lower()
+    if lower:find("ms") or lower:find("fps") or lower:find("singapore")
+        or lower:find("unitedstates") or lower:find("indonesia") or lower:find(",") then
+        return false
+    end
+    return (clean:len() >= 4 and clean:len() <= 35)
+end
+
+local function applyServerCode(code, source)
+    if not isValidServerCode(code) then return false end
+    local clean = tostring(code):gsub("%s+", "")
+    if clean == State.CurrentServerCode then return false end
+
+    State.CurrentServerCode = clean
+    State.CodeSource = source or "Unknown"
+    print(string.format("[OE-External CDID] 🔑 Kode Server Terdeteksi [%s]: %s", State.CodeSource, State.CurrentServerCode))
+
+    if Context and Context.SendLog then
+        Context.SendLog(string.format("Kode Server CDID terdeteksi (%s): %s", State.CodeSource, State.CurrentServerCode), "SUCCESS")
+    end
+
+    -- Update ke GUI CDID jika ada
+    pcall(function()
+        local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local ps = pGui and pGui:FindFirstChild("Hub") and pGui.Hub.Container.Window:FindFirstChild("PrivateServer")
+        if ps and ps:FindFirstChild("ServerLabel") then
+            ps.ServerLabel.Text = State.CurrentServerCode
+        end
+    end)
+
+    return true
+end
+
+-- ============================================================================
+-- MULTI-SOURCE SCANNER (EXACT ONE-EIGHT HUB METHOD)
+-- ============================================================================
+local function scanAllSources()
+    -- Sumber 1: Real UIAnimation dari GC
+    local realUI = getRealUIAnimation()
+    if realUI and realUI.WindowModule then
+        local ps = realUI.WindowModule.PrivateServer
+        if ps and ps.ServerLabel and isValidServerCode(ps.ServerLabel.Text) then
+            return applyServerCode(ps.ServerLabel.Text, "UIAnimation")
+        end
+    end
+
+    -- Sumber 2: Recursive scan di PlayerGui untuk ServerLabel
+    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        for _, inst in ipairs(pGui:GetDescendants()) do
+            if (inst:IsA("TextLabel") or inst:IsA("TextBox")) and inst.Name == "ServerLabel" then
+                if isValidServerCode(inst.Text) then
+                    return applyServerCode(inst.Text, "PlayerGui.ServerLabel")
+                end
+            end
+        end
+    end
+
+    -- Sumber 3: ReplicaService Player Data State (GC scan)
+    local replicaCode = nil
+    pcall(function()
+        for _, v in ipairs(getgc(true)) do
+            if type(v) == "table" and type(rawget(v, "Class")) == "string" and rawget(v, "Class"):find("^Player_") and rawget(v, "Data") then
+                local data = rawget(v, "Data")
+                if data and data.PrivateServer and data.PrivateServer.Code and isValidServerCode(data.PrivateServer.Code) then
+                    replicaCode = data.PrivateServer.Code
+                    break
+                end
+            end
+        end
+    end)
+    if replicaCode then
+        return applyServerCode(replicaCode, "GCReplicaScan")
+    end
+
+    return false
+end
+
+-- Request kode baru dari server game CDID
+local function requestServerCode()
+    print("[OE-External CDID] 🔄 Meminta pembuatan kode server private baru...")
+    if Context and Context.SendLog then
+        Context.SendLog("Meminta server CDID untuk generate kode private baru...", "INFO")
+    end
+
+    local net = getCDIDNetwork()
+    if net and net.FireServer then
+        pcall(function()
+            net:FireServer("PrivateServer", "Create")
+        end)
+    end
+
+    -- Polling agresif selama 5 detik
+    for _ = 1, 15 do
+        task.wait(0.3)
+        if scanAllSources() then
+            return State.CurrentServerCode
+        end
+    end
+    return State.CurrentServerCode
+end
+
+-- ============================================================================
+-- MAP SELECTION & JOIN DISPATCHER
+-- ============================================================================
 local function selectMapNative(mapKey)
-    -- 1. Sync ke Controller UIAnimation CDID (OneEight Hub exact method)
+    State.SelectedMap = mapKey
+
+    -- 1. Sync ke real UIAnimation di GC
+    local realUI = getRealUIAnimation()
+    if realUI then
+        pcall(function() realUI.SelectedMap = mapKey end)
+    end
+
+    -- 2. Sync ke Controller UIAnimation CDID
     pcall(function()
         local controller = ReplicatedStorage:FindFirstChild("Controller")
         if controller and controller:FindFirstChild("UIAnimation") then
             local uiMod = require(controller.UIAnimation)
-            if uiMod then
-                uiMod.SelectedMap = mapKey
-            end
+            if uiMod then uiMod.SelectedMap = mapKey end
         end
     end)
 
-    -- 2. Trigger tombol map di PlayerGui.Hub
+    -- 3. Trigger tombol map di PlayerGui.Hub
     pcall(function()
         local mapWin = LocalPlayer.PlayerGui.Hub.Container.Window:FindFirstChild("MapSelection")
         local targetMapFrame = mapWin and mapWin:FindFirstChild(mapKey)
@@ -1047,14 +1180,11 @@ local function selectMapNative(mapKey)
     end)
 end
 
--- Helper Join Map With Server Code / Public
 local function joinMap(mapKey, serverCode)
+    mapKey = mapKey or State.SelectedMap or "JawaTimur"
     State.Status = "JOINING_" .. string.upper(mapKey)
-    if Context and Context.SendLog then
-        Context.SendLog("Menghubungkan ke server map: " .. tostring(mapKey) .. "...", "WARN")
-    end
 
-    -- Setup queue_on_teleport agar loader kembali jalan di server map tujuan
+    -- Setup queue_on_teleport agar loader kembali berjalan di server tujuan
     local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
     if queue_teleport then
         pcall(function()
@@ -1065,14 +1195,43 @@ local function joinMap(mapKey, serverCode)
         end)
     end
 
+    -- 1. Pastikan Kode Server Terisi
+    local codeToUse = serverCode
+    if not codeToUse or codeToUse == "" then
+        codeToUse = State.CurrentServerCode
+    end
+
+    if not codeToUse or codeToUse == "" then
+        scanAllSources()
+        codeToUse = State.CurrentServerCode
+    end
+
+    -- Jika masih belum ada, minta server buatkan kode otomatis sekarang juga
+    if not codeToUse or codeToUse == "" then
+        codeToUse = requestServerCode()
+    end
+
+    print(string.format("[OE-External CDID] 🚀 Melakukan Join ke %s dengan Kode: '%s'...", mapKey, tostring(codeToUse)))
+    if Context and Context.SendLog then
+        Context.SendLog(string.format("Menghubungkan ke %s (Kode: %s)...", mapKey, tostring(codeToUse)), "WARN")
+    end
+
     selectMapNative(mapKey)
     task.wait(0.3)
 
-    -- Pemicu 1: Klik tombol Join bawaan UI CDID
+    -- Pemicu 1: Remote CDID Network (Utama - Persis OneEight Hub)
+    local net = getCDIDNetwork()
+    if net and net.FireServer and codeToUse and codeToUse ~= "" then
+        pcall(function()
+            net:FireServer("PrivateServer", "Join", tostring(codeToUse), mapKey)
+        end)
+    end
+
+    -- Pemicu 2: Klik tombol Join bawaan UI CDID
     pcall(function()
         local ps = LocalPlayer.PlayerGui.Hub.Container.Window.PrivateServer
-        if ps and ps:FindFirstChild("ServerLabel") and serverCode and #serverCode > 0 then
-            ps.ServerLabel.Text = tostring(serverCode)
+        if ps and ps:FindFirstChild("ServerLabel") and codeToUse and #codeToUse > 0 then
+            ps.ServerLabel.Text = tostring(codeToUse)
         end
 
         local joinBtn = ps and ps:FindFirstChild("JoinButton") and ps.JoinButton:FindFirstChild("TextButton")
@@ -1087,16 +1246,8 @@ local function joinMap(mapKey, serverCode)
         end
     end)
 
-    -- Pemicu 2: Native Network Remote CDID
-    local net = getCDIDNetwork()
-    if net and net.FireServer then
-        pcall(function()
-            net:FireServer("PrivateServer", "Join", tostring(serverCode or ""), mapKey)
-        end)
-    end
-
-    -- Pemicu 3: TeleportService Fallback jika remote gagal
-    task.wait(1.5)
+    -- Pemicu 3: TeleportService Fallback (Jika server code gagal atau join public)
+    task.wait(2.0)
     local targetPlaceId = nil
     for _, m in ipairs(CDID_MAPS) do
         if m.Key == mapKey then
@@ -1111,13 +1262,72 @@ local function joinMap(mapKey, serverCode)
     end
 end
 
+-- ============================================================================
+-- MODUL INIT & BACKGROUND LISTENERS
+-- ============================================================================
 function CDIDMenu.Init(coreContext)
     Context = coreContext
     print("[OE-External CDID] Modul Main Menu / Lobby CDID aktif!")
 
+    -- Initial scan kode server
+    scanAllSources()
+
+    -- Hook Remote Network jika sudah siap
+    task.spawn(function()
+        local net = getCDIDNetwork()
+        if net and net.OnClientEvent then
+            pcall(function()
+                net.OnClientEvent("PrivateServer", function(action, arg1)
+                    if isValidServerCode(arg1) then
+                        applyServerCode(arg1, "NetworkEvent")
+                    elseif isValidServerCode(action) then
+                        applyServerCode(action, "NetworkEvent")
+                    end
+                end)
+            end)
+        end
+    end)
+
+    -- Realtime Hook pada PlayerGui ServerLabel
+    task.spawn(function()
+        local pGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+        if not pGui then return end
+
+        local function checkInst(inst)
+            if (inst:IsA("TextLabel") or inst:IsA("TextBox")) and inst.Name == "ServerLabel" then
+                if isValidServerCode(inst.Text) then
+                    applyServerCode(inst.Text, "ServerLabelHook")
+                end
+                inst:GetPropertyChangedSignal("Text"):Connect(function()
+                    if isValidServerCode(inst.Text) then
+                        applyServerCode(inst.Text, "ServerLabelChange")
+                    end
+                end)
+            end
+        end
+
+        for _, inst in ipairs(pGui:GetDescendants()) do checkInst(inst) end
+        pGui.DescendantAdded:Connect(checkInst)
+    end)
+
+    -- Background scanner berkala tiap 3 detik
+    task.spawn(function()
+        while _G.OE_ExternalRunning do
+            task.wait(3)
+            if State.CurrentServerCode == "" then
+                scanAllSources()
+            end
+        end
+    end)
+
     -- Auto-Enter Jawa Timur jika diaktifkan (Hitung mundur 5 detik)
     if State.AutoJoinJatim then
         task.spawn(function()
+            -- Pastikan kode ada sebelum waktu habis
+            if State.CurrentServerCode == "" then
+                requestServerCode()
+            end
+
             for s = 5, 1, -1 do
                 if not State.AutoJoinJatim then break end
                 State.Status = string.format("AUTO_ENTER_JATIM (%ds)", s)
@@ -1134,8 +1344,20 @@ end
 function CDIDMenu.HandleCommand(action, payload)
     if action == "JOIN_MAP" then
         local mapKey = payload and payload.mapKey or "JawaTimur"
-        local code = payload and payload.code or ""
+        local code = payload and payload.code or State.CurrentServerCode
         joinMap(mapKey, code)
+        return true
+
+    elseif action == "GENERATE_SERVER_CODE" then
+        task.spawn(function()
+            requestServerCode()
+        end)
+        return true
+
+    elseif action == "SET_SERVER_CODE" then
+        if payload and payload.code then
+            applyServerCode(payload.code, "WebInput")
+        end
         return true
 
     elseif action == "TOGGLE_AUTO_JOIN_JATIM" then
@@ -1154,7 +1376,9 @@ function CDIDMenu.GetTelemetry()
         isLobby = true,
         autoJoinJatim = State.AutoJoinJatim,
         selectedMap = State.SelectedMap,
-        currentRoute = "Di Lobi (Pilih Map)",
+        serverCode = State.CurrentServerCode,
+        codeSource = State.CodeSource,
+        currentRoute = "Di Lobi (Kode: " .. (State.CurrentServerCode ~= "" and State.CurrentServerCode or "Belum Ada") .. ")",
         tripCount = 0,
         totalEarnings = 0,
         currentCash = 0
