@@ -5,34 +5,51 @@ import { getGameConfig } from "@/config/games.js";
 
 export function Sidebar({ bots, selectedBotId, onSelectBot }) {
   return (
-    <aside className="hidden md:flex flex-col w-72 shrink-0 border-r border-zinc-800/80 bg-zinc-950/40 p-4 min-h-[calc(100vh-4rem)]">
+    <aside className="hidden md:flex flex-col w-72 shrink-0 border-r border-zinc-800/80 bg-zinc-950 h-screen select-none">
       
-      {/* Head */}
-      <div className="flex items-center justify-between pb-3 mb-2 border-b border-zinc-800/60">
-        <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Daftar Akun Roblox</span>
-        <Badge variant="secondary" className="text-[10px] bg-zinc-800 text-zinc-300 font-semibold">
+      {/* Brand Header */}
+      <div className="flex items-center gap-3 h-16 px-5 border-b border-zinc-800/80 shrink-0">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 text-white font-black shadow-lg shadow-indigo-500/20 text-base">
+          18
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold tracking-tight text-zinc-100 text-sm">OneEight Hub</span>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-zinc-700 text-zinc-400 font-semibold">
+              PRO
+            </Badge>
+          </div>
+          <p className="text-[11px] text-zinc-400 font-medium">Command Center Fleet</p>
+        </div>
+      </div>
+
+      {/* Account Section Head */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-2 shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Daftar Akun Roblox</span>
+        <Badge variant="secondary" className="text-[10px] bg-zinc-900 border border-zinc-800 text-zinc-300 font-bold px-2 py-0.5">
           {bots.size} Bot
         </Badge>
       </div>
 
-      <div className="flex flex-col gap-2 overflow-y-auto pr-1">
+      {/* Account List Scroll Area */}
+      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
         
         {/* Global Item */}
         <button
           type="button"
           onClick={() => onSelectBot("ALL")}
-          className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all select-none ${
+          className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
             selectedBotId === "ALL" 
-              ? "bg-zinc-800/90 border-zinc-700 shadow-sm" 
-              : "bg-zinc-900/30 border-zinc-800/60 hover:bg-zinc-900/60"
+              ? "bg-zinc-900 border-zinc-700 shadow-sm" 
+              : "bg-zinc-950 border-transparent hover:bg-zinc-900/60 hover:border-zinc-800/60"
           }`}
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-800/80 border border-zinc-700/80 text-lg">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-lg">
             🌐
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="font-bold text-xs text-zinc-100">Semua Akun (Global)</div>
-            <div className="text-[11px] text-zinc-400">Kelola {bots.size} Akun Terhubung</div>
+            <div className="text-[11px] text-zinc-400 truncate">Kelola Seluruh Armada ({bots.size} Bot)</div>
           </div>
         </button>
 
@@ -47,14 +64,14 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
               key={id}
               type="button"
               onClick={() => onSelectBot(id)}
-              className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all select-none ${
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                 isSelected 
-                  ? "bg-zinc-800/90 border-zinc-700 shadow-sm" 
-                  : "bg-zinc-900/30 border-zinc-800/60 hover:bg-zinc-900/60"
+                  ? "bg-zinc-900 border-zinc-700 shadow-sm" 
+                  : "bg-zinc-950 border-transparent hover:bg-zinc-900/60 hover:border-zinc-800/60"
               }`}
             >
-              <div className="relative">
-                <Avatar className="h-10 w-10 border-zinc-700">
+              <div className="relative shrink-0">
+                <Avatar className="h-10 w-10 border-zinc-800">
                   {b.avatarUrl && <AvatarImage src={b.avatarUrl} alt={b.name} />}
                   <AvatarFallback>{b.isKicked ? "🚨" : initial}</AvatarFallback>
                 </Avatar>
@@ -63,10 +80,10 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
                 }`} />
               </div>
 
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs text-zinc-100 truncate">{b.name || "Bot"}</span>
-                  <span className="text-[10px]">{gameCfg.icon}</span>
+                  <span className="text-[10px] ml-1">{gameCfg.icon}</span>
                 </div>
                 <div className="text-[11px] font-mono text-emerald-400 font-semibold">
                   {b.currentCash > 0 ? gameCfg.formatMoney(b.currentCash) : "Memuat..."}
@@ -85,6 +102,14 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
           );
         })}
 
+      </div>
+
+      {/* Sidebar Footer */}
+      <div className="p-4 border-t border-zinc-800/80 shrink-0 bg-zinc-950/80">
+        <div className="flex items-center justify-between text-[11px] text-zinc-500">
+          <span>OneEight External v2.0</span>
+          <span>Cloudflare Edge</span>
+        </div>
       </div>
     </aside>
   );

@@ -23,43 +23,52 @@ export default function App() {
   const selectedBot = bots.get(selectedBotId);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
-      <Navbar
+    <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
+      
+      {/* 1. Desktop Full-Height Sidebar on the Left Edge */}
+      <Sidebar
         bots={bots}
         selectedBotId={selectedBotId}
         onSelectBot={setSelectedBotId}
-        isWsOnline={isWsOnline}
-        wsStatus={wsStatus}
       />
 
-      <div className="flex-1 flex max-w-7xl w-full mx-auto">
-        <Sidebar
+      {/* 2. Main Workspace (Fills all remaining screen width) */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        
+        {/* Top Navbar */}
+        <Navbar
           bots={bots}
           selectedBotId={selectedBotId}
           onSelectBot={setSelectedBotId}
+          isWsOnline={isWsOnline}
+          wsStatus={wsStatus}
         />
 
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-          {selectedBotId === "ALL" || !selectedBot ? (
-            <FleetOverview
-              bots={bots}
-              onSelectBot={setSelectedBotId}
-              onSendCommand={sendBotCommand}
-              onRejoinBot={rejoinBot}
-            />
-          ) : (
-            <BotDetailView
-              bot={selectedBot}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              logs={logsHistory}
-              onClearLogs={clearLogs}
-              onSendCommand={sendBotCommand}
-              onRejoinBot={rejoinBot}
-            />
-          )}
+        {/* Scrollable Viewport (No more weird centered container!) */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-zinc-950/60">
+          <div className="w-full max-w-6xl mx-auto space-y-6">
+            {selectedBotId === "ALL" || !selectedBot ? (
+              <FleetOverview
+                bots={bots}
+                onSelectBot={setSelectedBotId}
+                onSendCommand={sendBotCommand}
+                onRejoinBot={rejoinBot}
+              />
+            ) : (
+              <BotDetailView
+                bot={selectedBot}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                logs={logsHistory}
+                onClearLogs={clearLogs}
+                onSendCommand={sendBotCommand}
+                onRejoinBot={rejoinBot}
+              />
+            )}
+          </div>
         </main>
       </div>
+
     </div>
   );
 }
