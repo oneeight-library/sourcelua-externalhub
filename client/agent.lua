@@ -23,6 +23,20 @@ local LocalPlayer = Players.LocalPlayer
 -- MODULAR INTERNAL VFS
 -- ============================================================================
 local Modules = {}
+local LoadedModules = {}
+
+local function requireModule(name)
+    if LoadedModules[name] ~= nil then
+        return LoadedModules[name]
+    end
+    if Modules[name] then
+        local res = Modules[name]()
+        LoadedModules[name] = res
+        return res
+    end
+    error("[OE-External] Modul tidak ditemukan: " .. tostring(name))
+end
+
 
 Modules["core/safety"] = function()
 --[[
@@ -186,7 +200,344 @@ return BaseGame
 
 end
 
-Modules["games/cdid"] = function()
+-- ============================================================================
+-- MODULAR CDID SUB-MODULES
+-- ============================================================================
+-- ============================================================================
+-- MODULAR CDID SUB-MODULES
+-- ============================================================================
+-- ============================================================================
+-- MODULAR CDID SUB-MODULES
+-- ============================================================================
+-- ============================================================================
+-- MODULAR CDID SUB-MODULES
+-- ============================================================================
+Modules["games/cdid/features/lighting"] = function()
+--[[
+    CDID Feature: Lighting & Performance Visuals
+--]]
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+
+local LightingFeature = {
+    Fullbright = false,
+    NoFog = false,
+    Connection = nil,
+    SavedFog = 1000
+}
+
+pcall(function()
+    LightingFeature.SavedFog = Lighting.FogEnd
+end)
+
+function LightingFeature.SetFullbright(enable, Context)
+    LightingFeature.Fullbright = enable
+    if enable then
+        if not LightingFeature.Connection then
+            LightingFeature.Connection = RunService.RenderStepped:Connect(function()
+                if LightingFeature.Fullbright then
+                    Lighting.Brightness = 2
+                    Lighting.ClockTime = 14
+                    Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+                    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+                end
+            end)
+        end
+    else
+        if LightingFeature.Connection then
+            LightingFeature.Connection:Disconnect()
+            LightingFeature.Connection = nil
+        end
+        Lighting.Brightness = 1
+        Lighting.ClockTime = 14
+        Lighting.Ambient = Color3.fromRGB(128, 128, 128)
+        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+    end
+    if Context and Context.SendLog then
+        Context.SendLog(string.format("Fullbright Mode: %s", enable and "AKTIF ☀️" or "NONAKTIF 🌑"), "INFO")
+    end
+end
+
+function LightingFeature.SetNoFog(enable, Context)
+    LightingFeature.NoFog = enable
+    if enable then
+        pcall(function() Lighting.FogEnd = 1000000 end)
+    else
+        pcall(function() Lighting.FogEnd = LightingFeature.SavedFog or 1000 end)
+    end
+    if Context and Context.SendLog then
+        Context.SendLog(string.format("No Fog Mode: %s", enable and "AKTIF (Jernih)" or "NONAKTIF"), "INFO")
+    end
+end
+
+return LightingFeature
+
+end
+
+Modules["games/cdid/features/safety"] = function()
+--[[
+    CDID Feature: Safety, Anti-Staff & Server Lock
+--]]
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local TeleportService = game:GetService("TeleportService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local SafetyFeature = {
+    PlayerDetectorEnabled = false,
+    EmergencyAction = "Warn Only",
+    IgnoreFriends = true,
+    ServerLocked = false,
+    Connection = nil
+}
+
+function SafetyFeature.IsFriend(player)
+    if not SafetyFeature.IgnoreFriends then return false end
+    local ok, friend = pcall(function()
+        return LocalPlayer:IsFriendsWith(player.UserId)
+    end)
+    return ok and friend
+end
+
+function SafetyFeature.TriggerPanic(intruder, Context)
+    if not SafetyFeature.PlayerDetectorEnabled then return end
+    local msg = string.format("🚨 [Safety Alert] Stranger detected: %s (@%s)", intruder.DisplayName, intruder.Name)
+    if Context and Context.SendLog then
+        Context.SendLog(msg, "WARN")
+    end
+
+    if SafetyFeature.EmergencyAction == "Kick" then
+        task.wait(0.2)
+        LocalPlayer:Kick(string.format("[OneEight Safety Alert]\nStranger joined: %s (@%s)\nAuto-disconnected for account safety.", intruder.DisplayName, intruder.Name))
+    elseif SafetyFeature.EmergencyAction == "Server Hop" then
+        task.wait(0.2)
+        pcall(function()
+            TeleportService:Teleport(game.PlaceId, LocalPlayer)
+        end)
+    end
+end
+
+function SafetyFeature.InitDetector(Context)
+    if SafetyFeature.Connection then return end
+    SafetyFeature.Connection = Players.PlayerAdded:Connect(function(player)
+        if player == LocalPlayer then return end
+        task.wait(0.5)
+        if not SafetyFeature.IsFriend(player) then
+            SafetyFeature.TriggerPanic(player, Context)
+        end
+    end)
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and not SafetyFeature.IsFriend(player) then
+            task.spawn(function()
+                SafetyFeature.TriggerPanic(player, Context)
+            end)
+            break
+        end
+    end
+end
+
+function SafetyFeature.SetServerLock(enable, Context)
+    SafetyFeature.ServerLocked = enable
+    pcall(function()
+        local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local panel = pGui and pGui:FindFirstChild("PrivateServerPanel")
+        local serverFrame = panel and panel:FindFirstChild("MainFrame") and panel.MainFrame:FindFirstChild("Main") and panel.MainFrame.Main:FindFirstChild("Server")
+        if serverFrame then
+            for _, c in ipairs(serverFrame:GetChildren()) do
+                local title = c:FindFirstChild("OptionTitle")
+                if title and title.Text == "Server Lock" then
+                    local toggleBtn = c:FindFirstChild("ToggleButton")
+                    local conns = (typeof(getconnections) == "function" and getconnections(toggleBtn.MouseButton1Down)) or {}
+                    if #conns > 0 and conns[1].Function then
+                        pcall(conns[1].Function)
+                    end
+                end
+            end
+        end
+
+        local net = ReplicatedStorage:FindFirstChild("NetworkContainer")
+        local remotes = net and net:FindFirstChild("RemoteEvents")
+        local ps = remotes and (remotes:FindFirstChild("Private Server") or remotes:FindFirstChild("PrivateServer"))
+        if ps then
+            ps:FireServer("serverlock", {})
+        end
+    end)
+
+    if Context and Context.SendLog then
+        Context.SendLog(string.format("Private Server Lock: %s", enable and "TERKUNCI 🔒" or "TERBUKA 🔓"), "INFO")
+    end
+end
+
+return SafetyFeature
+
+end
+
+Modules["games/cdid/features/dealership"] = function()
+--[[
+    CDID Feature: Dealership Controller, Catalog Extractor & Remote Buy
+--]]
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local DealershipFeature = {}
+
+function DealershipFeature.GetRealDealerList()
+    local list = {}
+    local seen = {}
+
+    local dealershipFolder = Workspace:FindFirstChild("Etc") and Workspace.Etc:FindFirstChild("Dealership")
+    if dealershipFolder then
+        for _, child in ipairs(dealershipFolder:GetChildren()) do
+            if not seen[child.Name] and not child.Name:find("Fake_") then
+                seen[child.Name] = true
+                table.insert(list, child.Name)
+            end
+        end
+    end
+
+    table.sort(list, function(a, b) return a < b end)
+    return list
+end
+
+function DealershipFeature.GetCars(dealerTarget)
+    local list = {}
+    local carData = ReplicatedStorage:FindFirstChild("CarData")
+    if not carData then return list end
+
+    dealerTarget = (dealerTarget or ""):lower():gsub("%s+", "")
+
+    for _, car in ipairs(carData:GetChildren()) do
+        local dealerVal = car:FindFirstChild("Dealership")
+        local unobtainable = car:FindFirstChild("Unobtainable")
+        if dealerVal and not unobtainable then
+            local rawDealer = dealerVal.Value
+            local cleanDealer = rawDealer:lower():gsub("%s+", "")
+            if dealerTarget == "" or dealerTarget == "all" or cleanDealer:find(dealerTarget) or dealerTarget:find(cleanDealer) then
+                local img = car:FindFirstChild("CarImage") and car.CarImage.Value or ""
+                local assetId = img:match("id=(%d+)") or img:match("(%d+)$") or ""
+                table.insert(list, {
+                    id = car.Name,
+                    name = car:FindFirstChild("CarName") and car.CarName.Value or car.Name,
+                    cost = car:FindFirstChild("Cost") and car.Cost.Value or 0,
+                    dealer = rawDealer,
+                    assetId = assetId,
+                    topSpeed = car:FindFirstChild("TopSpeed") and car.TopSpeed.Value or 0,
+                    hp = car:FindFirstChild("Horsepower") and car.Horsepower.Value or 0,
+                    year = car:FindFirstChild("CarYear") and car.CarYear.Value or ""
+                })
+            end
+        end
+    end
+
+    table.sort(list, function(a, b) return a.cost < b.cost end)
+    return list
+end
+
+function DealershipFeature.Buy(carId, dealer, color, Context)
+    local color3 = (color and Color3.fromRGB(color.r or 255, color.g or 255, color.b or 255)) or Color3.fromRGB(255, 255, 255)
+    local result = "Failed"
+    pcall(function()
+        local net = require(ReplicatedStorage.Shared.Network)
+        result = net:InvokeServer("Dealership", "Buy", carId, color3, dealer or "")
+    end)
+    if Context and Context.SendLog then
+        Context.SendLog(string.format("Hasil beli mobil '%s' (%s): %s", carId, dealer, tostring(result)), result == "Success" and "SUCCESS" or "WARN")
+    end
+    return result
+end
+
+function DealershipFeature.Open(dealerName, Context)
+    dealerName = dealerName or "Dealer Utama"
+    pcall(function()
+        local etc = Workspace:FindFirstChild("Etc") or Instance.new("Folder", Workspace)
+        etc.Name = "Etc"
+        local dealershipFolder = etc:FindFirstChild("Dealership") or Instance.new("Folder", etc)
+        dealershipFolder.Name = "Dealership"
+
+        local oldFake = dealershipFolder:FindFirstChild("Fake_" .. dealerName)
+        if oldFake then oldFake:Destroy() end
+
+        local fakeModel = Instance.new("Model")
+        fakeModel.Name = dealerName
+        fakeModel.Parent = dealershipFolder
+
+        local fakePrompt = Instance.new("ProximityPrompt")
+        fakePrompt.Parent = fakeModel
+
+        if typeof(firesignal) == "function" then
+            firesignal(game:GetService("ProximityPromptService").PromptTriggered, fakePrompt)
+            if Context and Context.SendLog then
+                Context.SendLog(string.format("UI Dealership '%s' berhasil dibuka.", dealerName), "SUCCESS")
+            end
+        elseif Context and Context.SendLog then
+            Context.SendLog("Executor tidak mendukung firesignal.", "WARN")
+        end
+
+        task.delay(1.5, function()
+            if fakeModel then fakeModel:Destroy() end
+        end)
+    end)
+end
+
+function DealershipFeature.Teleport(dealerName, Context)
+    pcall(function()
+        local dealershipFolder = Workspace:FindFirstChild("Etc") and Workspace.Etc:FindFirstChild("Dealership")
+        local targetModel = dealershipFolder and dealershipFolder:FindFirstChild(dealerName)
+        local char = LocalPlayer.Character
+        local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart)
+        if hrp and targetModel then
+            hrp.CFrame = targetModel:GetPivot() * CFrame.new(0, 0, 3.5)
+            if Context and Context.SendLog then
+                Context.SendLog(string.format("Teleport ke showroom '%s' berhasil.", dealerName), "SUCCESS")
+            end
+        elseif hrp then
+            hrp.CFrame = CFrame.new(Vector3.new(34800, 140, -54200))
+        end
+    end)
+end
+
+return DealershipFeature
+
+end
+
+Modules["games/cdid/features/teleport"] = function()
+--[[
+    CDID Feature: Map Quick Teleports
+--]]
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local TeleportFeature = {
+    Locations = {
+        bengkel = Vector3.new(35210, 135, -53980),
+        dealer = Vector3.new(34800, 140, -54200),
+        rest_area = Vector3.new(33650, 138, -52100)
+    }
+}
+
+function TeleportFeature.Quick(targetKey, Context)
+    local pos = TeleportFeature.Locations[targetKey]
+    if not pos then return end
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart)
+        if hrp then
+            hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+            if Context and Context.SendLog then
+                Context.SendLog(string.format("Teleportasi karakter ke %s berhasil.", targetKey:upper()), "SUCCESS")
+            end
+        end
+    end)
+end
+
+return TeleportFeature
+
+end
+
+Modules["games/cdid/jobs/truck"] = function()
 --[[
     OneEight External Hub - Car Driving Indonesia (CDID) Game Module
     100% Exact Faithful Clone of Official OneEight Hub Truck Engine:
@@ -202,11 +553,11 @@ Modules["games/cdid"] = function()
     - Headless Web Dashboard WebSocket Control
 --]]
 
-local CDIDModule = {}
-CDIDModule.GameId = "cdid"
-CDIDModule.GameName = "Car Driving Indonesia"
-CDIDModule.CurrencyUnit = "Rp"
-CDIDModule.MetricUnit = "Trips"
+local TruckJob = {}
+TruckJob.GameId = "cdid"
+TruckJob.GameName = "Car Driving Indonesia"
+TruckJob.CurrencyUnit = "Rp"
+TruckJob.MetricUnit = "Trips"
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -918,7 +1269,7 @@ end
 -- ============================================================================
 -- INTERFACE CONTRACT IMPLEMENTATION FOR EXTERNAL WEB CONTROL
 -- ============================================================================
-function CDIDModule.Init(coreContext)
+function TruckJob.Init(coreContext)
     Context = coreContext
 
     bindCashHUD()
@@ -958,347 +1309,178 @@ function CDIDModule.Init(coreContext)
     print("[OE-External CDID] Modul OneEight State-Driven Truck Engine (50s) siap 100%!")
 end
 
-
--- ============================================================================
--- EXTRA UTILITIES & SAFETY (PORTED FROM ONEEIGHT SOURCELUA-DEV)
--- ============================================================================
-local SafetyEngine = {
-    PlayerDetectorEnabled = false,
-    EmergencyAction = "Warn Only",
-    IgnoreFriends = true,
-    ServerLocked = false,
-    Connection = nil
-}
-
-function SafetyEngine.IsFriend(player)
-    if not SafetyEngine.IgnoreFriends then return false end
-    local ok, friend = pcall(function()
-        return LocalPlayer:IsFriendsWith(player.UserId)
-    end)
-    return ok and friend
-end
-
-function SafetyEngine.TriggerPanic(intruder)
-    if not SafetyEngine.PlayerDetectorEnabled then return end
-    local msg = string.format("🚨 [Safety Alert] Stranger detected: %s (@%s)", intruder.DisplayName, intruder.Name)
+function TruckJob.Start()
+    if State.IsFarming then return end
+    State.IsFarming = true
+    State.FarmStartTime = os.clock()
     if Context and Context.SendLog then
-        Context.SendLog(msg, "WARN")
+        Context.SendLog("Auto Farm Truk Kargo CDID dimulai!", "SUCCESS")
     end
-
-    if SafetyEngine.EmergencyAction == "Kick" then
-        task.wait(0.2)
-        LocalPlayer:Kick(string.format("[OneEight Safety Alert]\nStranger joined: %s (@%s)\nAuto-disconnected for account safety.", intruder.DisplayName, intruder.Name))
-    elseif SafetyEngine.EmergencyAction == "Server Hop" then
-        task.wait(0.2)
-        pcall(function()
-            TeleportService:Teleport(game.PlaceId, LocalPlayer)
-        end)
-    end
+    task.spawn(runFarmLoop)
 end
 
-function SafetyEngine.InitDetector()
-    if SafetyEngine.Connection then return end
-    SafetyEngine.Connection = Players.PlayerAdded:Connect(function(player)
-        if player == LocalPlayer then return end
-        task.wait(0.5)
-        if not SafetyEngine.IsFriend(player) then
-            SafetyEngine.TriggerPanic(player)
-        end
-    end)
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and not SafetyEngine.IsFriend(player) then
-            task.spawn(function()
-                SafetyEngine.TriggerPanic(player)
-            end)
-            break
-        end
-    end
-end
-
-function SafetyEngine.SetServerLock(enable)
-    SafetyEngine.ServerLocked = enable
+function TruckJob.Stop()
+    State.IsFarming = false
+    State.Status = "STOPPED"
+    State.CurrentRoute = "IDLE"
     pcall(function()
-        local pGui = LocalPlayer:FindFirstChild("PlayerGui")
-        local panel = pGui and pGui:FindFirstChild("PrivateServerPanel")
-        local serverFrame = panel and panel:FindFirstChild("MainFrame") and panel.MainFrame:FindFirstChild("Main") and panel.MainFrame.Main:FindFirstChild("Server")
-        if serverFrame then
-            for _, c in ipairs(serverFrame:GetChildren()) do
-                local title = c:FindFirstChild("OptionTitle")
-                if title and title.Text == "Server Lock" then
-                    local toggleBtn = c:FindFirstChild("ToggleButton")
-                    local conns = (typeof(getconnections) == "function" and getconnections(toggleBtn.MouseButton1Down)) or {}
-                    if #conns > 0 and conns[1].Function then
-                        pcall(conns[1].Function)
-                    end
-                end
-            end
-        end
-
-        local net = ReplicatedStorage:FindFirstChild("NetworkContainer")
-        local remotes = net and net:FindFirstChild("RemoteEvents")
-        local ps = remotes and (remotes:FindFirstChild("Private Server") or remotes:FindFirstChild("PrivateServer"))
-        if ps then
-            ps:FireServer("serverlock", {})
-        end
+        ReplicatedStorage.NetworkContainer.RemoteEvents.Job:FireServer("Unemployee")
     end)
-
     if Context and Context.SendLog then
-        Context.SendLog(string.format("Private Server Lock: %s", enable and "TERKUNCI 🔒" or "TERBUKA 🔓"), "INFO")
+        Context.SendLog("Auto Farm Truk dihentikan.", "WARN")
     end
 end
 
-local DealershipEngine = {}
-
-function DealershipEngine.GetCars(dealerTarget)
-    local list = {}
-    local carData = ReplicatedStorage:FindFirstChild("CarData")
-    if not carData then return list end
-
-    dealerTarget = (dealerTarget or ""):lower():gsub("%s+", "")
-
-    for _, car in ipairs(carData:GetChildren()) do
-        local dealerVal = car:FindFirstChild("Dealership")
-        local unobtainable = car:FindFirstChild("Unobtainable")
-        if dealerVal and not unobtainable then
-            local rawDealer = dealerVal.Value
-            local cleanDealer = rawDealer:lower():gsub("%s+", "")
-            if dealerTarget == "" or dealerTarget == "all" or cleanDealer:find(dealerTarget) or dealerTarget:find(cleanDealer) then
-                local img = car:FindFirstChild("CarImage") and car.CarImage.Value or ""
-                local assetId = img:match("id=(%d+)") or img:match("(%d+)$") or ""
-                table.insert(list, {
-                    id = car.Name,
-                    name = car:FindFirstChild("CarName") and car.CarName.Value or car.Name,
-                    cost = car:FindFirstChild("Cost") and car.Cost.Value or 0,
-                    dealer = rawDealer,
-                    assetId = assetId,
-                    topSpeed = car:FindFirstChild("TopSpeed") and car.TopSpeed.Value or 0,
-                    hp = car:FindFirstChild("Horsepower") and car.Horsepower.Value or 0,
-                    year = car:FindFirstChild("CarYear") and car.CarYear.Value or ""
-                })
-            end
-        end
-    end
-
-    table.sort(list, function(a, b) return a.cost < b.cost end)
-    return list
+function TruckJob.TeleportHQ()
+    Helpers.TeleportPlayerToHQ()
 end
 
-function DealershipEngine.Buy(carId, dealer, color)
-    local color3 = (color and Color3.fromRGB(color.r or 255, color.g or 255, color.b or 255)) or Color3.fromRGB(255, 255, 255)
-    local result = "Failed"
-    pcall(function()
-        local net = require(ReplicatedStorage.Shared.Network)
-        result = net:InvokeServer("Dealership", "Buy", carId, color3, dealer or "")
-    end)
-    return result
+function TruckJob.GetState()
+    return State
 end
 
-function DealershipEngine.Open(dealerName)
-    dealerName = dealerName or "Dealer Utama"
-    pcall(function()
-        local etc = Workspace:FindFirstChild("Etc") or Instance.new("Folder", Workspace)
-        etc.Name = "Etc"
-        local dealershipFolder = etc:FindFirstChild("Dealership") or Instance.new("Folder", etc)
-        dealershipFolder.Name = "Dealership"
+return TruckJob
 
-        local oldFake = dealershipFolder:FindFirstChild("Fake_" .. dealerName)
-        if oldFake then oldFake:Destroy() end
-
-        local fakeModel = Instance.new("Model")
-        fakeModel.Name = dealerName
-        fakeModel.Parent = dealershipFolder
-
-        local fakePrompt = Instance.new("ProximityPrompt")
-        fakePrompt.Parent = fakeModel
-
-        if typeof(firesignal) == "function" then
-            firesignal(game:GetService("ProximityPromptService").PromptTriggered, fakePrompt)
-            if Context and Context.SendLog then
-                Context.SendLog(string.format("UI Dealership '%s' berhasil dibuka via remote prompt.", dealerName), "SUCCESS")
-            end
-        elseif Context and Context.SendLog then
-            Context.SendLog("Executor tidak mendukung firesignal untuk membuka UI dealer.", "WARN")
-        end
-
-        task.delay(1.5, function()
-            if fakeModel then fakeModel:Destroy() end
-        end)
-    end)
 end
 
-function DealershipEngine.Teleport(dealerName)
-    pcall(function()
-        local dealershipFolder = Workspace:FindFirstChild("Etc") and Workspace.Etc:FindFirstChild("Dealership")
-        local targetModel = dealershipFolder and dealershipFolder:FindFirstChild(dealerName)
-        local char = LocalPlayer.Character
-        local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart)
-        if hrp and targetModel then
-            hrp.CFrame = targetModel:GetPivot() * CFrame.new(0, 0, 3.5)
-            if Context and Context.SendLog then
-                Context.SendLog(string.format("Teleport ke showroom '%s' berhasil.", dealerName), "SUCCESS")
-            end
-        elseif hrp then
-            hrp.CFrame = CFrame.new(Vector3.new(34800, 140, -54200))
-            if Context and Context.SendLog then
-                Context.SendLog("Teleport ke area dealer utama.", "INFO")
-            end
-        end
-    end)
+Modules["games/cdid"] = function()
+--[[
+    OneEight External Hub - CDID Modular Main Coordinator
+    100% Clean, Modular, and Extensible Architecture
+--]]
+local CDIDModule = {}
+CDIDModule.GameId = "cdid"
+CDIDModule.GameName = "CDID Jawa Timur"
+CDIDModule.CurrencyUnit = "Rp"
+CDIDModule.MetricUnit = "Trips"
+
+local Context = nil
+local RunService = game:GetService("RunService")
+
+-- Sub-modul Modular
+local LightingFeature = nil
+local SafetyFeature = nil
+local DealershipFeature = nil
+local TeleportFeature = nil
+local TruckJob = nil
+
+function CDIDModule.Init(coreContext)
+    Context = coreContext
+
+    -- Load sub-modul
+    LightingFeature = requireModule("games/cdid/features/lighting")
+    SafetyFeature = requireModule("games/cdid/features/safety")
+    DealershipFeature = requireModule("games/cdid/features/dealership")
+    TeleportFeature = requireModule("games/cdid/features/teleport")
+    TruckJob = requireModule("games/cdid/jobs/truck")
+
+    TruckJob.Init(coreContext)
+    print("[OE-External CDID] Modular Coordinator Berhasil Diinisialisasi!")
 end
-
-local TeleportEngine = {
-    Locations = {
-        bengkel = Vector3.new(35210, 135, -53980),
-        dealer = Vector3.new(34800, 140, -54200),
-        rest_area = Vector3.new(33650, 138, -52100)
-    }
-}
-
-function TeleportEngine.Quick(targetKey)
-    local pos = TeleportEngine.Locations[targetKey]
-    if not pos then return end
-    pcall(function()
-        local char = LocalPlayer.Character
-        local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart)
-        if hrp then
-            hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
-            if Context and Context.SendLog then
-                Context.SendLog(string.format("Teleportasi karakter ke %s berhasil.", targetKey:upper()), "SUCCESS")
-            end
-        end
-    end)
-end
-
-local LightingEngine = {
-    Fullbright = false,
-    NoFog = false,
-    Connection = nil,
-    SavedFog = Lighting.FogEnd
-}
-
-function LightingEngine.SetFullbright(enable)
-    LightingEngine.Fullbright = enable
-    if enable then
-        if not LightingEngine.Connection then
-            LightingEngine.Connection = RunService.RenderStepped:Connect(function()
-                if LightingEngine.Fullbright then
-                    Lighting.Brightness = 2
-                    Lighting.ClockTime = 14
-                    Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-                    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-                end
-            end)
-        end
-    else
-        if LightingEngine.Connection then
-            LightingEngine.Connection:Disconnect()
-            LightingEngine.Connection = nil
-        end
-        Lighting.Brightness = 1
-        Lighting.ClockTime = 14
-        Lighting.Ambient = Color3.fromRGB(128, 128, 128)
-        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-    end
-    if Context and Context.SendLog then
-        Context.SendLog(string.format("Fullbright Mode: %s", enable and "AKTIF ☀️" or "NONAKTIF 🌑"), "INFO")
-    end
-end
-
-function LightingEngine.SetNoFog(enable)
-    LightingEngine.NoFog = enable
-    if enable then
-        Lighting.FogEnd = 1000000
-    else
-        Lighting.FogEnd = LightingEngine.SavedFog or 1000
-    end
-    if Context and Context.SendLog then
-        Context.SendLog(string.format("No Fog Mode: %s", enable and "AKTIF (Jernih)" or "NONAKTIF"), "INFO")
-    end
-end
-
 
 function CDIDModule.HandleCommand(action, payload)
     if action == "START_FARM" then
-        if not State.IsFarming then
-            State.IsFarming = true
-            State.FarmStartTime = os.clock()
-            if Context and Context.SendLog then
-                Context.SendLog("Memulai OneEight State-Driven CDID Truck Farm (50s)", "SUCCESS")
-            end
-            task.spawn(runFarmLoop)
-        end
+        TruckJob.Start()
         return true
 
     elseif action == "STOP_FARM" then
-        State.IsFarming = false
-        State.FarmStartTime = 0
-        State.Status = "STOPPED"
+        TruckJob.Stop()
+        return true
+
+    elseif action == "TELEPORT_HQ" then
+        TruckJob.TeleportHQ()
         if Context and Context.SendLog then
-            Context.SendLog("Menghentikan CDID AutoFarm...", "WARN")
+            Context.SendLog("Teleport manual ke Depot HQ Truk.", "INFO")
         end
         return true
 
     elseif action == "TOGGLE_LOW_RENDER" then
-        State.LowRender = not State.LowRender
+        local st = TruckJob.GetState()
+        st.LowRender = not st.LowRender
         pcall(function()
             if typeof(RunService.Set3dRenderingEnabled) == "function" then
-                RunService:Set3dRenderingEnabled(not State.LowRender)
+                RunService:Set3dRenderingEnabled(not st.LowRender)
             end
         end)
         if Context and Context.SendLog then
-            Context.SendLog("Low GPU Mode: " .. (State.LowRender and "AKTIF (3D Off)" or "NONAKTIF (3D On)"), "INFO")
+            Context.SendLog("Low GPU Mode: " .. (st.LowRender and "AKTIF (3D Off)" or "NONAKTIF (3D On)"), "INFO")
         end
-        return true
-
-    elseif action == "TELEPORT_HQ" then
-        if Context and Context.SendLog then
-            Context.SendLog("Teleportasi manual ke Depo HQ...", "INFO")
-        end
-        Helpers.TeleportPlayerToHQ()
         return true
 
     elseif action == "SET_MIN_DISTANCE" then
-        if payload and payload.minDistance then
-            State.MinDistance = tonumber(payload.minDistance) or 100000
+        if payload and payload.minDistance and TruckJob then
+            local st = TruckJob.GetState()
+            st.MinDistance = tonumber(payload.minDistance) or 100000
             if Context and Context.SendLog then
-                Context.SendLog("Konfigurasi Best Destination diperbarui: " .. tostring(State.MinDistance), "INFO")
+                Context.SendLog("Konfigurasi Best Destination: " .. tostring(st.MinDistance), "INFO")
             end
         end
         return true
 
     elseif action == "SET_SAFETY_CONFIG" then
-        if payload then
+        if payload and SafetyFeature then
             if payload.playerDetector ~= nil then
-                State.Safety.PlayerDetectorEnabled = payload.playerDetector
-                SafetyEngine.PlayerDetectorEnabled = payload.playerDetector
-                if payload.playerDetector then SafetyEngine.InitDetector() end
+                SafetyFeature.PlayerDetectorEnabled = payload.playerDetector
+                if payload.playerDetector then SafetyFeature.InitDetector(Context) end
             end
             if payload.emergencyAction ~= nil then
-                State.Safety.EmergencyAction = payload.emergencyAction
-                SafetyEngine.EmergencyAction = payload.emergencyAction
+                SafetyFeature.EmergencyAction = payload.emergencyAction
             end
             if payload.ignoreFriends ~= nil then
-                State.Safety.IgnoreFriends = payload.ignoreFriends
-                SafetyEngine.IgnoreFriends = payload.ignoreFriends
+                SafetyFeature.IgnoreFriends = payload.ignoreFriends
             end
             if Context and Context.SendLog then
-                Context.SendLog(string.format("Safety Config diperbarui: Detector=%s, Action=%s, IgnoreFriends=%s",
-                    tostring(State.Safety.PlayerDetectorEnabled), State.Safety.EmergencyAction, tostring(State.Safety.IgnoreFriends)), "INFO")
+                Context.SendLog(string.format("Safety Config: Detector=%s, Action=%s, IgnoreFriends=%s",
+                    tostring(SafetyFeature.PlayerDetectorEnabled), SafetyFeature.EmergencyAction, tostring(SafetyFeature.IgnoreFriends)), "INFO")
             end
         end
         return true
 
     elseif action == "TOGGLE_SERVER_LOCK" then
-        local enable = (payload and payload.locked ~= nil) and payload.locked or not State.Safety.ServerLocked
-        State.Safety.ServerLocked = enable
-        SafetyEngine.SetServerLock(enable)
+        if SafetyFeature then
+            local enable = (payload and payload.locked ~= nil) and payload.locked or not SafetyFeature.ServerLocked
+            SafetyFeature.SetServerLock(enable, Context)
+        end
+        return true
+
+    elseif action == "TOGGLE_FULLBRIGHT" then
+        if LightingFeature then
+            local enable = (payload and payload.enabled ~= nil) and payload.enabled or not LightingFeature.Fullbright
+            LightingFeature.SetFullbright(enable, Context)
+        end
+        return true
+
+    elseif action == "TOGGLE_NO_FOG" then
+        if LightingFeature then
+            local enable = (payload and payload.enabled ~= nil) and payload.enabled or not LightingFeature.NoFog
+            LightingFeature.SetNoFog(enable, Context)
+        end
+        return true
+
+    elseif action == "OPEN_DEALERSHIP" then
+        if DealershipFeature then
+            local dealer = (payload and payload.dealer) or "Dealer Utama"
+            DealershipFeature.Open(dealer, Context)
+        end
+        return true
+
+    elseif action == "TELEPORT_DEALERSHIP" then
+        if DealershipFeature then
+            local dealer = (payload and payload.dealer) or "Dealer Utama"
+            DealershipFeature.Teleport(dealer, Context)
+        end
+        return true
+
+    elseif action == "QUICK_TELEPORT" then
+        if TeleportFeature and payload and payload.target then
+            TeleportFeature.Quick(payload.target, Context)
+        end
         return true
 
     elseif action == "FETCH_DEALER_CARS" then
-        local dealer = payload and payload.dealer or "all"
-        local cars = DealershipEngine.GetCars(dealer)
-        if Context and Context.SendPacket then
+        if DealershipFeature and Context and Context.SendPacket then
+            local dealer = payload and payload.dealer or "all"
+            local cars = DealershipFeature.GetCars(dealer)
             Context.SendPacket("DEALER_CARS_DATA", {
                 dealer = dealer,
                 cars = cars
@@ -1307,42 +1489,9 @@ function CDIDModule.HandleCommand(action, payload)
         return true
 
     elseif action == "BUY_CAR" then
-        if payload and payload.carId then
-            local carId = payload.carId
-            local dealer = payload.dealer or ""
-            local color = payload.color
-            local res = DealershipEngine.Buy(carId, dealer, color)
-            if Context and Context.SendLog then
-                Context.SendLog(string.format("Pembelian mobil '%s' di dealer '%s': %s", carId, dealer, tostring(res)), res == "Success" and "SUCCESS" or "WARN")
-            end
+        if DealershipFeature and payload and payload.carId then
+            DealershipFeature.Buy(payload.carId, payload.dealer, payload.color, Context)
         end
-        return true
-
-    elseif action == "OPEN_DEALERSHIP" then
-        local dealer = (payload and payload.dealer) or "Dealer Utama"
-        DealershipEngine.Open(dealer)
-        return true
-
-    elseif action == "TELEPORT_DEALERSHIP" then
-        local dealer = (payload and payload.dealer) or "Dealer Utama"
-        DealershipEngine.Teleport(dealer)
-        return true
-
-    elseif action == "QUICK_TELEPORT" then
-        local target = payload and payload.target
-        if target then TeleportEngine.Quick(target) end
-        return true
-
-    elseif action == "TOGGLE_FULLBRIGHT" then
-        local enable = (payload and payload.enabled ~= nil) and payload.enabled or not State.Lighting.Fullbright
-        State.Lighting.Fullbright = enable
-        LightingEngine.SetFullbright(enable)
-        return true
-
-    elseif action == "TOGGLE_NO_FOG" then
-        local enable = (payload and payload.enabled ~= nil) and payload.enabled or not State.Lighting.NoFog
-        State.Lighting.NoFog = enable
-        LightingEngine.SetNoFog(enable)
         return true
     end
 
@@ -1350,26 +1499,35 @@ function CDIDModule.HandleCommand(action, payload)
 end
 
 function CDIDModule.GetTelemetry()
-    local elapsedSec = (State.IsFarming and State.FarmStartTime and State.FarmStartTime > 0) and math.floor(os.clock() - State.FarmStartTime) or 0
+    local st = TruckJob and TruckJob.GetState() or {}
+    local elapsedSec = (st.IsFarming and st.FarmStartTime and st.FarmStartTime > 0) and math.floor(os.clock() - st.FarmStartTime) or 0
     return {
-        status = State.Status,
-        currentRoute = State.CurrentRoute,
-        tripCount = State.TripCount,
-        totalEarnings = State.TotalEarnings,
-        currentCash = State.CurrentCash,
-        startCash = State.StartCash,
-        isFarming = State.IsFarming,
-        lowRender = State.LowRender,
-        minDistance = State.MinDistance,
+        status = st.Status or "CONNECTED",
+        currentRoute = st.CurrentRoute or "IDLE",
+        tripCount = st.TripCount or 0,
+        totalEarnings = st.TotalEarnings or 0,
+        currentCash = st.CurrentCash or 0,
+        startCash = st.StartCash or 0,
+        isFarming = st.IsFarming or false,
+        lowRender = st.LowRender or false,
+        minDistance = st.MinDistance or 100000,
         farmDuration = elapsedSec,
-        safety = State.Safety,
-        lighting = State.Lighting
+        dealerList = DealershipFeature and DealershipFeature.GetRealDealerList() or {},
+        safety = SafetyFeature and {
+            PlayerDetectorEnabled = SafetyFeature.PlayerDetectorEnabled,
+            EmergencyAction = SafetyFeature.EmergencyAction,
+            IgnoreFriends = SafetyFeature.IgnoreFriends,
+            ServerLocked = SafetyFeature.ServerLocked
+        } or {},
+        lighting = LightingFeature and {
+            Fullbright = LightingFeature.Fullbright,
+            NoFog = LightingFeature.NoFog
+        } or {}
     }
 end
 
 function CDIDModule.Cleanup()
-    State.IsFarming = false
-    State.Status = "STOPPED"
+    if TruckJob then TruckJob.Stop() end
 end
 
 return CDIDModule
@@ -1865,13 +2023,7 @@ return DDSModule
 
 end
 
-local function requireModule(name)
-    if Modules[name] then
-        return Modules[name]()
-    end
-    error("[OE-External] Modul tidak ditemukan: " .. tostring(name))
-end
-
+local LoadedModules = {}
 -- ============================================================================
 -- LOAD CORE SAFETY & KICK DETECTOR
 -- ============================================================================
