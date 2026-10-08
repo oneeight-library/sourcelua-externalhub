@@ -236,8 +236,9 @@ export function DealershipPage({
       .sort((a, b) => {
         // Sort persis sesuai in-game CDID (FilterFrame.Sort)
         if (sortBy === "new_limited") {
-          if (a.isLimited && !b.isLimited) return -1;
-          if (!a.isLimited && b.isLimited) return 1;
+          const aPriority = (a.isLimited ? 2 : 0) + (a.isNew ? 1 : 0);
+          const bPriority = (b.isLimited ? 2 : 0) + (b.isNew ? 1 : 0);
+          if (aPriority !== bPriority) return bPriority - aPriority;
           return a.cost - b.cost;
         }
         if (sortBy === "low_to_high") return a.cost - b.cost;
@@ -615,12 +616,19 @@ export function DealershipPage({
                       <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">{car.dealer}</span>
                     </div>
 
-                    {/* Badge LIMITED Merah (Sesuai Desain Asli In-Game CDID) */}
-                    {car.isLimited && (
-                      <span className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500/80 shadow-md shadow-rose-600/40 px-1.5 py-0.5 rounded-md z-20 leading-none animate-pulse">
-                        LIMITED!
-                      </span>
-                    )}
+                    {/* Badges: LIMITED (Merah) & NEW (Hijau) Persis In-Game CDID */}
+                    <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 flex items-center gap-1 z-20">
+                      {car.isLimited && (
+                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500/80 shadow-md shadow-rose-600/40 px-1.5 py-0.5 rounded-md leading-none animate-pulse">
+                          LIMITED!
+                        </span>
+                      )}
+                      {car.isNew && (
+                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500/80 shadow-md shadow-emerald-600/40 px-1.5 py-0.5 rounded-md leading-none">
+                          NEW!
+                        </span>
+                      )}
+                    </div>
 
                     <Badge
                       variant="secondary"
@@ -740,11 +748,18 @@ export function DealershipPage({
                 <Car className="h-12 w-12 text-zinc-700" />
               )}
 
-              {modalCar.isLimited && (
-                <span className="absolute top-2.5 left-2.5 text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500 shadow-md shadow-rose-600/30 px-2 py-0.5 rounded-md z-20 leading-none">
-                  LIMITED!
-                </span>
-              )}
+              <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-20">
+                {modalCar.isLimited && (
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500 shadow-md shadow-rose-600/30 px-2 py-0.5 rounded-md leading-none">
+                    LIMITED!
+                  </span>
+                )}
+                {modalCar.isNew && (
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500 shadow-md shadow-emerald-600/30 px-2 py-0.5 rounded-md leading-none">
+                    NEW!
+                  </span>
+                )}
+              </div>
 
               <Badge variant="secondary" className="absolute top-2.5 right-2.5 text-[9px] font-mono bg-zinc-900/90 border border-zinc-700 text-zinc-300">
                 {modalCar.dealer}

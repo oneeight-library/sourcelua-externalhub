@@ -66,7 +66,8 @@ local function getGamepassMaps()
         Rare = {},
         Retro = {},
         Emergency = {},
-        Limited = {}
+        Limited = {},
+        New = {}
     }
     local shared = ReplicatedStorage:FindFirstChild("Shared")
     if shared then
@@ -86,6 +87,7 @@ local function getGamepassMaps()
         fill("RetroCar", GamepassMaps.Retro)
         fill("EmergencyCar", GamepassMaps.Emergency)
         fill("LimitedCar", GamepassMaps.Limited)
+        fill("NewCar", GamepassMaps.New)
 
         -- Load from Shared.Data.LimitedList
         local dataFolder = shared:FindFirstChild("Data")
@@ -151,6 +153,8 @@ function DealershipFeature.GetCars(dealerTarget)
                     isLimited = true
                 end
 
+                local isNew = maps.New[lowerId] == true
+
                 local stockVal = nil
                 local stockFolder = ReplicatedStorage:FindFirstChild("LimitedStock")
                 if stockFolder then
@@ -174,6 +178,7 @@ function DealershipFeature.GetCars(dealerTarget)
                     gamepass = gamepassLabel,
                     isGamepass = isGamepass,
                     isLimited = isLimited,
+                    isNew = isNew,
                     stock = stockVal
                 })
             end
