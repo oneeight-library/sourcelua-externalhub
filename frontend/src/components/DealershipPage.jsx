@@ -102,7 +102,8 @@ export function DealershipPage({
   dealerCatalog,
   onFetchCars,
   onBuyCar,
-  onBackToDashboard
+  onBackToDashboard,
+  isEmbedded = false
 }) {
   const [selectedDealer, setSelectedDealer] = React.useState(initialDealer);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -286,11 +287,19 @@ export function DealershipPage({
       : `${selectedBots.length} Akun Terpilih`;
 
   return (
-    <div className="h-screen h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-zinc-950 text-zinc-100 flex flex-col selection:bg-emerald-500/20 selection:text-emerald-300 overscroll-contain">
+    <div className={`w-full selection:bg-emerald-500/20 selection:text-emerald-300 ${
+      isEmbedded ? "space-y-4" : "h-screen h-[100dvh] overflow-y-auto overflow-x-hidden bg-zinc-950 text-zinc-100 flex flex-col overscroll-contain"
+    }`}>
       
-      {/* 1. Header Navigasi Mandiri dengan Dropdown Showroom & Dropdown Multi-Akun */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
+      {/* 1. Header Toolbar dengan Dropdown Showroom & Dropdown Multi-Akun */}
+      <header className={`w-full ${
+        isEmbedded 
+          ? "rounded-2xl border border-zinc-800/80 bg-zinc-900/60 backdrop-blur-xl p-2.5 sm:p-3 shadow-md"
+          : "sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-xl"
+      }`}>
+        <div className={`flex items-center justify-between gap-2 sm:gap-4 ${
+          isEmbedded ? "w-full" : "max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16"
+        }`}>
           
           {/* Left: Tombol Kembali & Dropdown Showroom CDID */}
           <div className="flex items-center gap-2 sm:gap-3">
@@ -437,8 +446,10 @@ export function DealershipPage({
         </div>
       </header>
 
-      {/* 2. Main Standalone Content Viewport */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-24 sm:pb-12">
+      {/* 2. Main Content Viewport */}
+      <main className={`w-full space-y-4 sm:space-y-5 ${
+        isEmbedded ? "pt-1" : "flex-1 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 sm:pb-12"
+      }`}>
 
         {/* Toolbar: Search & 100% In-Game Custom Dropdown Filters (Bukan Default Browser) */}
         <div className="flex flex-col md:flex-row gap-2.5 sm:gap-3 items-stretch md:items-center justify-between">
