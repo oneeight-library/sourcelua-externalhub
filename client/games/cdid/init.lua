@@ -30,6 +30,18 @@ function CDIDModule.Init(coreContext)
 
     TruckJob.Init(coreContext)
     print("[OE-External CDID] Modular Coordinator Berhasil Diinisialisasi!")
+
+    -- Auto-push katalog dealer saat inisialisasi agar web langsung punya data tanpa nunggu tombol
+    task.spawn(function()
+        task.wait(1.5)
+        if DealershipFeature and Context and Context.SendPacket then
+            local cars = DealershipFeature.GetCars("all")
+            Context.SendPacket("DEALER_CARS_DATA", {
+                dealer = "all",
+                cars = cars
+            })
+        end
+    end)
 end
 
 function CDIDModule.HandleCommand(action, payload)
@@ -134,11 +146,13 @@ function CDIDModule.HandleCommand(action, payload)
     elseif action == "FETCH_DEALER_CARS" then
         if DealershipFeature and Context and Context.SendPacket then
             local dealer = payload and payload.dealer or "all"
-            local cars = DealershipFeature.GetCars(dealer)
-            Context.SendPacket("DEALER_CARS_DATA", {
-                dealer = dealer,
-                cars = cars
-            })
+            pcall(function()
+                local cars = DealershipFeature.GetCars(dealer)
+                Context.SendPacket("DEALER_CARS_DATA", {
+                    dealer = dealer,
+                    cars = cars
+                })
+            end)
         end
         return true
 

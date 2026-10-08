@@ -232,19 +232,18 @@ export function DealershipPage({
     return list;
   }, [activeBot?.dealerList]);
 
-  // Request cars from first selected bot (or activeBot)
+  // Request cars from connected bot (atau broadcast ALL)
   const queryBot = activeBot || (selectedBotIds[0] ? bots?.get(selectedBotIds[0]) : botList[0]);
   const fetchedRef = React.useRef({ botId: null, dealer: null });
   React.useEffect(() => {
-    if (queryBot && queryBot.botId) {
-      const dKey = selectedDealer === "Semua Dealer" ? "all" : selectedDealer;
-      if (fetchedRef.current.botId === queryBot.botId && fetchedRef.current.dealer === dKey) {
-        return;
-      }
-      fetchedRef.current = { botId: queryBot.botId, dealer: dKey };
-      onFetchCars(queryBot.botId, dKey);
+    const dKey = selectedDealer === "Semua Dealer" ? "all" : selectedDealer;
+    const targetId = queryBot?.botId || selectedBotIds[0] || (botList[0]?.botId) || "ALL";
+    if (fetchedRef.current.botId === targetId && fetchedRef.current.dealer === dKey) {
+      return;
     }
-  }, [selectedDealer, queryBot?.botId, onFetchCars]);
+    fetchedRef.current = { botId: targetId, dealer: dKey };
+    onFetchCars(targetId, dKey);
+  }, [selectedDealer, queryBot?.botId, selectedBotIds, botList, onFetchCars]);
 
   const dealerKey = (selectedDealer === "Semua Dealer" ? "all" : selectedDealer).toLowerCase().replace(/\s+/g, "");
   const rawCars = dealerCatalog[dealerKey] || dealerCatalog["all"] || [];
@@ -622,10 +621,9 @@ export function DealershipPage({
               variant="outline"
               size="sm"
               onClick={() => {
-                if (queryBot?.botId) {
-                  const dKey = selectedDealer === "Semua Dealer" ? "all" : selectedDealer;
-                  onFetchCars(queryBot.botId, dKey);
-                }
+                const targetId = queryBot?.botId || selectedBotIds[0] || (botList[0]?.botId) || "ALL";
+                const dKey = selectedDealer === "Semua Dealer" ? "all" : selectedDealer;
+                onFetchCars(targetId, dKey);
               }}
               title="Refresh Katalog dari Game"
               className="h-9 w-9 p-0 border-zinc-800 hover:bg-zinc-800 shrink-0 active:scale-95 shadow-sm"

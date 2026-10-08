@@ -140,11 +140,16 @@ export class HubRoom {
             payload: botInfo
           });
         } else if (data.type === "DEALER_CARS_DATA") {
+          const dealerKey = (data.payload?.dealer || data.dealer || "all").toLowerCase().replace(/\s+/g, "");
+          const cars = data.payload?.cars || data.cars || [];
+          if (!this.cachedDealerCatalog) this.cachedDealerCatalog = {};
+          this.cachedDealerCatalog[dealerKey] = cars;
+
           this.broadcastToControllers({
             type: "DEALER_CARS_DATA",
             botId,
-            dealer: data.payload?.dealer || data.dealer,
-            cars: data.payload?.cars || data.cars || []
+            dealer: data.payload?.dealer || data.dealer || "all",
+            cars: cars
           });
         } else if (data.type === "CLIENT_KICKED") {
           botInfo.isKicked = true;
@@ -215,6 +220,16 @@ export class HubRoom {
       }));
     }
 
+    if (this.cachedDealerCatalog) {
+      for (const [dKey, cars] of Object.entries(this.cachedDealerCatalog)) {
+        ws.send(JSON.stringify({
+          type: "DEALER_CARS_DATA",
+          dealer: dKey,
+          cars
+        }));
+      }
+    }
+
     ws.addEventListener("message", (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -233,14 +248,29 @@ export class HubRoom {
   routeCommandToBot(targetBotId, action, payload) {
     const cmdPacket = JSON.stringify({ type: "EXECUTE_COMMAND", action, payload });
 
-    if (targetBotId === "ALL") {
+    if (targetBotId === "ALL" || !targetBotId) {
       for (const [_, b] of this.bots.entries()) {
         try { b.ws.send(cmdPacket); } catch (_) {}
       }
+      return;
+    }
+
+    let target = this.bots.get(targetBotId);
+    if (!target) {
+      const search = String(targetBotId).toLowerCase().trim();
+      for (const [id, b] of this.bots.entries()) {
+        if (id.toLowerCase() === search || (b.info && b.info.name && b.info.name.toLowerCase() === search)) {
+          target = b;
+          break;
+        }
+      }
+    }
+
+    if (target) {
+      try { target.ws.send(cmdPacket); } catch (_) {}
     } else {
-      const target = this.bots.get(targetBotId);
-      if (target) {
-        try { target.ws.send(cmdPacket); } catch (_) {}
+      for (const [_, b] of this.bots.entries()) {
+        try { b.ws.send(cmdPacket); } catch (_) {}
       }
     }
   }
