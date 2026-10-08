@@ -89,14 +89,27 @@ function Safety.InitKickDetector(onKickedCallback)
     end)
 end
 
--- 4. Rejoin Server Now (Private Server & Specific Instance Aware)
+-- 4. Rejoin Server Now (Private Server & CDID Gateway Aware)
 function Safety.RejoinNow(loaderUrl)
     loaderUrl = loaderUrl or "https://externalhub.oneeight-project18.workers.dev/loader"
 
     local currentPlaceId = game.PlaceId
-    local currentJobId = game.JobId
+    local HttpService = game:GetService("HttpService")
 
-    -- 1. Deteksi dan Amankan Kode Private Server (Khusus CDID)
+    -- 1. Deteksi apakah ini game CDID dan berada di Private Server
+    local CDID_PLACE_MAP = {
+        [14005966837] = "Jakarta",
+        [110369730911937] = "JawaTimur",
+        [9233343468] = "JawaBarat",
+        [9508940498] = "JawaTengah",
+        [79488788685813] = "Bandung",
+        [118108582994420] = "Bali",
+        [132986577553100] = "Seasonal"
+    }
+
+    local currentMapKey = CDID_PLACE_MAP[currentPlaceId]
+    local isCDID = (currentMapKey ~= nil) or (currentPlaceId == 6911148748)
+
     local psCode = nil
     pcall(function()
         if typeof(getgc) == "function" then
@@ -113,47 +126,61 @@ function Safety.RejoinNow(loaderUrl)
         psCode = _G.OE_PRIVATE_SERVER_CODE
     end
 
-    if psCode then
-        _G.OE_PRIVATE_SERVER_CODE = psCode
+    if not psCode and typeof(readfile) == "function" then
         pcall(function()
-            if typeof(writefile) == "function" then
-                writefile("oe_cdid_ps_code.txt", tostring(psCode))
+            if typeof(isfile) == "function" and isfile("oe_cdid_ps_code.txt") then
+                local saved = readfile("oe_cdid_ps_code.txt")
+                if saved and #saved >= 4 then
+                    psCode = saved
+                end
             end
         end)
     end
 
-    -- 2. Setup queue_on_teleport agar loader & auto-rejoin berjalan di server berikutnya
+    -- 2. Setup queue_on_teleport agar loader & connector otomatis aktif
     local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport) or queueonteleport
     if queue_teleport then
         pcall(function()
             queue_teleport(string.format([[
-                task.wait(3.5)
-                loadstring(game:HttpGet("%s"))()
+                task.wait(2)
+                pcall(function()
+                    loadstring(game:HttpGet("http://localhost:16384/script.luau"))()
+                end)
+                task.wait(2)
+                pcall(function()
+                    loadstring(game:HttpGet("%s"))()
+                end)
             ]], loaderUrl))
         end)
     end
 
-    -- 3. Eksekusi Rejoin: Prioritaskan Instance Sama (Private Server Instance)
-    local rejoined = false
-    if currentJobId and #currentJobId > 0 then
-        print(string.format("[OE-External Safety] Rejoining instance: %s (Place: %d)...", currentJobId, currentPlaceId))
-        local ok, err = pcall(function()
-            TeleportService:TeleportToPlaceInstance(currentPlaceId, currentJobId, LocalPlayer)
+    -- 3. Logika Rejoin CDID Private Server
+    -- Di CDID, Private Server adalah Reserved Server. Roblox memblokir TeleportToPlaceInstance langsung dari client (Error 773).
+    -- Jalur resmi & 100%% berhasil masuk ke Private Server CDID adalah melalui Lobby Gateway (PlaceId: 6911148748).
+    if isCDID and psCode and currentMapKey and currentPlaceId ~= 6911148748 then
+        print(string.format("[OE-External Safety] CDID Private Server terdeteksi (Kode: %s, Map: %s). Menjadwalkan gateway rejoin via Lobby...", tostring(psCode), currentMapKey))
+
+        pcall(function()
+            if typeof(writefile) == "function" then
+                writefile("oe_cdid_ps_code.txt", tostring(psCode))
+                writefile("oe_cdid_rejoin_target.json", HttpService:JSONEncode({
+                    code = tostring(psCode),
+                    map = currentMapKey
+                }))
+            end
         end)
-        if ok then
-            rejoined = true
-        else
-            warn("[OE-External Safety] TeleportToPlaceInstance error: " .. tostring(err))
-        end
+        _G.OE_PRIVATE_SERVER_CODE = psCode
+
+        print("[OE-External Safety] Berpindah ke CDID Main Menu untuk routing ke Private Server...")
+        TeleportService:Teleport(6911148748, LocalPlayer)
+        return
     end
 
-    -- 4. Fallback jika JobId kosong atau TeleportToPlaceInstance gagal
-    if not rejoined then
-        print("[OE-External Safety] Fallback ke Teleport biasa...")
-        pcall(function()
-            TeleportService:Teleport(currentPlaceId, LocalPlayer)
-        end)
-    end
+    -- 4. Fallback jika bukan CDID Private Server atau sudah di Lobby
+    print(string.format("[OE-External Safety] Melakukan Teleport ke PlaceId: %d...", currentPlaceId))
+    pcall(function()
+        TeleportService:Teleport(currentPlaceId, LocalPlayer)
+    end)
 end
 
 return Safety
