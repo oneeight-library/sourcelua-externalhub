@@ -58,6 +58,36 @@ function DealershipFeature.GetRealDealerList()
     return list
 end
 
+local GamepassMaps = nil
+local function getGamepassMaps()
+    if GamepassMaps then return GamepassMaps end
+    GamepassMaps = {
+        Luxury = {},
+        Rare = {},
+        Retro = {},
+        Emergency = {}
+    }
+    local shared = ReplicatedStorage:FindFirstChild("Shared")
+    if shared then
+        local function fill(name, target)
+            local m = shared:FindFirstChild(name)
+            if m and m:IsA("ModuleScript") then
+                local ok, data = pcall(require, m)
+                if ok and type(data) == "table" then
+                    for _, id in ipairs(data) do
+                        target[tostring(id):lower()] = true
+                    end
+                end
+            end
+        end
+        fill("LuxuryCar", GamepassMaps.Luxury)
+        fill("RareImportCar", GamepassMaps.Rare)
+        fill("RetroCar", GamepassMaps.Retro)
+        fill("EmergencyCar", GamepassMaps.Emergency)
+    end
+    return GamepassMaps
+end
+
 function DealershipFeature.GetCars(dealerTarget)
     local list = {}
     local carData = ReplicatedStorage:FindFirstChild("CarData")
@@ -83,6 +113,25 @@ function DealershipFeature.GetCars(dealerTarget)
             end
 
             if isMatch then
+                local maps = getGamepassMaps()
+                local lowerId = car.Name:lower()
+                local gamepassLabel = "None Gamepass"
+                local isGamepass = false
+
+                if maps.Luxury[lowerId] then
+                    gamepassLabel = "Gamepass (Luxury)"
+                    isGamepass = true
+                elseif maps.Rare[lowerId] then
+                    gamepassLabel = "Gamepass (Rare Import)"
+                    isGamepass = true
+                elseif maps.Retro[lowerId] then
+                    gamepassLabel = "Gamepass (Retro)"
+                    isGamepass = true
+                elseif maps.Emergency[lowerId] then
+                    gamepassLabel = "Gamepass (Emergency)"
+                    isGamepass = true
+                end
+
                 local img = car:FindFirstChild("CarImage") and car.CarImage.Value or ""
                 local assetId = img:match("id=(%d+)") or img:match("(%d+)$") or ""
                 table.insert(list, {
@@ -93,7 +142,9 @@ function DealershipFeature.GetCars(dealerTarget)
                     assetId = assetId,
                     topSpeed = car:FindFirstChild("TopSpeed") and car.TopSpeed.Value or 0,
                     hp = car:FindFirstChild("Horsepower") and car.Horsepower.Value or 0,
-                    year = car:FindFirstChild("CarYear") and car.CarYear.Value or ""
+                    year = car:FindFirstChild("CarYear") and car.CarYear.Value or "",
+                    gamepass = gamepassLabel,
+                    isGamepass = isGamepass
                 })
             end
         end

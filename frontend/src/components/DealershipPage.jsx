@@ -504,6 +504,18 @@ export function DealershipPage({
                       <h3 className="text-[11px] sm:text-xs font-bold text-zinc-100 line-clamp-2 leading-tight group-hover:text-emerald-400 transition-colors min-h-[1.75rem] sm:min-h-[2rem]">
                         {car.name}
                       </h3>
+                      {/* Status Gamepass di bawah nama mobil */}
+                      <div className="mt-1 mb-1">
+                        {car.isGamepass || (car.gamepass && car.gamepass !== "None Gamepass") ? (
+                          <span className="inline-block text-[9px] sm:text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded leading-none">
+                            {car.gamepass || "Gamepass"}
+                          </span>
+                        ) : (
+                          <span className="inline-block text-[9px] sm:text-[10px] font-medium text-zinc-500 bg-zinc-900/80 border border-zinc-800 px-1.5 py-0.5 rounded leading-none">
+                            None Gamepass
+                          </span>
+                        )}
+                      </div>
                       {/* Specs Badges */}
                       <div className="flex items-center gap-1 sm:gap-2 mt-1.5 sm:mt-2 flex-wrap">
                         <span className="text-[9px] sm:text-[10px] text-zinc-400 font-mono flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
@@ -598,6 +610,18 @@ export function DealershipPage({
                 <h3 className="text-sm sm:text-base font-bold text-zinc-100 mt-0.5 truncate">
                   {modalCar.name}
                 </h3>
+                {/* Status Gamepass di bawah nama mobil */}
+                <div className="mt-1">
+                  {modalCar.isGamepass || (modalCar.gamepass && modalCar.gamepass !== "None Gamepass") ? (
+                    <span className="inline-block text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded leading-none">
+                      {modalCar.gamepass || "Gamepass"}
+                    </span>
+                  ) : (
+                    <span className="inline-block text-[10px] font-medium text-zinc-500 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded leading-none">
+                      None Gamepass
+                    </span>
+                  )}
+                </div>
               </div>
               <span className="font-mono font-black text-sm sm:text-base text-emerald-400 shrink-0">
                 {formatRupiah(modalCar.cost)}
