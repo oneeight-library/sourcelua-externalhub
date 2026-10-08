@@ -65,7 +65,8 @@ local function getGamepassMaps()
         Luxury = {},
         Rare = {},
         Retro = {},
-        Emergency = {}
+        Emergency = {},
+        Limited = {}
     }
     local shared = ReplicatedStorage:FindFirstChild("Shared")
     if shared then
@@ -84,6 +85,19 @@ local function getGamepassMaps()
         fill("RareImportCar", GamepassMaps.Rare)
         fill("RetroCar", GamepassMaps.Retro)
         fill("EmergencyCar", GamepassMaps.Emergency)
+        fill("LimitedCar", GamepassMaps.Limited)
+
+        -- Load from Shared.Data.LimitedList
+        local dataFolder = shared:FindFirstChild("Data")
+        local limListMod = dataFolder and dataFolder:FindFirstChild("LimitedList")
+        if limListMod and limListMod:IsA("ModuleScript") then
+            local ok, data = pcall(require, limListMod)
+            if ok and type(data) == "table" then
+                for _, id in ipairs(data) do
+                    GamepassMaps.Limited[tostring(id):lower()] = true
+                end
+            end
+        end
     end
     return GamepassMaps
 end
@@ -132,6 +146,20 @@ function DealershipFeature.GetCars(dealerTarget)
                     isGamepass = true
                 end
 
+                local isLimited = false
+                if maps.Limited[lowerId] or car:FindFirstChild("Limited") then
+                    isLimited = true
+                end
+
+                local stockVal = nil
+                local stockFolder = ReplicatedStorage:FindFirstChild("LimitedStock")
+                if stockFolder then
+                    local sItem = stockFolder:FindFirstChild(car.Name)
+                    if sItem and (sItem:IsA("IntValue") or sItem:IsA("NumberValue")) then
+                        stockVal = sItem.Value
+                    end
+                end
+
                 local img = car:FindFirstChild("CarImage") and car.CarImage.Value or ""
                 local assetId = img:match("id=(%d+)") or img:match("(%d+)$") or ""
                 table.insert(list, {
@@ -144,7 +172,9 @@ function DealershipFeature.GetCars(dealerTarget)
                     hp = car:FindFirstChild("Horsepower") and car.Horsepower.Value or 0,
                     year = car:FindFirstChild("CarYear") and car.CarYear.Value or "",
                     gamepass = gamepassLabel,
-                    isGamepass = isGamepass
+                    isGamepass = isGamepass,
+                    isLimited = isLimited,
+                    stock = stockVal
                 })
             end
         end

@@ -86,6 +86,7 @@ export function DealershipPage({
   const [selectedDealer, setSelectedDealer] = React.useState(initialDealer);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortBy, setSortBy] = React.useState("price_asc");
+  const [onlyLimited, setOnlyLimited] = React.useState(false);
   const [modalCar, setModalCar] = React.useState(null);
   const [selectedColor, setSelectedColor] = React.useState(PRESET_COLORS[0]);
   const [buyStatus, setBuyStatus] = React.useState(null);
@@ -191,16 +192,22 @@ export function DealershipPage({
           car.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           car.id.toLowerCase().includes(searchQuery.toLowerCase());
 
-        return matchesDealer && matchesSearch;
+        const matchesLimited = !onlyLimited || car.isLimited;
+
+        return matchesDealer && matchesSearch && matchesLimited;
       })
       .sort((a, b) => {
+        if (sortBy === "limited_first") {
+          if (a.isLimited && !b.isLimited) return -1;
+          if (!a.isLimited && b.isLimited) return 1;
+        }
         if (sortBy === "price_asc") return a.cost - b.cost;
         if (sortBy === "price_desc") return b.cost - a.cost;
         if (sortBy === "speed_desc") return (b.topSpeed || 0) - (a.topSpeed || 0);
         if (sortBy === "hp_desc") return (b.hp || 0) - (a.hp || 0);
         return 0;
       });
-  }, [rawCars, selectedDealer, searchQuery, sortBy]);
+  }, [rawCars, selectedDealer, searchQuery, sortBy, onlyLimited]);
 
   const displayedCars = React.useMemo(() => {
     return filteredCars.slice(0, visibleCount);
@@ -417,6 +424,20 @@ export function DealershipPage({
               {filteredCars.length} Unit ({selectedDealer})
             </Badge>
 
+            {/* Tombol Filter Limited */}
+            <Button
+              variant={onlyLimited ? "destructive" : "outline"}
+              size="sm"
+              onClick={() => setOnlyLimited(!onlyLimited)}
+              className={`h-9 px-2.5 sm:px-3 text-xs font-bold transition-all active:scale-95 ${
+                onlyLimited
+                  ? "bg-rose-600 hover:bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-600/30"
+                  : "border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300"
+              }`}
+            >
+              ⭐ Limited
+            </Button>
+
             <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
               <span className="text-[11px] sm:text-xs text-zinc-400 whitespace-nowrap hidden xs:inline">Urut:</span>
               <select
@@ -428,6 +449,7 @@ export function DealershipPage({
                 <option value="price_desc">Harga: Termahal</option>
                 <option value="speed_desc">Top Speed Tertinggi</option>
                 <option value="hp_desc">Tenaga Kuda (HP) Tertinggi</option>
+                <option value="limited_first">⭐ Limited Dahulu</option>
               </select>
             </div>
             
@@ -490,6 +512,13 @@ export function DealershipPage({
                       <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">{car.dealer}</span>
                     </div>
 
+                    {/* Badge LIMITED Merah (Sesuai Desain Asli In-Game CDID) */}
+                    {car.isLimited && (
+                      <span className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500/80 shadow-md shadow-rose-600/40 px-1.5 py-0.5 rounded-md z-20 leading-none animate-pulse">
+                        LIMITED!
+                      </span>
+                    )}
+
                     <Badge
                       variant="secondary"
                       className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-[8px] sm:text-[9px] font-mono bg-zinc-900/90 text-zinc-300 border border-zinc-700/60 z-20 px-1.5 py-0"
@@ -518,6 +547,15 @@ export function DealershipPage({
                       </div>
                       {/* Specs Badges */}
                       <div className="flex items-center gap-1 sm:gap-2 mt-1.5 sm:mt-2 flex-wrap">
+                        {car.stock !== undefined && car.stock !== null && (
+                          <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-1 sm:px-1.5 py-0.5 rounded border ${
+                            car.stock === 0
+                              ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                              : "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                          }`}>
+                            {car.stock === 0 ? "Stok: 0 (Sold Out)" : `Stok: ${car.stock}`}
+                          </span>
+                        )}
                         <span className="text-[9px] sm:text-[10px] text-zinc-400 font-mono flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
                           <Gauge className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-cyan-400 shrink-0" />
                           {car.topSpeed || 0} KM/H
@@ -596,6 +634,12 @@ export function DealershipPage({
               ) : (
                 <Car className="h-12 w-12 text-zinc-700" />
               )}
+              {modalCar.isLimited && (
+                <span className="absolute top-2.5 left-2.5 text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500 shadow-md shadow-rose-600/30 px-2 py-0.5 rounded-md z-20 leading-none">
+                  LIMITED!
+                </span>
+              )}
+
               <Badge variant="secondary" className="absolute top-2.5 right-2.5 text-[9px] font-mono bg-zinc-900/90 border border-zinc-700 text-zinc-300">
                 {modalCar.dealer}
               </Badge>
