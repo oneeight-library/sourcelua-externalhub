@@ -218,35 +218,37 @@ export function BotDetailView({
       {/* =========================================================================
           TAB NAVIGATION (AUTOFARM & KONTROL vs SHOWROOM CDID)
           ========================================================================= */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-2 overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => onTabChange && onTabChange("overview")}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab !== "dealership"
-              ? "bg-zinc-800 text-white shadow-sm border border-zinc-700"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
-          }`}
-        >
-          <SlidersHorizontal className="h-4 w-4 text-indigo-400" />
-          <span>Autofarm & Kontrol</span>
-        </button>
+      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+        <div className="inline-flex items-center p-1 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-inner">
+          <button
+            type="button"
+            onClick={() => onTabChange && onTabChange("overview")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all select-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none cursor-pointer ${
+              activeTab !== "dealership"
+                ? "bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/80"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 border border-transparent"
+            }`}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 text-indigo-400" />
+            <span>Autofarm & Kontrol</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => onTabChange && onTabChange("dealership")}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === "dealership"
-              ? "bg-emerald-950/70 text-emerald-300 shadow-sm border border-emerald-500/40"
-              : "text-zinc-400 hover:text-emerald-300 hover:bg-zinc-900/60"
-          }`}
-        >
-          <Store className="h-4 w-4 text-emerald-400" />
-          <span>Showroom CDID</span>
-          <Badge variant="emerald" className="text-[9px] px-1.5 py-0 font-mono">
-            Dealer
-          </Badge>
-        </button>
+          <button
+            type="button"
+            onClick={() => onTabChange && onTabChange("dealership")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all select-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none cursor-pointer ${
+              activeTab === "dealership"
+                ? "bg-emerald-950/80 text-emerald-300 shadow-sm border border-emerald-500/50"
+                : "text-zinc-400 hover:text-emerald-300 hover:bg-zinc-800/40 border border-transparent"
+            }`}
+          >
+            <Store className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Showroom CDID</span>
+            <Badge variant="emerald" className="text-[8px] px-1.5 py-0 font-mono leading-tight">
+              Dealer
+            </Badge>
+          </button>
+        </div>
       </div>
 
       {activeTab === "dealership" ? (
