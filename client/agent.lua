@@ -271,7 +271,6 @@ function LightingFeature.SetNoFog(enable, Context)
 end
 
 return LightingFeature
-
 end
 
 Modules["games/cdid/features/safety"] = function()
@@ -370,7 +369,6 @@ function SafetyFeature.SetServerLock(enable, Context)
 end
 
 return SafetyFeature
-
 end
 
 Modules["games/cdid/features/dealership"] = function()
@@ -434,6 +432,52 @@ function DealershipFeature.GetRealDealerList()
     return list
 end
 
+local GamepassMaps = nil
+local function getGamepassMaps()
+    if GamepassMaps then return GamepassMaps end
+    GamepassMaps = {
+        Luxury = {},
+        Rare = {},
+        Retro = {},
+        Emergency = {},
+        Limited = {},
+        New = {}
+    }
+    local shared = ReplicatedStorage:FindFirstChild("Shared")
+    if shared then
+        local function fill(name, target)
+            local m = shared:FindFirstChild(name)
+            if m and m:IsA("ModuleScript") then
+                local ok, data = pcall(require, m)
+                if ok and type(data) == "table" then
+                    for _, id in ipairs(data) do
+                        target[tostring(id):lower()] = true
+                    end
+                end
+            end
+        end
+        fill("LuxuryCar", GamepassMaps.Luxury)
+        fill("RareImportCar", GamepassMaps.Rare)
+        fill("RetroCar", GamepassMaps.Retro)
+        fill("EmergencyCar", GamepassMaps.Emergency)
+        fill("LimitedCar", GamepassMaps.Limited)
+        fill("NewCar", GamepassMaps.New)
+
+        -- Load from Shared.Data.LimitedList
+        local dataFolder = shared:FindFirstChild("Data")
+        local limListMod = dataFolder and dataFolder:FindFirstChild("LimitedList")
+        if limListMod and limListMod:IsA("ModuleScript") then
+            local ok, data = pcall(require, limListMod)
+            if ok and type(data) == "table" then
+                for _, id in ipairs(data) do
+                    GamepassMaps.Limited[tostring(id):lower()] = true
+                end
+            end
+        end
+    end
+    return GamepassMaps
+end
+
 function DealershipFeature.GetCars(dealerTarget)
     local list = {}
     local carData = ReplicatedStorage:FindFirstChild("CarData")
@@ -459,6 +503,41 @@ function DealershipFeature.GetCars(dealerTarget)
             end
 
             if isMatch then
+                local maps = getGamepassMaps()
+                local lowerId = car.Name:lower()
+                local gamepassLabel = "None Gamepass"
+                local isGamepass = false
+
+                if maps.Luxury[lowerId] then
+                    gamepassLabel = "Gamepass (Luxury)"
+                    isGamepass = true
+                elseif maps.Rare[lowerId] then
+                    gamepassLabel = "Gamepass (Rare Import)"
+                    isGamepass = true
+                elseif maps.Retro[lowerId] then
+                    gamepassLabel = "Gamepass (Retro)"
+                    isGamepass = true
+                elseif maps.Emergency[lowerId] then
+                    gamepassLabel = "Gamepass (Emergency)"
+                    isGamepass = true
+                end
+
+                local isLimited = false
+                if maps.Limited[lowerId] or car:FindFirstChild("Limited") then
+                    isLimited = true
+                end
+
+                local isNew = maps.New[lowerId] == true
+
+                local stockVal = nil
+                local stockFolder = ReplicatedStorage:FindFirstChild("LimitedStock")
+                if stockFolder then
+                    local sItem = stockFolder:FindFirstChild(car.Name)
+                    if sItem and (sItem:IsA("IntValue") or sItem:IsA("NumberValue")) then
+                        stockVal = sItem.Value
+                    end
+                end
+
                 local img = car:FindFirstChild("CarImage") and car.CarImage.Value or ""
                 local assetId = img:match("id=(%d+)") or img:match("(%d+)$") or ""
                 table.insert(list, {
@@ -469,7 +548,12 @@ function DealershipFeature.GetCars(dealerTarget)
                     assetId = assetId,
                     topSpeed = car:FindFirstChild("TopSpeed") and car.TopSpeed.Value or 0,
                     hp = car:FindFirstChild("Horsepower") and car.Horsepower.Value or 0,
-                    year = car:FindFirstChild("CarYear") and car.CarYear.Value or ""
+                    year = car:FindFirstChild("CarYear") and car.CarYear.Value or "",
+                    gamepass = gamepassLabel,
+                    isGamepass = isGamepass,
+                    isLimited = isLimited,
+                    isNew = isNew,
+                    stock = stockVal
                 })
             end
         end
@@ -543,7 +627,6 @@ function DealershipFeature.Teleport(dealerName, Context)
 end
 
 return DealershipFeature
-
 end
 
 Modules["games/cdid/features/teleport"] = function()
@@ -577,7 +660,6 @@ function TeleportFeature.Quick(targetKey, Context)
 end
 
 return TeleportFeature
-
 end
 
 Modules["games/cdid/jobs/truck"] = function()
@@ -1383,7 +1465,6 @@ function TruckJob.GetState()
 end
 
 return TruckJob
-
 end
 
 Modules["games/cdid"] = function()
@@ -1574,7 +1655,6 @@ function CDIDModule.Cleanup()
 end
 
 return CDIDModule
-
 end
 
 Modules["games/cdid_menu"] = function()

@@ -1,5 +1,4 @@
 import fs from "fs";
-import path from "path";
 
 const lighting = fs.readFileSync("client/games/cdid/features/lighting.lua", "utf8");
 const safety = fs.readFileSync("client/games/cdid/features/safety.lua", "utf8");
@@ -10,68 +9,39 @@ const init = fs.readFileSync("client/games/cdid/init.lua", "utf8");
 
 let agentLua = fs.readFileSync("client/agent.lua", "utf8");
 
-// Remove bottom requireModule if present
-const oldBottomReqPattern = /local (LoadedModules = \{\}\s+local )?function requireModule\(name\)[\s\S]*?(?=-- =+\s*\n-- LOAD CORE SAFETY)/;
-if (oldBottomReqPattern.test(agentLua)) {
-    agentLua = agentLua.replace(oldBottomReqPattern, '');
+function replaceModule(source, moduleName, moduleContent) {
+  const prefix = `Modules["${moduleName}"] = function()`;
+  const startIdx = source.indexOf(prefix);
+  if (startIdx === -1) {
+    console.warn(`Module prefix not found: ${prefix}`);
+    return source;
+  }
+  
+  const nextModuleIdx = source.indexOf('\nModules["', startIdx + prefix.length);
+  const endIdx = nextModuleIdx !== -1 
+    ? source.lastIndexOf('\nend\n', nextModuleIdx) 
+    : source.indexOf('\nend\n', startIdx);
+  
+  if (endIdx === -1) {
+    console.warn(`Module end not found for ${moduleName}`);
+    return source;
+  }
+
+  const before = source.substring(0, startIdx + prefix.length);
+  const after = source.substring(endIdx);
+  console.log(`Replaced ${moduleName} (start: ${startIdx}, end: ${endIdx})`);
+  return before + "\n" + moduleContent.trim() + after;
 }
 
-// Put clean requireModule at top
-const topVfsPattern = /local Modules = \{\}(\s*local LoadedModules = \{\}[\s\S]*?end\n)?/;
-const newTopVfs = `local Modules = {}
-local LoadedModules = {}
+agentLua = replaceModule(agentLua, "games/cdid/features/lighting", lighting);
+agentLua = replaceModule(agentLua, "games/cdid/features/safety", safety);
+agentLua = replaceModule(agentLua, "games/cdid/features/dealership", dealership);
+agentLua = replaceModule(agentLua, "games/cdid/features/teleport", teleport);
+agentLua = replaceModule(agentLua, "games/cdid/jobs/truck", truck);
+agentLua = replaceModule(agentLua, "games/cdid", init);
 
-local function requireModule(name)
-    if LoadedModules[name] ~= nil then
-        return LoadedModules[name]
-    end
-    if Modules[name] then
-        local res = Modules[name]()
-        LoadedModules[name] = res
-        return res
-    end
-    error("[OE-External] Modul tidak ditemukan: " .. tostring(name))
-end
-`;
-agentLua = agentLua.replace(topVfsPattern, newTopVfs);
-
-const modularCdidBlock = `
--- ============================================================================
--- MODULAR CDID SUB-MODULES
--- ============================================================================
-Modules["games/cdid/features/lighting"] = function()
-${lighting}
-end
-
-Modules["games/cdid/features/safety"] = function()
-${safety}
-end
-
-Modules["games/cdid/features/dealership"] = function()
-${dealership}
-end
-
-Modules["games/cdid/features/teleport"] = function()
-${teleport}
-end
-
-Modules["games/cdid/jobs/truck"] = function()
-${truck}
-end
-
-Modules["games/cdid"] = function()
-${init}
-end
-`;
-
-const cdidStartIdx = agentLua.indexOf('Modules["games/cdid');
-const cdidMenuIdx = agentLua.indexOf('Modules["games/cdid_menu"]');
-
-if (cdidStartIdx !== -1 && cdidMenuIdx !== -1) {
-    agentLua = agentLua.substring(0, cdidStartIdx) + modularCdidBlock.trim() + '\n\n' + agentLua.substring(cdidMenuIdx);
-    fs.writeFileSync("client/agent.lua", agentLua, "utf8");
-    console.log("Updated client/agent.lua with modular sub-modules!");
-}
+fs.writeFileSync("client/agent.lua", agentLua, "utf8");
+console.log("Updated client/agent.lua with all sub-modules!");
 
 const jsCode = `// Auto-generated from client/agent.lua (UTF-8 without BOM)
 export const AGENT_LUA = ${JSON.stringify(agentLua)};
