@@ -60,3 +60,19 @@ button:focus, button:focus-visible,
 [role="button"]:focus, [role="button"]:focus-visible {
   outline: none !important;
 }
+
+/* Global clean resets for buttons & tabs */
+button, [role="button"], a {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-focus-ring-color: transparent !important;
+}
+
+button:focus, button:focus-visible,
+[role="button"]:focus, [role="button"]:focus-visible,
+button:active, [role="button"]:active {
+  outline: none !important;
+  outline-style: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}

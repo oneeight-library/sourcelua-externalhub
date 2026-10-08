@@ -223,10 +223,10 @@ export function BotDetailView({
           <button
             type="button"
             onClick={() => onTabChange && onTabChange("overview")}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all select-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all select-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none cursor-pointer border-0 ring-0 ${
               activeTab !== "dealership"
-                ? "bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/80"
-                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 border border-transparent"
+                ? "bg-zinc-800 text-zinc-100 shadow-sm"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
             }`}
           >
             <SlidersHorizontal className="h-3.5 w-3.5 text-indigo-400" />
@@ -236,10 +236,10 @@ export function BotDetailView({
           <button
             type="button"
             onClick={() => onTabChange && onTabChange("dealership")}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all select-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all select-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none cursor-pointer border-0 ring-0 ${
               activeTab === "dealership"
-                ? "bg-emerald-950/80 text-emerald-300 shadow-sm border border-emerald-500/50"
-                : "text-zinc-400 hover:text-emerald-300 hover:bg-zinc-800/40 border border-transparent"
+                ? "bg-emerald-950/90 text-emerald-300 shadow-sm"
+                : "text-zinc-400 hover:text-emerald-300 hover:bg-zinc-800/40"
             }`}
           >
             <Store className="h-3.5 w-3.5 text-emerald-400" />

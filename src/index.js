@@ -372,7 +372,12 @@ fn()`;
 
     if (url.pathname === "/" || url.pathname === "/dashboard" || url.pathname.startsWith("/cdid_")) {
       return new Response(getWebDashboardHTML(url.origin), {
-        headers: { "Content-Type": "text/html; charset=utf-8" }
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        }
       });
     }
 
