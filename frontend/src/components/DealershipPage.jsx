@@ -130,6 +130,50 @@ export function DealershipPage({
   useOutsideClick(sortDropdownRef, () => setIsSortDropdownOpen(false));
   useOutsideClick(passDropdownRef, () => setIsPassDropdownOpen(false));
 
+  const toggleDealerDropdown = () => {
+    setIsDealerDropdownOpen((prev) => {
+      if (!prev) {
+        setIsAccountDropdownOpen(false);
+        setIsSortDropdownOpen(false);
+        setIsPassDropdownOpen(false);
+      }
+      return !prev;
+    });
+  };
+
+  const toggleAccountDropdown = () => {
+    setIsAccountDropdownOpen((prev) => {
+      if (!prev) {
+        setIsDealerDropdownOpen(false);
+        setIsSortDropdownOpen(false);
+        setIsPassDropdownOpen(false);
+      }
+      return !prev;
+    });
+  };
+
+  const togglePassDropdown = () => {
+    setIsPassDropdownOpen((prev) => {
+      if (!prev) {
+        setIsSortDropdownOpen(false);
+        setIsDealerDropdownOpen(false);
+        setIsAccountDropdownOpen(false);
+      }
+      return !prev;
+    });
+  };
+
+  const toggleSortDropdown = () => {
+    setIsSortDropdownOpen((prev) => {
+      if (!prev) {
+        setIsPassDropdownOpen(false);
+        setIsDealerDropdownOpen(false);
+        setIsAccountDropdownOpen(false);
+      }
+      return !prev;
+    });
+  };
+
   const botList = bots ? Array.from(bots.values()) : [];
 
   // Multi-select akun untuk eksekusi
@@ -292,10 +336,12 @@ export function DealershipPage({
     }`}>
       
       {/* 1. Header Toolbar dengan Dropdown Showroom & Dropdown Multi-Akun */}
-      <header className={`w-full ${
+      <header className={`w-full relative ${
+        isDealerDropdownOpen || isAccountDropdownOpen ? "z-40" : "z-30"
+      } ${
         isEmbedded 
-          ? "rounded-2xl border border-zinc-800/80 bg-zinc-900/60 backdrop-blur-xl p-2.5 sm:p-3 shadow-md"
-          : "sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-xl"
+          ? "rounded-2xl border border-zinc-800/80 bg-zinc-900/90 backdrop-blur-xl p-2.5 sm:p-3 shadow-md"
+          : "sticky top-0 border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl"
       }`}>
         <div className={`flex items-center justify-between gap-2 sm:gap-4 ${
           isEmbedded ? "w-full" : "max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16"
@@ -320,7 +366,7 @@ export function DealershipPage({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsDealerDropdownOpen((prev) => !prev)}
+                onClick={toggleDealerDropdown}
                 className="h-8 sm:h-9 px-2.5 sm:px-3 gap-2 border-zinc-800 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-100 shadow-sm transition-all"
               >
                 <Store className="h-4 w-4 text-emerald-400 shrink-0" />
@@ -379,7 +425,7 @@ export function DealershipPage({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsAccountDropdownOpen((prev) => !prev)}
+                onClick={toggleAccountDropdown}
                 className="h-8 sm:h-9 px-2.5 sm:px-3 gap-1.5 sm:gap-2 border-zinc-800 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-200 shadow-sm transition-all"
               >
                 <Users className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
@@ -447,12 +493,14 @@ export function DealershipPage({
       </header>
 
       {/* 2. Main Content Viewport */}
-      <main className={`w-full space-y-4 sm:space-y-5 ${
+      <main className={`w-full space-y-4 sm:space-y-5 relative z-10 ${
         isEmbedded ? "pt-1" : "flex-1 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 sm:pb-12"
       }`}>
 
         {/* Toolbar: Search & 100% In-Game Custom Dropdown Filters (Bukan Default Browser) */}
-        <div className="flex flex-col md:flex-row gap-2.5 sm:gap-3 items-stretch md:items-center justify-between">
+        <div className={`flex flex-col md:flex-row gap-2.5 sm:gap-3 items-stretch md:items-center justify-between relative ${
+            isPassDropdownOpen || isSortDropdownOpen ? "z-30" : "z-20"
+          }`}>
           
           {/* Input Search */}
           <div className="relative w-full md:w-80">
@@ -486,7 +534,7 @@ export function DealershipPage({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsPassDropdownOpen((prev) => !prev)}
+                onClick={togglePassDropdown}
                 className="h-9 px-2.5 sm:px-3 gap-1.5 border-zinc-800 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-200 transition-all shadow-sm"
               >
                 <span className="text-zinc-400 font-normal hidden sm:inline">Pass:</span>
@@ -530,7 +578,7 @@ export function DealershipPage({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsSortDropdownOpen((prev) => !prev)}
+                onClick={toggleSortDropdown}
                 className="h-9 px-2.5 sm:px-3 gap-1.5 border-zinc-800 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-200 transition-all shadow-sm"
               >
                 <span className="text-zinc-400 font-normal hidden sm:inline">Sort:</span>
@@ -630,7 +678,7 @@ export function DealershipPage({
                     </div>
 
                     {/* Badges: LIMITED (Merah) & NEW (Hijau) Persis In-Game CDID */}
-                    <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 flex items-center gap-1 z-20">
+                    <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 flex items-center gap-1 z-10">
                       {car.isLimited && (
                         <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500/80 shadow-md shadow-rose-600/40 px-1.5 py-0.5 rounded-md leading-none animate-pulse">
                           LIMITED!
@@ -645,7 +693,7 @@ export function DealershipPage({
 
                     <Badge
                       variant="secondary"
-                      className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-[8px] sm:text-[9px] font-mono bg-zinc-900/90 text-zinc-300 border border-zinc-700/60 z-20 px-1.5 py-0"
+                      className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-[8px] sm:text-[9px] font-mono bg-zinc-900/90 text-zinc-300 border border-zinc-700/60 z-10 px-1.5 py-0"
                     >
                       {car.dealer}
                     </Badge>
