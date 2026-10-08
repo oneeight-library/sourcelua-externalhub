@@ -77,9 +77,7 @@ export function BotDetailView({
   const [playerDetector, setPlayerDetector] = React.useState(bot.safety?.PlayerDetectorEnabled || false);
   const [emergencyAction, setEmergencyAction] = React.useState(bot.safety?.EmergencyAction || "Warn Only");
   const [ignoreFriends, setIgnoreFriends] = React.useState(bot.safety?.IgnoreFriends !== false);
-  const [serverLocked, setServerLocked] = React.useState(() => {
-    return bot.safety?.ServerLocked !== undefined ? !!bot.safety.ServerLocked : true;
-  });
+  const [serverLocked, setServerLocked] = React.useState(!!bot.safety?.ServerLocked);
   const [fullbright, setFullbright] = React.useState(bot.lighting?.Fullbright || false);
   const [noFog, setNoFog] = React.useState(bot.lighting?.NoFog || false);
 
