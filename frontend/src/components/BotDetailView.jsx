@@ -77,9 +77,40 @@ export function BotDetailView({
   const [playerDetector, setPlayerDetector] = React.useState(bot.safety?.PlayerDetectorEnabled || false);
   const [emergencyAction, setEmergencyAction] = React.useState(bot.safety?.EmergencyAction || "Warn Only");
   const [ignoreFriends, setIgnoreFriends] = React.useState(bot.safety?.IgnoreFriends !== false);
-  const [serverLocked, setServerLocked] = React.useState(bot.safety?.ServerLocked || false);
+  const [serverLocked, setServerLocked] = React.useState(() => {
+    return bot.safety?.ServerLocked !== undefined ? !!bot.safety.ServerLocked : true;
+  });
   const [fullbright, setFullbright] = React.useState(bot.lighting?.Fullbright || false);
   const [noFog, setNoFog] = React.useState(bot.lighting?.NoFog || false);
+
+  // Sinkronisasi state lokal dengan update telemetri bot secara realtime
+  React.useEffect(() => {
+    if (bot.safety?.ServerLocked !== undefined) {
+      setServerLocked(!!bot.safety.ServerLocked);
+    }
+    if (bot.safety?.PlayerDetectorEnabled !== undefined) {
+      setPlayerDetector(!!bot.safety.PlayerDetectorEnabled);
+    }
+    if (bot.safety?.EmergencyAction !== undefined) {
+      setEmergencyAction(bot.safety.EmergencyAction);
+    }
+    if (bot.safety?.IgnoreFriends !== undefined) {
+      setIgnoreFriends(bot.safety.IgnoreFriends !== false);
+    }
+    if (bot.lighting?.Fullbright !== undefined) {
+      setFullbright(!!bot.lighting.Fullbright);
+    }
+    if (bot.lighting?.NoFog !== undefined) {
+      setNoFog(!!bot.lighting.NoFog);
+    }
+  }, [
+    bot.safety?.ServerLocked,
+    bot.safety?.PlayerDetectorEnabled,
+    bot.safety?.EmergencyAction,
+    bot.safety?.IgnoreFriends,
+    bot.lighting?.Fullbright,
+    bot.lighting?.NoFog
+  ]);
 
   const handleSafetyUpdate = (newDetector, newAction, newIgnore) => {
     const d = newDetector !== undefined ? newDetector : playerDetector;

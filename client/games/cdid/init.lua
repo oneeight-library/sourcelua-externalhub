@@ -29,6 +29,9 @@ function CDIDModule.Init(coreContext)
     TruckJob = requireModule("games/cdid/jobs/truck")
 
     TruckJob.Init(coreContext)
+    if SafetyFeature and SafetyFeature.CheckCurrentLockState then
+        pcall(SafetyFeature.CheckCurrentLockState)
+    end
     print("[OE-External CDID] Modular Coordinator Berhasil Diinisialisasi!")
 
     -- Auto-push katalog dealer saat inisialisasi agar web langsung punya data tanpa nunggu tombol
@@ -185,7 +188,7 @@ function CDIDModule.GetTelemetry()
             PlayerDetectorEnabled = SafetyFeature.PlayerDetectorEnabled,
             EmergencyAction = SafetyFeature.EmergencyAction,
             IgnoreFriends = SafetyFeature.IgnoreFriends,
-            ServerLocked = SafetyFeature.ServerLocked
+            ServerLocked = (SafetyFeature.CheckCurrentLockState and SafetyFeature.CheckCurrentLockState()) or SafetyFeature.ServerLocked
         } or {},
         lighting = LightingFeature and {
             Fullbright = LightingFeature.Fullbright,

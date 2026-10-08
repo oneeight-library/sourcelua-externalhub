@@ -10,9 +10,44 @@ local SafetyFeature = {
     PlayerDetectorEnabled = false,
     EmergencyAction = "Warn Only",
     IgnoreFriends = true,
-    ServerLocked = false,
+    ServerLocked = true, -- Default true karena private server CDID otomatis terkunci saat join
     Connection = nil
 }
+
+function SafetyFeature.CheckCurrentLockState()
+    local detectedState = nil
+    pcall(function()
+        local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local panel = pGui and pGui:FindFirstChild("PrivateServerPanel")
+        local serverFrame = panel and panel:FindFirstChild("MainFrame") and panel.MainFrame:FindFirstChild("Main") and panel.MainFrame.Main:FindFirstChild("Server")
+        if serverFrame then
+            for _, c in ipairs(serverFrame:GetChildren()) do
+                local title = c:FindFirstChild("OptionTitle")
+                if title and title.Text:lower():find("server%s*lock") then
+                    local toggleBtn = c:FindFirstChild("ToggleButton") or c:FindFirstChildWhichIsA("TextButton") or c:FindFirstChildWhichIsA("ImageButton")
+                    if toggleBtn then
+                        local val = toggleBtn:FindFirstChildWhichIsA("BoolValue") or c:FindFirstChildWhichIsA("BoolValue")
+                        if val then
+                            detectedState = val.Value
+                        end
+                        if detectedState == nil and toggleBtn:IsA("GuiObject") then
+                            local bg = toggleBtn.BackgroundColor3
+                            if bg.G > 0.5 and bg.G > bg.R then
+                                detectedState = true
+                            elseif bg.R > 0.5 and bg.R > bg.G then
+                                detectedState = false
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+    if detectedState ~= nil then
+        SafetyFeature.ServerLocked = detectedState
+    end
+    return SafetyFeature.ServerLocked
+end
 
 function SafetyFeature.IsFriend(player)
     if not SafetyFeature.IgnoreFriends then return false end
@@ -61,29 +96,45 @@ function SafetyFeature.InitDetector(Context)
 end
 
 function SafetyFeature.SetServerLock(enable, Context)
+    SafetyFeature.CheckCurrentLockState()
+
+    -- Jika state sudah sesuai, jangan di-toggle lagi agar tidak terbalik
+    if SafetyFeature.ServerLocked == enable then
+        if Context and Context.SendLog then
+            Context.SendLog(string.format("Private Server Lock sudah %s.", enable and "TERKUNCI 🔒" or "TERBUKA 🔓"), "INFO")
+        end
+        return
+    end
+
     SafetyFeature.ServerLocked = enable
     pcall(function()
         local pGui = LocalPlayer:FindFirstChild("PlayerGui")
         local panel = pGui and pGui:FindFirstChild("PrivateServerPanel")
         local serverFrame = panel and panel:FindFirstChild("MainFrame") and panel.MainFrame:FindFirstChild("Main") and panel.MainFrame.Main:FindFirstChild("Server")
+        local triggered = false
         if serverFrame then
             for _, c in ipairs(serverFrame:GetChildren()) do
                 local title = c:FindFirstChild("OptionTitle")
-                if title and title.Text == "Server Lock" then
-                    local toggleBtn = c:FindFirstChild("ToggleButton")
-                    local conns = (typeof(getconnections) == "function" and getconnections(toggleBtn.MouseButton1Down)) or {}
-                    if #conns > 0 and conns[1].Function then
-                        pcall(conns[1].Function)
+                if title and title.Text:lower():find("server%s*lock") then
+                    local toggleBtn = c:FindFirstChild("ToggleButton") or c:FindFirstChildWhichIsA("TextButton")
+                    if toggleBtn then
+                        local conns = (typeof(getconnections) == "function" and getconnections(toggleBtn.MouseButton1Down)) or {}
+                        if #conns > 0 and conns[1].Function then
+                            pcall(conns[1].Function)
+                            triggered = true
+                        end
                     end
                 end
             end
         end
 
-        local net = ReplicatedStorage:FindFirstChild("NetworkContainer")
-        local remotes = net and net:FindFirstChild("RemoteEvents")
-        local ps = remotes and (remotes:FindFirstChild("Private Server") or remotes:FindFirstChild("PrivateServer"))
-        if ps then
-            ps:FireServer("serverlock", {})
+        if not triggered then
+            local net = ReplicatedStorage:FindFirstChild("NetworkContainer")
+            local remotes = net and net:FindFirstChild("RemoteEvents")
+            local ps = remotes and (remotes:FindFirstChild("Private Server") or remotes:FindFirstChild("PrivateServer"))
+            if ps then
+                ps:FireServer("serverlock", {})
+            end
         end
     end)
 
