@@ -103,7 +103,8 @@ export function DealershipPage({
   onFetchCars,
   onBuyCar,
   onBackToDashboard,
-  isEmbedded = false
+  isEmbedded = false,
+  isSingleBotMode = false
 }) {
   const [selectedDealer, setSelectedDealer] = React.useState(initialDealer);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -237,7 +238,7 @@ export function DealershipPage({
   const fetchedRef = React.useRef({ botId: null, dealer: null });
   React.useEffect(() => {
     const dKey = selectedDealer === "Semua Dealer" ? "all" : selectedDealer;
-    const targetId = queryBot?.botId || selectedBotIds[0] || (botList[0]?.botId) || "ALL";
+    const targetId = (isSingleBotMode && activeBot?.botId) ? activeBot.botId : (queryBot?.botId || selectedBotIds[0] || (botList[0]?.botId) || "ALL");
     if (fetchedRef.current.botId === targetId && fetchedRef.current.dealer === dKey) {
       return;
     }
@@ -306,8 +307,10 @@ export function DealershipPage({
   };
 
   const handleConfirmBuy = () => {
-    if (!modalCar || selectedBotIds.length === 0) return;
-    selectedBotIds.forEach((botId) => {
+    if (!modalCar) return;
+    const targetBotIds = (isSingleBotMode && activeBot?.botId) ? [activeBot.botId] : selectedBotIds;
+    if (targetBotIds.length === 0) return;
+    targetBotIds.forEach((botId) => {
       onBuyCar(botId, modalCar.id, modalCar.dealer, selectedColor.name);
     });
     setBuyStatus("SUBMITTED");
@@ -393,8 +396,8 @@ export function DealershipPage({
                         onClick={() => {
                           setSelectedDealer(dealerName);
                           setIsDealerDropdownOpen(false);
-                          const cleanKey = dealerName.replace(/\s+/g, "_").toLowerCase();
-                          if (typeof window !== "undefined") {
+                          if (!isEmbedded && !isSingleBotMode && typeof window !== "undefined") {
+                            const cleanKey = dealerName.replace(/\s+/g, "_").toLowerCase();
                             window.history.replaceState(
                               null,
                               "",
@@ -418,21 +421,36 @@ export function DealershipPage({
             </div>
           </div>
 
-          {/* Right: Dropdown Multi-Akun Eksekusi (Checkbox Context Menu dengan Nominal Uang) */}
+          {/* Right: Info Akun Spesifik / Dropdown Multi-Akun Eksekusi */}
           <div className="flex items-center gap-2">
-            <div className="relative" ref={accountDropdownRef}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={toggleAccountDropdown}
-                className="h-8 sm:h-9 px-2.5 sm:px-3 gap-1.5 sm:gap-2 border-zinc-800 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-200 shadow-sm transition-all"
-              >
-                <Users className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                <span className="truncate max-w-[130px] sm:max-w-xs font-mono text-[11px] sm:text-xs">
-                  {accountTriggerLabel}
-                </span>
-                <ChevronDown className={`h-3.5 w-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${isAccountDropdownOpen ? "rotate-180" : ""}`} />
-              </Button>
+            {isSingleBotMode ? (
+              <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-800 shadow-sm">
+                <div className="flex flex-col text-right">
+                  <span className="text-[11px] font-bold text-zinc-100 leading-tight">
+                    {activeBot?.name || "Akun Bot"}
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 leading-tight">
+                    {formatRupiah(activeBot?.currentCash || 0)}
+                  </span>
+                </div>
+                <Badge variant="emerald" className="text-[9px] px-1.5 py-0 font-mono">
+                  Aktif
+                </Badge>
+              </div>
+            ) : (
+              <div className="relative" ref={accountDropdownRef}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleAccountDropdown}
+                  className="h-8 sm:h-9 px-2.5 sm:px-3 gap-1.5 sm:gap-2 border-zinc-800 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-200 shadow-sm transition-all"
+                >
+                  <Users className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span className="truncate max-w-[130px] sm:max-w-xs font-mono text-[11px] sm:text-xs">
+                    {accountTriggerLabel}
+                  </span>
+                  <ChevronDown className={`h-3.5 w-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${isAccountDropdownOpen ? "rotate-180" : ""}`} />
+                </Button>
 
               {isAccountDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-64 sm:w-72 max-h-80 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-xl p-1.5 text-zinc-200 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
@@ -486,6 +504,7 @@ export function DealershipPage({
                 </div>
               )}
             </div>
+            )}
           </div>
 
         </div>
@@ -871,15 +890,37 @@ export function DealershipPage({
             </div>
 
             {/* Info Akun Eksekusi */}
-            <div className="text-[11px] text-zinc-400 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Users className="h-3.5 w-3.5 text-zinc-400" />
-                Eksekusi Pembelian:
-              </span>
-              <span className="font-semibold text-zinc-200">
-                {selectedBotIds.length} Akun Terpilih
-              </span>
-            </div>
+            {isSingleBotMode ? (
+              <div className="text-[11px] text-zinc-400 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Store className="h-3.5 w-3.5 text-emerald-400" />
+                  Akun Pembeli:
+                </span>
+                <span className="font-semibold text-zinc-200 flex items-center gap-1.5">
+                  <span>{activeBot?.name || "Akun Bot"}</span>
+                  <span className="font-mono text-emerald-400 text-[10px]">
+                    ({formatRupiah(activeBot?.currentCash || 0)})
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <div className="text-[11px] text-zinc-400 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-zinc-400" />
+                  Eksekusi Pembelian:
+                </span>
+                <span className="font-semibold text-zinc-200">
+                  {selectedBotIds.length} Akun Terpilih
+                </span>
+              </div>
+            )}
+
+            {isSingleBotMode && activeBot?.currentCash !== undefined && activeBot.currentCash < modalCar.cost && (
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>Saldo tidak cukup (Kurang {formatRupiah(modalCar.cost - activeBot.currentCash)})</span>
+              </div>
+            )}
 
             {selectedBotIds.length === 0 && (
               <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">

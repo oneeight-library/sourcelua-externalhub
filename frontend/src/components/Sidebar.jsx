@@ -1,4 +1,4 @@
-import { Users, Store } from "lucide-react";
+import { Users } from "lucide-react";
 import * as React from "react";
 import { Badge } from "@/ui/badge.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
@@ -49,30 +49,6 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
           <div className="min-w-0 flex-1">
             <div className="font-bold text-xs text-zinc-100">Semua Akun (Global)</div>
             <div className="text-[11px] text-zinc-400 truncate">Kelola Seluruh Armada ({bots.size} Bot)</div>
-          </div>
-        </button>
-
-        {/* CDID Showroom Menu Item */}
-        <button
-          type="button"
-          onClick={() => onSelectBot("DEALERSHIP")}
-          className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-            selectedBotId === "DEALERSHIP"
-              ? "bg-emerald-950/40 border-emerald-500/50 shadow-sm text-emerald-300"
-              : "bg-zinc-950 border-transparent hover:bg-zinc-900/60 hover:border-zinc-800/60 text-zinc-200"
-          }`}
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400">
-            <Store className="h-4 w-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-xs text-zinc-100">CDID Showroom</span>
-              <Badge variant="emerald" className="text-[9px] px-1.5 py-0 font-mono">
-                Live
-              </Badge>
-            </div>
-            <div className="text-[11px] text-zinc-400 truncate">Katalog & Beli Mobil In-Game</div>
           </div>
         </button>
 

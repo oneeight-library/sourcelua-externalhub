@@ -13,6 +13,7 @@ import {
 } from "@/ui/select.jsx";
 import { ConsoleTab } from "@/components/tabs/ConsoleTab.jsx";
 import { CDIDMenuTab } from "@/components/tabs/CDIDMenuTab.jsx";
+import { DealershipPage } from "@/components/DealershipPage.jsx";
 import { getGameConfig } from "@/config/games.js";
 import { 
   Play, 
@@ -42,7 +43,18 @@ import {
   Store
 } from "lucide-react";
 
-export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, onSendCommand, onRejoinBot }) {
+export function BotDetailView({ 
+  bot, 
+  activeTab = "overview", 
+  onTabChange, 
+  logs, 
+  onClearLogs, 
+  onSendCommand, 
+  onRejoinBot,
+  dealerCatalog = {},
+  onFetchCars,
+  onBuyCar
+}) {
   const gameCfg = getGameConfig(bot.gameId);
   const isKicked = bot.isKicked;
   const isLobby = bot.gameId === "cdid_menu";
@@ -204,11 +216,50 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
       </Card>
 
       {/* =========================================================================
-          2. DUA GRID LAYOUT
-          - JIKA DI LOBI (CDID MAIN MENU): FOKUS PEMILIHAN MAP & KODE SERVER
-          - JIKA DI DALAM GAME (CDID JATIM DLL): FOKUS TELEMETRI & KONTROL AUTOFARM
+          TAB NAVIGATION (AUTOFARM & KONTROL vs SHOWROOM CDID)
           ========================================================================= */}
-      {isLobby ? (
+      <div className="flex items-center gap-2 border-b border-zinc-800 pb-2 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => onTabChange && onTabChange("overview")}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab !== "dealership"
+              ? "bg-zinc-800 text-white shadow-sm border border-zinc-700"
+              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+          }`}
+        >
+          <SlidersHorizontal className="h-4 w-4 text-indigo-400" />
+          <span>Autofarm & Kontrol</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onTabChange && onTabChange("dealership")}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "dealership"
+              ? "bg-emerald-950/70 text-emerald-300 shadow-sm border border-emerald-500/40"
+              : "text-zinc-400 hover:text-emerald-300 hover:bg-zinc-900/60"
+          }`}
+        >
+          <Store className="h-4 w-4 text-emerald-400" />
+          <span>Showroom CDID</span>
+          <Badge variant="emerald" className="text-[9px] px-1.5 py-0 font-mono">
+            Dealer
+          </Badge>
+        </button>
+      </div>
+
+      {activeTab === "dealership" ? (
+        <DealershipPage
+          activeBot={bot}
+          dealerCatalog={dealerCatalog}
+          onFetchCars={onFetchCars}
+          onBuyCar={onBuyCar}
+          isEmbedded={true}
+          isSingleBotMode={true}
+          onBackToDashboard={() => onTabChange && onTabChange("overview")}
+        />
+      ) : isLobby ? (
         /* -----------------------------------------------------------------------
            LAYOUT KHUSUS MAIN MENU / LOBI CDID (Tanpa Autofarm & Tanpa Telemetri Palsu)
            ----------------------------------------------------------------------- */
@@ -437,10 +488,9 @@ export function BotDetailView({ bot, activeTab, onTabChange, logs, onClearLogs, 
                   <Button
                     variant="emerald"
                     size="sm"
-                    className="w-full h-9 text-xs font-bold gap-2 shadow-md bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black tracking-wide"
+                    className="w-full h-9 text-xs font-bold gap-2 shadow-md bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black tracking-wide cursor-pointer"
                     onClick={() => {
-                      window.history.pushState(null, "", "/cdid_dealer");
-                      window.dispatchEvent(new PopStateEvent("popstate"));
+                      if (onTabChange) onTabChange("dealership");
                     }}
                   >
                     <Store className="h-4 w-4" />

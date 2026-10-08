@@ -3,7 +3,6 @@ import { Navbar } from "@/components/Navbar.jsx";
 import { Sidebar } from "@/components/Sidebar.jsx";
 import { FleetOverview } from "@/components/FleetOverview.jsx";
 import { BotDetailView } from "@/components/BotDetailView.jsx";
-import { DealershipPage } from "@/components/DealershipPage.jsx";
 import { Button } from "@/ui/button.jsx";
 import { useWebSocketHub } from "@/hooks/useWebSocketHub.js";
 
@@ -27,27 +26,7 @@ export default function App() {
     buyCar
   } = useWebSocketHub();
 
-  const [currentPath, setCurrentPath] = React.useState(() => typeof window !== "undefined" ? window.location.pathname : "/");
-
-  React.useEffect(() => {
-    const handleLocationChange = () => {
-      const p = window.location.pathname;
-      setCurrentPath(p);
-      if (p.startsWith("/cdid_")) {
-        setSelectedBotId("DEALERSHIP");
-      }
-    };
-    if (window.location.pathname.startsWith("/cdid_")) {
-      setSelectedBotId("DEALERSHIP");
-    }
-    window.addEventListener("popstate", handleLocationChange);
-    return () => window.removeEventListener("popstate", handleLocationChange);
-  }, [setSelectedBotId]);
-
-  const urlDealerRaw = currentPath.startsWith("/cdid_") ? currentPath.replace(/^\/cdid_/, "").replace(/\//g, "") : null;
-  const initialDealerName = urlDealerRaw && urlDealerRaw !== "dealer"
-    ? urlDealerRaw.charAt(0).toUpperCase() + urlDealerRaw.slice(1)
-    : "Semua Dealer";
+  // Dealer showroom is scoped per-bot inside BotDetailView
 
   return (
     <div className="flex h-screen h-[100dvh] w-screen overflow-hidden bg-zinc-950 text-zinc-100">
@@ -58,10 +37,7 @@ export default function App() {
         selectedBotId={selectedBotId}
         onSelectBot={(id) => {
           setSelectedBotId(id);
-          if (id !== "DEALERSHIP" && window.location.pathname.startsWith("/cdid_")) {
-            window.history.pushState(null, "", "/");
-            setCurrentPath("/");
-          }
+          
         }}
       />
 
@@ -74,10 +50,7 @@ export default function App() {
           selectedBotId={selectedBotId}
           onSelectBot={(id) => {
             setSelectedBotId(id);
-            if (id !== "DEALERSHIP" && window.location.pathname.startsWith("/cdid_")) {
-              window.history.pushState(null, "", "/");
-              setCurrentPath("/");
-            }
+            
           }}
           isWsOnline={isWsOnline}
           wsStatus={wsStatus}
@@ -86,25 +59,7 @@ export default function App() {
         {/* Scrollable Viewport */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 pb-28 sm:pb-12 bg-zinc-950/60 overscroll-contain">
           <div className="w-full max-w-7xl mx-auto space-y-5 pb-6">
-            {selectedBotId === "DEALERSHIP" ? (
-              <DealershipPage
-                initialDealer={initialDealerName}
-                bots={bots}
-                activeBot={selectedBot || Array.from(bots.values())[0]}
-                onSelectBot={setSelectedBotId}
-                dealerCatalog={dealerCatalog}
-                onFetchCars={fetchDealerCars}
-                onBuyCar={buyCar}
-                isWsOnline={isWsOnline}
-                wsStatus={wsStatus}
-                isEmbedded={true}
-                onBackToDashboard={() => {
-                  setSelectedBotId("ALL");
-                  window.history.pushState(null, "", "/");
-                  setCurrentPath("/");
-                }}
-              />
-            ) : selectedAccountName === "ALL" ? (
+            {selectedAccountName === "ALL" ? (
               <FleetOverview
                 bots={bots}
                 onSelectBot={setSelectedBotId}
@@ -120,6 +75,9 @@ export default function App() {
                 onClearLogs={clearLogs}
                 onSendCommand={sendBotCommand}
                 onRejoinBot={rejoinBot}
+                dealerCatalog={dealerCatalog}
+                onFetchCars={fetchDealerCars}
+                onBuyCar={buyCar}
               />
             ) : (
               /* State Teleportasi / Menghubungkan Ulang: Jangan melempar user ke home */
