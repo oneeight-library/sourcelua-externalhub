@@ -190,14 +190,34 @@ function DealershipFeature.GetCars(dealerTarget)
 end
 
 function DealershipFeature.Buy(carId, dealer, color, Context)
-    local color3 = (color and Color3.fromRGB(color.r or 255, color.g or 255, color.b or 255)) or Color3.fromRGB(255, 255, 255)
+    local colorName = "White"
+    if type(color) == "string" and color ~= "" then
+        colorName = color
+    elseif type(color) == "table" and color.name then
+        colorName = color.name
+    end
+
+    local cMap = {
+        ["Putih"] = "White",
+        ["Hitam"] = "Black",
+        ["Silver"] = "White",
+        ["Abu-abu"] = "Black",
+        ["Merah"] = "Red",
+        ["Biru"] = "Blue",
+        ["Kuning"] = "Yellow",
+        ["Oranye"] = "Orange",
+        ["Hijau"] = "Green",
+        ["Pink"] = "Pink"
+    }
+    colorName = cMap[colorName] or colorName or "White"
+
     local result = "Failed"
     pcall(function()
-        local net = require(ReplicatedStorage.Shared.Network)
-        result = net:InvokeServer("Dealership", "Buy", carId, color3, dealer or "")
+        local Network = require(ReplicatedStorage.Modules.Network)
+        result = Network:InvokeServer("Dealership", "Buy", carId, colorName, dealer or "")
     end)
     if Context and Context.SendLog then
-        Context.SendLog(string.format("Hasil beli mobil '%s' (%s): %s", carId, dealer, tostring(result)), result == "Success" and "SUCCESS" or "WARN")
+        Context.SendLog(string.format("Hasil beli mobil '%s' (%s, Warna %s): %s", carId, tostring(dealer), colorName, tostring(result)), result == "Success" and "SUCCESS" or "WARN")
     end
     return result
 end

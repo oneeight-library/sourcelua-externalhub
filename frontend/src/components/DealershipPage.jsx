@@ -48,14 +48,16 @@ const CDID_DEALERS_LIST = [
   "Komersial"
 ];
 
+// Pilihan warna resmi CDID (sesuai Preview.Colors: White, Black, Red, Blue, Yellow, Orange, Green, Pink)
 const PRESET_COLORS = [
-  { name: "Putih", rgb: { r: 255, g: 255, b: 255 }, hex: "#ffffff" },
-  { name: "Hitam", rgb: { r: 15, g: 15, b: 15 }, hex: "#111111" },
-  { name: "Silver", rgb: { r: 192, g: 192, b: 192 }, hex: "#c0c0c0" },
-  { name: "Abu-abu", rgb: { r: 80, g: 80, b: 80 }, hex: "#505050" },
-  { name: "Merah", rgb: { r: 200, g: 20, b: 20 }, hex: "#c81414" },
-  { name: "Biru", rgb: { r: 20, g: 80, b: 200 }, hex: "#1450c8" },
-  { name: "Kuning", rgb: { r: 240, g: 190, b: 10 }, hex: "#f0be0a" },
+  { name: "White", label: "Putih", hex: "#ffffff" },
+  { name: "Black", label: "Hitam", hex: "#18181b" },
+  { name: "Red", label: "Merah", hex: "#e11d48" },
+  { name: "Blue", label: "Biru", hex: "#2563eb" },
+  { name: "Yellow", label: "Kuning", hex: "#eab308" },
+  { name: "Orange", label: "Oranye", hex: "#f97316" },
+  { name: "Green", label: "Hijau", hex: "#22c55e" },
+  { name: "Pink", label: "Pink", hex: "#ec4899" },
 ];
 
 // Opsi Sort persis sesuai in-game CDID FilterFrame.Sort
@@ -262,7 +264,7 @@ export function DealershipPage({
   const handleConfirmBuy = () => {
     if (!modalCar || selectedBotIds.length === 0) return;
     selectedBotIds.forEach((botId) => {
-      onBuyCar(botId, modalCar.id, modalCar.dealer, selectedColor.rgb);
+      onBuyCar(botId, modalCar.id, modalCar.dealer, selectedColor.name);
     });
     setBuyStatus("SUBMITTED");
     setTimeout(() => {
