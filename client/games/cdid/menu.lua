@@ -241,12 +241,18 @@ local function joinMap(mapKey, serverCode)
     State.Status = "JOINING_" .. string.upper(mapKey)
 
     -- Setup queue_on_teleport agar loader kembali berjalan di server tujuan
-    local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
+    local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport) or queueonteleport
     if queue_teleport then
         pcall(function()
             queue_teleport([[
-                task.wait(4)
-                loadstring(game:HttpGet("https://externalhub.oneeight-project18.workers.dev/loader"))()
+                task.wait(2)
+                pcall(function()
+                    loadstring(game:HttpGet("http://localhost:16384/script.luau"))()
+                end)
+                task.wait(2)
+                pcall(function()
+                    loadstring(game:HttpGet("https://externalhub.oneeight-project18.workers.dev/loader"))()
+                end)
             ]])
         end)
     end
