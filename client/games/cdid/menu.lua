@@ -88,11 +88,7 @@ local function applyServerCode(code, source)
     State.CurrentServerCode = clean
     State.CodeSource = source or "Unknown"
     _G.OE_PRIVATE_SERVER_CODE = clean
-    pcall(function()
-        if typeof(writefile) == "function" then
-            writefile("oe_cdid_ps_code.txt", tostring(clean))
-        end
-    end)
+    
     print(string.format("[OE-External CDID] 🔑 Kode Server Terdeteksi [%s]: %s", State.CodeSource, State.CurrentServerCode))
 
     if Context and Context.SendLog then
@@ -336,23 +332,7 @@ function CDIDMenu.Init(coreContext)
     Context = coreContext
     print("[OE-External CDID] Modul Main Menu / Lobby CDID aktif!")
 
-    -- Cek apakah ada antrean Auto-Rejoin ke Private Server dari sesi sebelumnya
-    task.spawn(function()
-        task.wait(1.5)
-        local rejoinTarget = nil
-        pcall(function()
-            local HttpService = game:GetService("HttpService")
-            if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile("oe_cdid_rejoin_target.json") then
-                local raw = readfile("oe_cdid_rejoin_target.json")
-                local data = HttpService:JSONDecode(raw)
-                if data and data.code and data.map then
-                    rejoinTarget = data
-                end
-                if typeof(delfile) == "function" then
-                    pcall(delfile, "oe_cdid_rejoin_target.json")
-                end
-            end
-        end)
+    -- Auto-Rejoin queue removed (Clean Mode)
 
         if rejoinTarget then
             print(string.format("[OE-External CDID] ⚡ Auto-Rejoin ke Private Server: Map %s, Kode %s", tostring(rejoinTarget.map), tostring(rejoinTarget.code)))

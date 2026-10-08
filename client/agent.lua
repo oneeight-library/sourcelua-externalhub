@@ -50,10 +50,10 @@ end
 Modules["core/safety"] = function()
 --[[
     OneEight External Hub - Core Safety & Kick Detection Engine
-    Handles:
+    Clean & Robust Architecture:
     1. Anti-AFK (20-minute idle bypass)
     2. Real-time Kick / Disconnect detection (GuiService & RobloxPromptGui)
-    3. Auto-Rejoin subsystem with queue_on_teleport
+    3. Safe Teleport / Manual Rejoin helper (Clean & non-intrusive)
 --]]
 
 local Safety = {}
@@ -64,7 +64,7 @@ local TeleportService = game:GetService("TeleportService")
 local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 
-Safety.AutoRejoin = true
+Safety.AutoRejoin = false -- Default Nonaktif agar bersih dan tidak mengganggu sesi game
 Safety.RejoinDelay = 5
 Safety.IsKicked = false
 Safety.KickReason = nil
@@ -139,97 +139,21 @@ function Safety.InitKickDetector(onKickedCallback)
     end)
 end
 
--- 4. Rejoin Server Now (Private Server & CDID Gateway Aware)
+-- 4. Clean Rejoin Function (Simple & Standard)
 function Safety.RejoinNow(loaderUrl)
     loaderUrl = loaderUrl or "https://externalhub.oneeight-project18.workers.dev/loader"
-
-    local currentPlaceId = game.PlaceId
-    local HttpService = game:GetService("HttpService")
-
-    -- 1. Deteksi apakah ini game CDID dan berada di Private Server
-    local CDID_PLACE_MAP = {
-        [14005966837] = "Jakarta",
-        [110369730911937] = "JawaTimur",
-        [9233343468] = "JawaBarat",
-        [9508940498] = "JawaTengah",
-        [79488788685813] = "Bandung",
-        [118108582994420] = "Bali",
-        [132986577553100] = "Seasonal"
-    }
-
-    local currentMapKey = CDID_PLACE_MAP[currentPlaceId]
-    local isCDID = (currentMapKey ~= nil) or (currentPlaceId == 6911148748)
-
-    local psCode = nil
-    pcall(function()
-        if typeof(getgc) == "function" then
-            for _, v in ipairs(getgc(true)) do
-                if typeof(v) == "table" and rawget(v, "Code") and #tostring(rawget(v, "Code")) >= 4 and rawget(v, "Jakarta") then
-                    psCode = tostring(rawget(v, "Code"))
-                    break
-                end
-            end
-        end
-    end)
-
-    if not psCode and _G.OE_PRIVATE_SERVER_CODE then
-        psCode = _G.OE_PRIVATE_SERVER_CODE
-    end
-
-    if not psCode and typeof(readfile) == "function" then
-        pcall(function()
-            if typeof(isfile) == "function" and isfile("oe_cdid_ps_code.txt") then
-                local saved = readfile("oe_cdid_ps_code.txt")
-                if saved and #saved >= 4 then
-                    psCode = saved
-                end
-            end
-        end)
-    end
-
-    -- 2. Setup queue_on_teleport agar loader & connector otomatis aktif
     local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport) or queueonteleport
     if queue_teleport then
         pcall(function()
             queue_teleport(string.format([[
-                task.wait(2)
-                pcall(function()
-                    loadstring(game:HttpGet("http://localhost:16384/script.luau"))()
-                end)
-                task.wait(2)
-                pcall(function()
-                    loadstring(game:HttpGet("%s"))()
-                end)
+                task.wait(3.5)
+                loadstring(game:HttpGet("%s"))()
             ]], loaderUrl))
         end)
     end
 
-    -- 3. Logika Rejoin CDID Private Server
-    -- Di CDID, Private Server adalah Reserved Server. Roblox memblokir TeleportToPlaceInstance langsung dari client (Error 773).
-    -- Jalur resmi & 100%% berhasil masuk ke Private Server CDID adalah melalui Lobby Gateway (PlaceId: 6911148748).
-    if isCDID and psCode and currentMapKey and currentPlaceId ~= 6911148748 then
-        print(string.format("[OE-External Safety] CDID Private Server terdeteksi (Kode: %s, Map: %s). Menjadwalkan gateway rejoin via Lobby...", tostring(psCode), currentMapKey))
-
-        pcall(function()
-            if typeof(writefile) == "function" then
-                writefile("oe_cdid_ps_code.txt", tostring(psCode))
-                writefile("oe_cdid_rejoin_target.json", HttpService:JSONEncode({
-                    code = tostring(psCode),
-                    map = currentMapKey
-                }))
-            end
-        end)
-        _G.OE_PRIVATE_SERVER_CODE = psCode
-
-        print("[OE-External Safety] Berpindah ke CDID Main Menu untuk routing ke Private Server...")
-        TeleportService:Teleport(6911148748, LocalPlayer)
-        return
-    end
-
-    -- 4. Fallback jika bukan CDID Private Server atau sudah di Lobby
-    print(string.format("[OE-External Safety] Melakukan Teleport ke PlaceId: %d...", currentPlaceId))
     pcall(function()
-        TeleportService:Teleport(currentPlaceId, LocalPlayer)
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
     end)
 end
 
@@ -1926,11 +1850,7 @@ local function applyServerCode(code, source)
     State.CurrentServerCode = clean
     State.CodeSource = source or "Unknown"
     _G.OE_PRIVATE_SERVER_CODE = clean
-    pcall(function()
-        if typeof(writefile) == "function" then
-            writefile("oe_cdid_ps_code.txt", tostring(clean))
-        end
-    end)
+    
     print(string.format("[OE-External CDID] 🔑 Kode Server Terdeteksi [%s]: %s", State.CodeSource, State.CurrentServerCode))
 
     if Context and Context.SendLog then
@@ -2174,23 +2094,7 @@ function CDIDMenu.Init(coreContext)
     Context = coreContext
     print("[OE-External CDID] Modul Main Menu / Lobby CDID aktif!")
 
-    -- Cek apakah ada antrean Auto-Rejoin ke Private Server dari sesi sebelumnya
-    task.spawn(function()
-        task.wait(1.5)
-        local rejoinTarget = nil
-        pcall(function()
-            local HttpService = game:GetService("HttpService")
-            if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile("oe_cdid_rejoin_target.json") then
-                local raw = readfile("oe_cdid_rejoin_target.json")
-                local data = HttpService:JSONDecode(raw)
-                if data and data.code and data.map then
-                    rejoinTarget = data
-                end
-                if typeof(delfile) == "function" then
-                    pcall(delfile, "oe_cdid_rejoin_target.json")
-                end
-            end
-        end)
+    -- Auto-Rejoin queue removed (Clean Mode)
 
         if rejoinTarget then
             print(string.format("[OE-External CDID] ⚡ Auto-Rejoin ke Private Server: Map %s, Kode %s", tostring(rejoinTarget.map), tostring(rejoinTarget.code)))
