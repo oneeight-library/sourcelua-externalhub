@@ -58,6 +58,25 @@ const PRESET_COLORS = [
   { name: "Kuning", rgb: { r: 240, g: 190, b: 10 }, hex: "#f0be0a" },
 ];
 
+// Opsi Sort persis sesuai in-game CDID FilterFrame.Sort
+const SORT_OPTIONS = [
+  { value: "low_to_high", label: "Low to high (Harga Termurah)" },
+  { value: "high_to_low", label: "High to low (Harga Termahal)" },
+  { value: "new_limited", label: "New & Limited" },
+  { value: "speed_desc", label: "Top Speed Tertinggi" },
+  { value: "hp_desc", label: "Tenaga Kuda (HP)" },
+];
+
+// Opsi Pass persis sesuai in-game CDID FilterFrame.Pass
+const PASS_OPTIONS = [
+  { value: "all", label: "Semua Pass (All)" },
+  { value: "nopass", label: "No Pass (Reguler)" },
+  { value: "luxury", label: "Luxury" },
+  { value: "rareimport", label: "Rare Import" },
+  { value: "retro", label: "Retro" },
+  { value: "emergency", label: "Emergency" },
+];
+
 function useOutsideClick(ref, handler) {
   React.useEffect(() => {
     const listener = (event) => {
@@ -85,21 +104,28 @@ export function DealershipPage({
 }) {
   const [selectedDealer, setSelectedDealer] = React.useState(initialDealer);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [sortBy, setSortBy] = React.useState("price_asc");
-  const [onlyLimited, setOnlyLimited] = React.useState(false);
+  const [sortBy, setSortBy] = React.useState("low_to_high");
+  const [selectedPass, setSelectedPass] = React.useState("all");
   const [modalCar, setModalCar] = React.useState(null);
   const [selectedColor, setSelectedColor] = React.useState(PRESET_COLORS[0]);
   const [buyStatus, setBuyStatus] = React.useState(null);
   const [visibleCount, setVisibleCount] = React.useState(36);
 
-  // Dropdown UI Open States
+  // Dropdown UI Open States (Custom Context Menus - NO default browser select)
   const [isDealerDropdownOpen, setIsDealerDropdownOpen] = React.useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = React.useState(false);
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = React.useState(false);
+  const [isPassDropdownOpen, setIsPassDropdownOpen] = React.useState(false);
+
   const dealerDropdownRef = React.useRef(null);
   const accountDropdownRef = React.useRef(null);
+  const sortDropdownRef = React.useRef(null);
+  const passDropdownRef = React.useRef(null);
 
   useOutsideClick(dealerDropdownRef, () => setIsDealerDropdownOpen(false));
   useOutsideClick(accountDropdownRef, () => setIsAccountDropdownOpen(false));
+  useOutsideClick(sortDropdownRef, () => setIsSortDropdownOpen(false));
+  useOutsideClick(passDropdownRef, () => setIsPassDropdownOpen(false));
 
   const botList = bots ? Array.from(bots.values()) : [];
 
@@ -110,7 +136,6 @@ export function DealershipPage({
     return [];
   });
 
-  // Sync jika bot list baru pertama kali termuat
   React.useEffect(() => {
     if (selectedBotIds.length === 0 && botList.length > 0) {
       setSelectedBotIds([activeBot?.botId || botList[0].botId]);
@@ -131,10 +156,10 @@ export function DealershipPage({
     }
   };
 
-  // Reset pagination saat dealer atau search query berganti
+  // Reset pagination saat dealer, filter pass, atau search query berganti
   React.useEffect(() => {
     setVisibleCount(36);
-  }, [selectedDealer, searchQuery]);
+  }, [selectedDealer, searchQuery, selectedPass, sortBy]);
 
   // Sync initialDealer if URL prop changes
   React.useEffect(() => {
@@ -177,7 +202,7 @@ export function DealershipPage({
   const dealerKey = (selectedDealer === "Semua Dealer" ? "all" : selectedDealer).toLowerCase().replace(/\s+/g, "");
   const rawCars = dealerCatalog[dealerKey] || dealerCatalog["all"] || [];
 
-  // PENGELOMPOKAN 100% MURNI SESUAI car.dealer (car.Dealership.Value dari CarData)
+  // PENGELOMPOKAN & FILTER 100% PERSIS SEPERTI IN-GAME CDID DEALERSHIP
   const filteredCars = React.useMemo(() => {
     const selLower = selectedDealer.toLowerCase().trim();
     return rawCars
@@ -192,22 +217,36 @@ export function DealershipPage({
           car.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           car.id.toLowerCase().includes(searchQuery.toLowerCase());
 
-        const matchesLimited = !onlyLimited || car.isLimited;
+        // Filter Pass persis sesuai in-game CDID (FilterFrame.Pass)
+        let matchesPass = true;
+        if (selectedPass === "nopass") {
+          matchesPass = !car.isGamepass && (!car.gamepass || car.gamepass === "None Gamepass");
+        } else if (selectedPass === "luxury") {
+          matchesPass = !!(car.gamepass && car.gamepass.includes("Luxury"));
+        } else if (selectedPass === "rareimport") {
+          matchesPass = !!(car.gamepass && car.gamepass.includes("Rare Import"));
+        } else if (selectedPass === "retro") {
+          matchesPass = !!(car.gamepass && car.gamepass.includes("Retro"));
+        } else if (selectedPass === "emergency") {
+          matchesPass = !!(car.gamepass && car.gamepass.includes("Emergency"));
+        }
 
-        return matchesDealer && matchesSearch && matchesLimited;
+        return matchesDealer && matchesSearch && matchesPass;
       })
       .sort((a, b) => {
-        if (sortBy === "limited_first") {
+        // Sort persis sesuai in-game CDID (FilterFrame.Sort)
+        if (sortBy === "new_limited") {
           if (a.isLimited && !b.isLimited) return -1;
           if (!a.isLimited && b.isLimited) return 1;
+          return a.cost - b.cost;
         }
-        if (sortBy === "price_asc") return a.cost - b.cost;
-        if (sortBy === "price_desc") return b.cost - a.cost;
+        if (sortBy === "low_to_high") return a.cost - b.cost;
+        if (sortBy === "high_to_low") return b.cost - a.cost;
         if (sortBy === "speed_desc") return (b.topSpeed || 0) - (a.topSpeed || 0);
         if (sortBy === "hp_desc") return (b.hp || 0) - (a.hp || 0);
         return 0;
       });
-  }, [rawCars, selectedDealer, searchQuery, sortBy, onlyLimited]);
+  }, [rawCars, selectedDealer, searchQuery, sortBy, selectedPass]);
 
   const displayedCars = React.useMemo(() => {
     return filteredCars.slice(0, visibleCount);
@@ -398,9 +437,11 @@ export function DealershipPage({
       {/* 2. Main Standalone Content Viewport */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-24 sm:pb-12">
 
-        {/* Search, Sort, & Refresh Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center justify-between">
-          <div className="relative w-full sm:w-80">
+        {/* Toolbar: Search & 100% In-Game Custom Dropdown Filters (Bukan Default Browser) */}
+        <div className="flex flex-col md:flex-row gap-2.5 sm:gap-3 items-stretch md:items-center justify-between">
+          
+          {/* Input Search */}
+          <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
             <input
               type="text"
@@ -419,40 +460,102 @@ export function DealershipPage({
             )}
           </div>
 
-          <div className="flex items-center gap-2 justify-between sm:justify-end">
-            <Badge variant="secondary" className="text-[10px] sm:text-xs font-mono px-2.5 py-1 bg-zinc-900 border-zinc-800 text-zinc-300 shrink-0">
-              {filteredCars.length} Unit ({selectedDealer})
+          {/* Sisi Kanan: Total Unit + Dropdown Pass + Dropdown Sort + Refresh */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-between md:justify-end">
+            
+            <Badge variant="secondary" className="text-[10px] sm:text-xs font-mono px-2.5 py-1.5 bg-zinc-900 border-zinc-800 text-zinc-300 shrink-0">
+              {filteredCars.length} Unit
             </Badge>
 
-            {/* Tombol Filter Limited */}
-            <Button
-              variant={onlyLimited ? "destructive" : "outline"}
-              size="sm"
-              onClick={() => setOnlyLimited(!onlyLimited)}
-              className={`h-9 px-2.5 sm:px-3 text-xs font-bold transition-all active:scale-95 ${
-                onlyLimited
-                  ? "bg-rose-600 hover:bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-600/30"
-                  : "border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300"
-              }`}
-            >
-              ⭐ Limited
-            </Button>
-
-            <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
-              <span className="text-[11px] sm:text-xs text-zinc-400 whitespace-nowrap hidden xs:inline">Urut:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="h-9 w-full sm:w-auto px-2.5 sm:px-3 rounded-xl bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-zinc-700"
+            {/* 1. Custom Dropdown Filter PASS (Sesuai In-Game FilterFrame.Pass) */}
+            <div className="relative" ref={passDropdownRef}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPassDropdownOpen((prev) => !prev)}
+                className="h-9 px-2.5 sm:px-3 gap-1.5 border-zinc-800 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-200 transition-all shadow-sm"
               >
-                <option value="price_asc">Harga: Termurah</option>
-                <option value="price_desc">Harga: Termahal</option>
-                <option value="speed_desc">Top Speed Tertinggi</option>
-                <option value="hp_desc">Tenaga Kuda (HP) Tertinggi</option>
-                <option value="limited_first">⭐ Limited Dahulu</option>
-              </select>
+                <span className="text-zinc-400 font-normal hidden sm:inline">Pass:</span>
+                <span className="truncate max-w-[90px] sm:max-w-none text-emerald-400">
+                  {PASS_OPTIONS.find((p) => p.value === selectedPass)?.label.replace(/\s*\(.*\)/, "") || "Pass"}
+                </span>
+                <ChevronDown className={`h-3.5 w-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${isPassDropdownOpen ? "rotate-180" : ""}`} />
+              </Button>
+
+              {isPassDropdownOpen && (
+                <div className="absolute left-0 md:right-0 md:left-auto mt-2 w-52 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-xl p-1.5 text-zinc-200 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    Filter Pass (In-Game CDID)
+                  </div>
+                  <div className="h-px bg-zinc-800/80 my-1" />
+                  {PASS_OPTIONS.map((opt) => {
+                    const isSelected = selectedPass === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPass(opt.value);
+                          setIsPassDropdownOpen(false);
+                        }}
+                        className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${
+                          isSelected ? "bg-emerald-500/15 text-emerald-400 font-bold" : "hover:bg-zinc-900 text-zinc-300"
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {isSelected && <Check className="h-3.5 w-3.5 text-emerald-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            
+
+            {/* 2. Custom Dropdown Filter SORT (Sesuai In-Game FilterFrame.Sort) */}
+            <div className="relative" ref={sortDropdownRef}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSortDropdownOpen((prev) => !prev)}
+                className="h-9 px-2.5 sm:px-3 gap-1.5 border-zinc-800 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-200 transition-all shadow-sm"
+              >
+                <span className="text-zinc-400 font-normal hidden sm:inline">Sort:</span>
+                <span className="truncate max-w-[95px] sm:max-w-none text-cyan-400">
+                  {SORT_OPTIONS.find((s) => s.value === sortBy)?.label.replace(/\s*\(.*\)/, "") || "Sort"}
+                </span>
+                <ChevronDown className={`h-3.5 w-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${isSortDropdownOpen ? "rotate-180" : ""}`} />
+              </Button>
+
+              {isSortDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-xl p-1.5 text-zinc-200 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    Sortir (In-Game CDID)
+                  </div>
+                  <div className="h-px bg-zinc-800/80 my-1" />
+                  {SORT_OPTIONS.map((opt) => {
+                    const isSelected = sortBy === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setSortBy(opt.value);
+                          setIsSortDropdownOpen(false);
+                        }}
+                        className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${
+                          isSelected ? "bg-cyan-500/15 text-cyan-400 font-bold" : "hover:bg-zinc-900 text-zinc-300"
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {isSelected && <Check className="h-3.5 w-3.5 text-cyan-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Refresh Button */}
             <Button
               variant="outline"
               size="sm"
@@ -463,7 +566,7 @@ export function DealershipPage({
                 }
               }}
               title="Refresh Katalog dari Game"
-              className="h-9 w-9 p-0 border-zinc-800 hover:bg-zinc-800 shrink-0 active:scale-95"
+              className="h-9 w-9 p-0 border-zinc-800 hover:bg-zinc-800 shrink-0 active:scale-95 shadow-sm"
             >
               <RefreshCw className="h-3.5 w-3.5 text-zinc-400" />
             </Button>
@@ -474,9 +577,9 @@ export function DealershipPage({
         {filteredCars.length === 0 ? (
           <div className="py-16 sm:py-20 text-center rounded-2xl border border-zinc-800 bg-zinc-900/30 px-4">
             <Car className="h-10 w-10 sm:h-12 sm:w-12 text-zinc-600 mx-auto mb-3" />
-            <h3 className="text-xs sm:text-sm font-bold text-zinc-300">Memuat Katalog Mobil dari Game CDID...</h3>
+            <h3 className="text-xs sm:text-sm font-bold text-zinc-300">Tidak ada mobil yang sesuai filter</h3>
             <p className="text-[11px] sm:text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
-              Sedang mensinkronkan daftar kendaraan dari server game CDID. Pastikan bot Roblox sedang online dan terhubung.
+              Coba ubah opsi pencarian, showroom, atau filter Pass di atas.
             </p>
           </div>
         ) : (
@@ -533,6 +636,7 @@ export function DealershipPage({
                       <h3 className="text-[11px] sm:text-xs font-bold text-zinc-100 line-clamp-2 leading-tight group-hover:text-emerald-400 transition-colors min-h-[1.75rem] sm:min-h-[2rem]">
                         {car.name}
                       </h3>
+
                       {/* Status Gamepass di bawah nama mobil */}
                       <div className="mt-1 mb-1">
                         {car.isGamepass || (car.gamepass && car.gamepass !== "None Gamepass") ? (
@@ -545,17 +649,9 @@ export function DealershipPage({
                           </span>
                         )}
                       </div>
+
                       {/* Specs Badges */}
                       <div className="flex items-center gap-1 sm:gap-2 mt-1.5 sm:mt-2 flex-wrap">
-                        {car.stock !== undefined && car.stock !== null && (
-                          <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-1 sm:px-1.5 py-0.5 rounded border ${
-                            car.stock === 0
-                              ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
-                              : "text-amber-400 bg-amber-500/10 border-amber-500/20"
-                          }`}>
-                            {car.stock === 0 ? "Stok: 0 (Sold Out)" : `Stok: ${car.stock}`}
-                          </span>
-                        )}
                         <span className="text-[9px] sm:text-[10px] text-zinc-400 font-mono flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
                           <Gauge className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-cyan-400 shrink-0" />
                           {car.topSpeed || 0} KM/H
@@ -564,6 +660,15 @@ export function DealershipPage({
                           <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-400 shrink-0" />
                           {car.hp || 0} HP
                         </span>
+                        {car.stock !== undefined && car.stock !== null && (
+                          <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-1 sm:px-1.5 py-0.5 rounded border ${
+                            car.stock === 0
+                              ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                              : "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                          }`}>
+                            {car.stock === 0 ? "Stok: 0" : `Stok: ${car.stock}`}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -634,6 +739,7 @@ export function DealershipPage({
               ) : (
                 <Car className="h-12 w-12 text-zinc-700" />
               )}
+
               {modalCar.isLimited && (
                 <span className="absolute top-2.5 left-2.5 text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500 shadow-md shadow-rose-600/30 px-2 py-0.5 rounded-md z-20 leading-none">
                   LIMITED!
