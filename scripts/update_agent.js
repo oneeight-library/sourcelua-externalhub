@@ -1,11 +1,13 @@
 import fs from "fs";
 
 const lighting = fs.readFileSync("client/games/cdid/features/lighting.lua", "utf8");
-const safety = fs.readFileSync("client/games/cdid/features/safety.lua", "utf8");
+const safetyFeature = fs.readFileSync("client/games/cdid/features/safety.lua", "utf8");
 const dealership = fs.readFileSync("client/games/cdid/features/dealership.lua", "utf8");
 const teleport = fs.readFileSync("client/games/cdid/features/teleport.lua", "utf8");
 const truck = fs.readFileSync("client/games/cdid/jobs/truck.lua", "utf8");
 const init = fs.readFileSync("client/games/cdid/init.lua", "utf8");
+const cdidMenu = fs.readFileSync("client/games/cdid/menu.lua", "utf8");
+const coreSafety = fs.readFileSync("client/core/safety.lua", "utf8");
 
 let agentLua = fs.readFileSync("client/agent.lua", "utf8");
 
@@ -13,7 +15,13 @@ function replaceModule(source, moduleName, moduleContent) {
   const prefix = `Modules["${moduleName}"] = function()`;
   const startIdx = source.indexOf(prefix);
   if (startIdx === -1) {
-    console.warn(`Module prefix not found: ${prefix}`);
+    console.warn(`Module prefix not found: ${prefix}, appending before LoadedModules...`);
+    const insertMarker = "local LoadedModules = {}";
+    const insertIdx = source.indexOf(insertMarker);
+    if (insertIdx !== -1) {
+      const injection = `Modules["${moduleName}"] = function()\n${moduleContent.trim()}\nend\n\n`;
+      return source.substring(0, insertIdx) + injection + source.substring(insertIdx);
+    }
     return source;
   }
   
@@ -33,12 +41,14 @@ function replaceModule(source, moduleName, moduleContent) {
   return before + "\n" + moduleContent.trim() + after;
 }
 
+agentLua = replaceModule(agentLua, "core/safety", coreSafety);
 agentLua = replaceModule(agentLua, "games/cdid/features/lighting", lighting);
-agentLua = replaceModule(agentLua, "games/cdid/features/safety", safety);
+agentLua = replaceModule(agentLua, "games/cdid/features/safety", safetyFeature);
 agentLua = replaceModule(agentLua, "games/cdid/features/dealership", dealership);
 agentLua = replaceModule(agentLua, "games/cdid/features/teleport", teleport);
 agentLua = replaceModule(agentLua, "games/cdid/jobs/truck", truck);
 agentLua = replaceModule(agentLua, "games/cdid", init);
+agentLua = replaceModule(agentLua, "games/cdid_menu", cdidMenu);
 
 fs.writeFileSync("client/agent.lua", agentLua, "utf8");
 console.log("Updated client/agent.lua with all sub-modules!");
@@ -58,4 +68,4 @@ export function getAgentLuaCode(origin) {
 `;
 
 fs.writeFileSync("src/agent_code.js", jsCode, "utf8");
-console.log("Updated src/agent_code.js successfully with modular architecture!");
+console.log("Updated src/agent_code.js!");

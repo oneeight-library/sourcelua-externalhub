@@ -139,26 +139,74 @@ function Safety.InitKickDetector(onKickedCallback)
     end)
 end
 
--- 4. Rejoin Server Now
+-- 4. Rejoin Server Now (Private Server & Specific Instance Aware)
 function Safety.RejoinNow(loaderUrl)
     loaderUrl = loaderUrl or "https://externalhub.oneeight-project18.workers.dev/loader"
-    local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
+
+    local currentPlaceId = game.PlaceId
+    local currentJobId = game.JobId
+
+    -- 1. Deteksi dan Amankan Kode Private Server (Khusus CDID)
+    local psCode = nil
+    pcall(function()
+        if typeof(getgc) == "function" then
+            for _, v in ipairs(getgc(true)) do
+                if typeof(v) == "table" and rawget(v, "Code") and #tostring(rawget(v, "Code")) >= 4 and rawget(v, "Jakarta") then
+                    psCode = tostring(rawget(v, "Code"))
+                    break
+                end
+            end
+        end
+    end)
+
+    if not psCode and _G.OE_PRIVATE_SERVER_CODE then
+        psCode = _G.OE_PRIVATE_SERVER_CODE
+    end
+
+    if psCode then
+        _G.OE_PRIVATE_SERVER_CODE = psCode
+        pcall(function()
+            if typeof(writefile) == "function" then
+                writefile("oe_cdid_ps_code.txt", tostring(psCode))
+            end
+        end)
+    end
+
+    -- 2. Setup queue_on_teleport agar loader & auto-rejoin berjalan di server berikutnya
+    local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport) or queueonteleport
     if queue_teleport then
         pcall(function()
             queue_teleport(string.format([[
-                task.wait(4)
+                task.wait(3.5)
                 loadstring(game:HttpGet("%s"))()
             ]], loaderUrl))
         end)
     end
 
-    pcall(function()
-        TeleportService:Teleport(game.PlaceId, LocalPlayer)
-    end)
+    -- 3. Eksekusi Rejoin: Prioritaskan Instance Sama (Private Server Instance)
+    local rejoined = false
+    if currentJobId and #currentJobId > 0 then
+        print(string.format("[OE-External Safety] Rejoining instance: %s (Place: %d)...", currentJobId, currentPlaceId))
+        local ok, err = pcall(function()
+            TeleportService:TeleportToPlaceInstance(currentPlaceId, currentJobId, LocalPlayer)
+        end)
+        if ok then
+            rejoined = true
+        else
+            warn("[OE-External Safety] TeleportToPlaceInstance error: " .. tostring(err))
+        end
+    end
+
+    -- 4. Fallback jika JobId kosong atau TeleportToPlaceInstance gagal
+    if not rejoined then
+        print("[OE-External Safety] Fallback ke Teleport biasa...")
+        pcall(function()
+            TeleportService:Teleport(currentPlaceId, LocalPlayer)
+        end)
+    end
 end
 
 return Safety
-
 end
 
 Modules["games/base_game"] = function()
@@ -1850,6 +1898,12 @@ local function applyServerCode(code, source)
 
     State.CurrentServerCode = clean
     State.CodeSource = source or "Unknown"
+    _G.OE_PRIVATE_SERVER_CODE = clean
+    pcall(function()
+        if typeof(writefile) == "function" then
+            writefile("oe_cdid_ps_code.txt", tostring(clean))
+        end
+    end)
     print(string.format("[OE-External CDID] 🔑 Kode Server Terdeteksi [%s]: %s", State.CodeSource, State.CurrentServerCode))
 
     if Context and Context.SendLog then
@@ -1908,6 +1962,24 @@ local function scanAllSources()
     end)
     if replicaCode then
         return applyServerCode(replicaCode, "GCReplicaScan")
+    end
+
+    -- Sumber 4: Global Variable & Persisten File (Auto-Rejoin Bridge)
+    local persistentCode = nil
+    if _G.OE_PRIVATE_SERVER_CODE and isValidServerCode(_G.OE_PRIVATE_SERVER_CODE) then
+        persistentCode = _G.OE_PRIVATE_SERVER_CODE
+    elseif typeof(readfile) == "function" then
+        pcall(function()
+            if (typeof(isfile) == "function" and isfile("oe_cdid_ps_code.txt")) or true then
+                local saved = readfile("oe_cdid_ps_code.txt")
+                if isValidServerCode(saved) then
+                    persistentCode = saved
+                end
+            end
+        end)
+    end
+    if persistentCode then
+        return applyServerCode(persistentCode, "PersistentFileOrGlobal")
     end
 
     return false
@@ -2112,7 +2184,7 @@ function CDIDMenu.Init(coreContext)
 
     -- Background scanner berkala tiap 3 detik
     task.spawn(function()
-        while isInstanceAlive() do
+        while _G.OE_ExternalRunning do
             task.wait(3)
             if State.CurrentServerCode == "" then
                 scanAllSources()
@@ -2179,7 +2251,6 @@ function CDIDMenu.Cleanup()
 end
 
 return CDIDMenu
-
 end
 
 Modules["games/dds"] = function()

@@ -87,6 +87,12 @@ local function applyServerCode(code, source)
 
     State.CurrentServerCode = clean
     State.CodeSource = source or "Unknown"
+    _G.OE_PRIVATE_SERVER_CODE = clean
+    pcall(function()
+        if typeof(writefile) == "function" then
+            writefile("oe_cdid_ps_code.txt", tostring(clean))
+        end
+    end)
     print(string.format("[OE-External CDID] 🔑 Kode Server Terdeteksi [%s]: %s", State.CodeSource, State.CurrentServerCode))
 
     if Context and Context.SendLog then
@@ -145,6 +151,24 @@ local function scanAllSources()
     end)
     if replicaCode then
         return applyServerCode(replicaCode, "GCReplicaScan")
+    end
+
+    -- Sumber 4: Global Variable & Persisten File (Auto-Rejoin Bridge)
+    local persistentCode = nil
+    if _G.OE_PRIVATE_SERVER_CODE and isValidServerCode(_G.OE_PRIVATE_SERVER_CODE) then
+        persistentCode = _G.OE_PRIVATE_SERVER_CODE
+    elseif typeof(readfile) == "function" then
+        pcall(function()
+            if (typeof(isfile) == "function" and isfile("oe_cdid_ps_code.txt")) or true then
+                local saved = readfile("oe_cdid_ps_code.txt")
+                if isValidServerCode(saved) then
+                    persistentCode = saved
+                end
+            end
+        end)
+    end
+    if persistentCode then
+        return applyServerCode(persistentCode, "PersistentFileOrGlobal")
     end
 
     return false
