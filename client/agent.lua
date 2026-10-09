@@ -861,9 +861,14 @@ local function updateCash(txt)
     end
 
     State.CurrentCash = val
-    if State.StartCash and State.StartCash > 0 then
+
+    -- HASIL SESI HANYA DIHITUNG JIKA JOB TRUK SEDANG AKTIF BERJALAN!
+    if State.IsFarming then
+        if not State.StartCash or State.StartCash <= 0 then
+            State.StartCash = val
+        end
         local netDiff = State.CurrentCash - State.StartCash
-        if netDiff >= 0 and netDiff > State.TotalEarnings then
+        if netDiff >= 0 then
             State.TotalEarnings = netDiff
         end
     end
@@ -874,7 +879,8 @@ local function updateCash(txt)
             Context.SendPacket("TELEMETRY", {
                 currentCash = State.CurrentCash,
                 startCash = State.StartCash,
-                totalEarnings = State.TotalEarnings
+                totalEarnings = State.IsFarming and State.TotalEarnings or 0,
+                truckEarnings = State.IsFarming and State.TotalEarnings or 0
             })
         end)
     end
@@ -1541,8 +1547,23 @@ function TruckJob.Start()
     if State.IsFarming then return end
     State.IsFarming = true
     State.FarmStartTime = os.clock()
+    -- Reset titik awal saldo dan hasil sesi khusus untuk sesi job kargo ini
+    State.StartCash = State.CurrentCash or 0
+    State.TotalEarnings = 0
+    State.TripCount = 0
     if Context and Context.SendLog then
         Context.SendLog("Auto Farm Truk Kargo CDID dimulai!", "SUCCESS")
+    end
+    if Context and Context.SendPacket then
+        pcall(function()
+            Context.SendPacket("TELEMETRY", {
+                isFarming = true,
+                totalEarnings = 0,
+                truckEarnings = 0,
+                tripCount = 0,
+                farmDuration = 0
+            })
+        end)
     end
     task.spawn(runFarmLoop)
 end
@@ -2855,7 +2876,8 @@ function CDIDModule.GetTelemetry()
         gameName = placeName,
         currentRoute = stMg.IsFarming and ("Sumo Arena: " .. (stMg.Phase or "Lobby")) or (st.CurrentRoute or "IDLE"),
         tripCount = st.TripCount or 0,
-        totalEarnings = (st.TotalEarnings or 0) + (stMg.CashEarned or 0),
+        truckEarnings = st.IsFarming and (st.TotalEarnings or 0) or (st.TripCount and st.TripCount > 0 and (st.TotalEarnings or 0) or 0),
+        totalEarnings = (st.IsFarming and (st.TotalEarnings or 0) or 0) + (stMg.IsFarming and (stMg.CashEarned or 0) or 0),
         currentCash = (st.CurrentCash and st.CurrentCash > 0) and st.CurrentCash or (stMg.CurrentCash or 0),
         startCash = st.StartCash or 0,
         isFarming = isFarming,

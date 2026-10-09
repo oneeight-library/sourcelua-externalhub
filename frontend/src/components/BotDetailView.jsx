@@ -192,16 +192,23 @@ export function BotDetailView({
   };
 
   const trips = bot.tripCount || 0;
-  const earnings = bot.totalEarnings || 0;
+  const isTruckFarming = isFarming && !isMinigameActive;
+  // Di truk kargo, hasil sesi HANYA terhitung saat job aktif berjalan (atau jika sudah pernah ada trip dalam sesi ini)
+  const truckEarnings = isTruckFarming 
+    ? (bot.truckEarnings !== undefined ? bot.truckEarnings : (bot.totalEarnings || 0))
+    : (trips > 0 ? (bot.truckEarnings !== undefined ? bot.truckEarnings : (bot.totalEarnings || 0)) : 0);
+
   const elapsedSec = (bot.farmDuration && bot.farmDuration > 0) ? bot.farmDuration : (trips > 0 ? trips * 50 : 0);
-  const farmActiveTime = formatTime(elapsedSec);
+  const farmActiveTime = isTruckFarming || trips > 0 ? formatTime(elapsedSec) : "00:00:00";
 
   let avgPerHourStr = "Menghitung...";
-  if (trips > 0 && earnings > 0) {
+  if (isTruckFarming && trips > 0 && truckEarnings > 0) {
     const effectiveHours = Math.max(elapsedSec / 3600, (trips * 50) / 3600);
-    const hourlyRate = Math.round(earnings / effectiveHours);
+    const hourlyRate = Math.round(truckEarnings / effectiveHours);
     avgPerHourStr = gameCfg.formatMoney ? gameCfg.formatMoney(hourlyRate) + " / jam" : `${hourlyRate.toLocaleString()} / jam`;
-  } else if (elapsedSec >= 15 && earnings === 0) {
+  } else if (!isTruckFarming && trips === 0) {
+    avgPerHourStr = "Job Standby";
+  } else if (elapsedSec >= 15 && truckEarnings === 0) {
     avgPerHourStr = gameCfg.formatMoney ? gameCfg.formatMoney(0) + " / jam" : "0 / jam";
   }
 
@@ -690,7 +697,7 @@ export function BotDetailView({
                       </span>
                     </div>
                     <div className="text-base sm:text-lg font-black text-emerald-400 tabular-nums tracking-tight mt-0.5">
-                      +{gameCfg.formatMoney(earnings)}
+                      +{gameCfg.formatMoney(truckEarnings)}
                     </div>
                   </div>
 
