@@ -667,24 +667,25 @@ export function DealershipPage({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3.5">
             {displayedCars.map((car) => {
               const imgUrl = car.assetId ? `/api/car-thumbnail?id=${car.assetId}` : null;
+              const cleanGp = formatGamepass(car.gamepass);
 
               return (
                 <Card
                   key={car.id}
-                  className="border-zinc-800 bg-gradient-to-b from-zinc-900/70 to-zinc-950/70 overflow-hidden flex flex-col hover:border-zinc-700 transition-all group shadow-sm hover:shadow-lg"
+                  className="border-zinc-800/90 bg-zinc-950/70 hover:bg-zinc-900/40 overflow-hidden flex flex-col hover:border-zinc-700 transition-all group shadow-sm hover:shadow-md rounded-xl"
                 >
-                  {/* Thumbnail Image Container */}
-                  <div className="relative aspect-video w-full bg-zinc-950/90 overflow-hidden border-b border-zinc-800/60 flex items-center justify-center">
+                  {/* Thumbnail Image Container (Rasio proporsional, hemat tinggi layar) */}
+                  <div className="relative aspect-[16/10] w-full bg-zinc-950/90 overflow-hidden border-b border-zinc-800/60 flex items-center justify-center">
                     {imgUrl ? (
                       <img
                         src={imgUrl}
                         alt={car.name}
                         loading="lazy"
                         referrerPolicy="no-referrer"
-                        className="w-full h-full object-contain p-1.5 sm:p-2 group-hover:scale-105 transition-transform duration-300 z-10"
+                        className="w-full h-full object-contain p-1 sm:p-2 group-hover:scale-105 transition-transform duration-300 z-10"
                         onError={(e) => {
                           e.target.style.display = "none";
                           const fb = e.target.parentElement.querySelector(".car-fallback");
@@ -695,69 +696,64 @@ export function DealershipPage({
                     
                     {/* Fallback Display */}
                     <div className={`car-fallback ${imgUrl ? "hidden" : "flex"} flex-col items-center justify-center text-zinc-600 absolute inset-0`}>
-                      <Car className="h-7 w-7 sm:h-10 sm:w-10 text-zinc-700 mb-1" />
-                      <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500 uppercase">{car.dealer}</span>
+                      <Car className="h-6 w-6 sm:h-8 sm:w-8 text-zinc-700 mb-0.5" />
+                      <span className="text-[8px] sm:text-[9px] font-semibold text-zinc-500 uppercase">{car.dealer}</span>
                     </div>
 
-                    {/* Badges: LIMITED (Merah) & NEW (Hijau) Persis In-Game CDID */}
-                    <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 flex items-center gap-1 z-10">
+                    {/* Badges Overlay: LIMITED, NEW, & GAMEPASS (Retro/Luxury) di Pojok Kiri Atas */}
+                    <div className="absolute top-1 left-1 sm:top-1.5 sm:left-1.5 flex items-center gap-1 z-10 flex-wrap max-w-[70%]">
                       {car.isLimited && (
-                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500/80 shadow-md shadow-rose-600/40 px-1.5 py-0.5 rounded-md leading-none animate-pulse">
+                        <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500/80 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none animate-pulse">
                           LIMITED!
                         </span>
                       )}
                       {car.isNew && (
-                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500/80 shadow-md shadow-emerald-600/40 px-1.5 py-0.5 rounded-md leading-none">
+                        <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500/80 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none">
                           NEW!
+                        </span>
+                      )}
+                      {cleanGp && (
+                        <span className="text-[7.5px] sm:text-[8.5px] font-bold uppercase tracking-wider bg-amber-500/90 text-zinc-950 border border-amber-400 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none backdrop-blur-md">
+                          {cleanGp}
                         </span>
                       )}
                     </div>
 
+                    {/* Dealer Badge di Pojok Kanan Atas */}
                     <Badge
                       variant="secondary"
-                      className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-[8px] sm:text-[9px] font-semibold bg-zinc-900/90 text-zinc-300 border border-zinc-700/60 z-10 px-1.5 py-0"
+                      className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 text-[7.5px] sm:text-[8.5px] font-semibold bg-zinc-900/90 text-zinc-300 border border-zinc-700/60 z-10 px-1.5 py-0"
                     >
                       {car.dealer}
                     </Badge>
                   </div>
 
-                  {/* Car Details */}
-                  <CardContent className="p-2.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2 sm:space-y-3">
-                    <div>
+                  {/* Car Details (Padding Ramping, Tata Letak Bersih & Seimbang) */}
+                  <CardContent className="p-2 sm:p-3 flex-1 flex flex-col justify-between gap-1.5 sm:gap-2">
+                    <div className="space-y-1 sm:space-y-1.5">
+                      {/* Nama Mobil */}
                       <h3 className="text-[11px] sm:text-xs font-bold text-zinc-100 line-clamp-2 leading-tight group-hover:text-emerald-400 transition-colors min-h-[1.75rem] sm:min-h-[2rem]">
                         {car.name}
                       </h3>
 
-                      {/* Status Gamepass di bawah nama mobil (langsung Nama Gamepass tanpa Gamepass (...)) */}
-                      {(() => {
-                        const cleanGp = formatGamepass(car.gamepass);
-                        return cleanGp ? (
-                          <div className="mt-1 mb-1">
-                            <span className="inline-block text-[9px] sm:text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded leading-none">
-                              {cleanGp}
-                            </span>
-                          </div>
-                        ) : null;
-                      })()}
-
-                      {/* Specs Badges: KM/H, HP, Seater */}
-                      <div className="flex items-center gap-1 sm:gap-2 mt-1.5 sm:mt-2 flex-wrap">
-                        <span className="text-[9px] sm:text-[10px] text-zinc-300 font-bold tabular-nums flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
-                          <Gauge className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-cyan-400 shrink-0" />
-                          {car.topSpeed || 0} KM/H
+                      {/* Specs Badges Ringkas: Top Speed, HP, Seater, Stok */}
+                      <div className="flex items-center gap-1 text-[8.5px] sm:text-[9.5px] text-zinc-300 font-bold tabular-nums flex-wrap">
+                        <span className="flex items-center gap-0.5 bg-zinc-900/80 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
+                          <Gauge className="h-2.5 w-2.5 text-cyan-400 shrink-0" />
+                          {car.topSpeed || 0} km/h
                         </span>
-                        <span className="text-[9px] sm:text-[10px] text-zinc-300 font-bold tabular-nums flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
-                          <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-400 shrink-0" />
+                        <span className="flex items-center gap-0.5 bg-zinc-900/80 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
+                          <Zap className="h-2.5 w-2.5 text-amber-400 shrink-0" />
                           {car.hp || 0} HP
                         </span>
                         {car.seater ? (
-                          <span className="text-[9px] sm:text-[10px] text-zinc-300 font-bold tabular-nums flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
-                            <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-400 shrink-0" />
-                            {car.seater} Seater
+                          <span className="flex items-center gap-0.5 bg-zinc-900/80 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
+                            <Users className="h-2.5 w-2.5 text-emerald-400 shrink-0" />
+                            {car.seater} Seat
                           </span>
                         ) : null}
                         {car.stock !== undefined && car.stock !== null && (
-                          <span className={`text-[9px] sm:text-[10px] font-bold tabular-nums px-1 sm:px-1.5 py-0.5 rounded border ${
+                          <span className={`px-1 sm:px-1.5 py-0.5 rounded border ${
                             car.stock === 0
                               ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
                               : "text-amber-400 bg-amber-500/10 border-amber-500/20"
@@ -767,22 +763,23 @@ export function DealershipPage({
                         )}
                       </div>
 
-                      {/* Engine Info */}
+                      {/* Engine Info (Ramping, Minimalis & Elegan) */}
                       {car.engine ? (
-                        <div className="flex items-center gap-1 sm:gap-1.5 mt-1.5 text-[9px] sm:text-[10px] text-zinc-400 bg-zinc-900/50 px-1.5 py-0.5 sm:py-1 rounded border border-zinc-800/80">
-                          <Cpu className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-indigo-400 shrink-0" />
-                          <span className="truncate font-medium text-zinc-300" title={car.engine}>
+                        <div className="flex items-center gap-1 text-[8.5px] sm:text-[9.5px] text-zinc-400 pt-0.5 truncate" title={car.engine}>
+                          <Cpu className="h-2.5 w-2.5 text-indigo-400 shrink-0" />
+                          <span className="truncate font-medium text-zinc-400">
                             {car.engine}
                           </span>
                         </div>
                       ) : null}
                     </div>
 
-                    <div className="pt-2 border-t border-zinc-800/80">
+                    {/* Tombol Beli / Harga Terintegrasi */}
+                    <div className="pt-1.5 border-t border-zinc-800/70">
                       <Button
                         size="sm"
                         onClick={() => handleOpenBuyModal(car)}
-                        className="w-full h-8 sm:h-9 text-xs sm:text-[13px] font-bold tracking-tight tabular-nums transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/15 rounded-xl cursor-pointer"
+                        className="w-full h-7 sm:h-8 text-[11px] sm:text-xs font-bold tracking-tight tabular-nums transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-sm shadow-emerald-500/10 rounded-lg cursor-pointer"
                         title={`Beli mobil ini seharga ${formatRupiah(car.cost)}`}
                       >
                         {formatRupiah(car.cost)}
