@@ -261,7 +261,7 @@ function CDIDModule.HandleCommand(action, payload)
 
     elseif action == "SET_SPOOFED_NAME" then
         if StreamerModeFeature and payload and payload.spoofedName then
-            StreamerModeFeature.SetEnabled(StreamerModeFeature.Enabled, payload.spoofedName, Context)
+            StreamerModeFeature.SetEnabled(true, payload.spoofedName, Context)
         end
         return true
     end

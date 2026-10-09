@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv175l2x)
+    Version: 3.3.0 (Build: v3.3.mv17axq4)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv175l2x"
+local AGENT_BUILD_ID = "v3.3.mv17axq4"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -4591,7 +4591,7 @@ function CDIDModule.HandleCommand(action, payload)
 
     elseif action == "SET_SPOOFED_NAME" then
         if StreamerModeFeature and payload and payload.spoofedName then
-            StreamerModeFeature.SetEnabled(StreamerModeFeature.Enabled, payload.spoofedName, Context)
+            StreamerModeFeature.SetEnabled(true, payload.spoofedName, Context)
         end
         return true
     end
