@@ -49,10 +49,11 @@ export class HubRoom {
     const name = url.searchParams.get("name") || "RobloxPlayer";
     const userId = url.searchParams.get("userId") || "";
     const displayName = url.searchParams.get("displayName") || name;
-    const job = url.searchParams.get("job") || "Truck";
-    const placeId = url.searchParams.get("placeId") || "110369730911937";
     const gameId = url.searchParams.get("gameId") || "cdid";
-    const gameName = url.searchParams.get("gameName") || "Car Driving Indonesia";
+    const placeId = url.searchParams.get("placeId") || "110369730911937";
+    const placeName = url.searchParams.get("placeName") || url.searchParams.get("gameName") || "Car Driving Indonesia";
+    const gameName = url.searchParams.get("gameName") || placeName;
+    const job = url.searchParams.get("job") || (gameId === "cdid_menu" ? "Server Gateway" : "Standby");
     const botId = `${name}_${Date.now().toString(36)}`;
 
     // 1. PENTING: Bersihkan koneksi lama dengan username yang sama (mencegah double bot saat teleport/reconnect)
@@ -83,6 +84,7 @@ export class HubRoom {
       avatarUrl: null,
       job,
       placeId,
+      placeName,
       gameId,
       gameName,
       status: "CONNECTED",

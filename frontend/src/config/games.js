@@ -19,7 +19,7 @@ export const GameRegistry = {
   },
   cdid: {
     id: "cdid",
-    name: "CDID Jawa Timur",
+    name: "Car Driving Indonesia",
     icon: "",
     color: "#10b981",
     currency: "Rp",

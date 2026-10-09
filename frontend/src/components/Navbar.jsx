@@ -72,7 +72,7 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
           {selectedBot && gameCfg && (
             <Badge variant="outline" className="text-[11px] gap-1 px-2 py-0.5 border-zinc-700">
               <span>{gameCfg.icon}</span>
-              <span>{gameCfg.name}</span>
+              <span>{selectedBot.placeName || selectedBot.gameName || gameCfg.name}</span>
             </Badge>
           )}
         </div>
@@ -174,11 +174,11 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
                           </div>
                           <div className="text-[10px] text-zinc-400 truncate">
                             {b.isKicked ? (
-                              <span className="text-rose-400 font-semibold">{bGameCfg.name} • Terputus</span>
+                              <span className="text-rose-400 font-semibold">{b.placeName || b.gameName || bGameCfg.name} • Terputus</span>
                             ) : b.isFarming ? (
-                              <span className="text-emerald-400 font-semibold">{bGameCfg.name} • {b.job || bGameCfg.defaultJob}</span>
+                              <span className="text-emerald-400 font-semibold">{b.placeName || b.gameName || bGameCfg.name} • {b.job || bGameCfg.defaultJob}</span>
                             ) : (
-                              <span>{bGameCfg.name} • Standby</span>
+                              <span>{b.placeName || b.gameName || bGameCfg.name} • {b.job || "Standby"}</span>
                             )}
                           </div>
                         </div>

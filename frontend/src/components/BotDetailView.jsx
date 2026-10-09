@@ -210,17 +210,18 @@ export function BotDetailView({
                 )}
               </div>
 
-              {/* Info Game & Job */}
+              {/* Info Game & Job (100% Dinamis dari game.PlaceId & state bot) */}
               <div className="flex flex-wrap items-center gap-2 mt-1.5">
                 <Badge variant="outline" className="border-zinc-700/80 bg-zinc-900/60 text-zinc-300 font-medium text-xs px-2.5 py-0.5">
-                  <span>{gameCfg.name}</span>
+                  <MapPin className="h-3 w-3 mr-1 text-emerald-400 inline" />
+                  <span>{bot.placeName || bot.gameName || gameCfg.name}</span>
                 </Badge>
                 
                 {/* Job hanya ditampilkan jika berada di dalam map permainan, BUKAN di main menu */}
                 {!isLobby && (
-                  <Badge variant="secondary" className="bg-zinc-800 text-zinc-300 font-medium text-xs gap-1.5 px-2.5 py-0.5">
+                  <Badge variant={isFarming ? "emerald" : "secondary"} className={`font-medium text-xs gap-1.5 px-2.5 py-0.5 ${!isFarming ? 'bg-zinc-800 text-zinc-300' : ''}`}>
                     <Briefcase className="h-3 w-3 text-zinc-400" />
-                    <span>Job: {bot.job || gameCfg.defaultJob}</span>
+                    <span>Job: {isFarming ? (bot.job || "Truk Kargo") : (bot.job === "Truk Kargo" ? "Truk Kargo (Siap)" : (bot.job || "Standby"))}</span>
                   </Badge>
                 )}
               </div>

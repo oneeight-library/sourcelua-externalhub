@@ -2,9 +2,35 @@
     OneEight External Hub - CDID Modular Main Coordinator
     100% Clean, Modular, and Extensible Architecture
 --]]
+local CDID_PLACES = {
+    [6911148748]        = "CDID Main Menu",
+    [110369730911937]   = "CDID Jawa Timur",
+    [14005966837]       = "CDID Jakarta",
+    [79488788685813]    = "CDID Bandung",
+    [9233343468]        = "CDID Jawa Barat",
+    [9508940498]        = "CDID Jawa Tengah",
+    [118108582994420]   = "CDID Bali",
+    [132986577553100]   = "CDID Seasonal"
+}
+
+local function getPlaceName()
+    local name = CDID_PLACES[game.PlaceId]
+    if not name then
+        pcall(function()
+            local MarketplaceService = game:GetService("MarketplaceService")
+            local info = MarketplaceService:GetProductInfo(game.PlaceId)
+            if info and info.Name then
+                name = info.Name
+            end
+        end)
+    end
+    return name or "Car Driving Indonesia"
+end
+
 local CDIDModule = {}
 CDIDModule.GameId = "cdid"
-CDIDModule.GameName = "CDID Jawa Timur"
+CDIDModule.GameName = getPlaceName()
+CDIDModule.GetPlaceName = getPlaceName
 CDIDModule.CurrencyUnit = "Rp"
 CDIDModule.MetricUnit = "Trips"
 
@@ -172,8 +198,13 @@ end
 function CDIDModule.GetTelemetry()
     local st = TruckJob and TruckJob.GetState() or {}
     local elapsedSec = (st.IsFarming and st.FarmStartTime and st.FarmStartTime > 0) and math.floor(os.clock() - st.FarmStartTime) or 0
+    local placeName = getPlaceName()
+    local dynamicJob = st.IsFarming and "Truk Kargo" or "Standby"
     return {
         status = st.Status or "CONNECTED",
+        job = dynamicJob,
+        placeName = placeName,
+        gameName = placeName,
         currentRoute = st.CurrentRoute or "IDLE",
         tripCount = st.TripCount or 0,
         totalEarnings = st.TotalEarnings or 0,

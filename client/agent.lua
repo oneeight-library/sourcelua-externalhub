@@ -1604,9 +1604,35 @@ Modules["games/cdid"] = function()
     OneEight External Hub - CDID Modular Main Coordinator
     100% Clean, Modular, and Extensible Architecture
 --]]
+local CDID_PLACES = {
+    [6911148748]        = "CDID Main Menu",
+    [110369730911937]   = "CDID Jawa Timur",
+    [14005966837]       = "CDID Jakarta",
+    [79488788685813]    = "CDID Bandung",
+    [9233343468]        = "CDID Jawa Barat",
+    [9508940498]        = "CDID Jawa Tengah",
+    [118108582994420]   = "CDID Bali",
+    [132986577553100]   = "CDID Seasonal"
+}
+
+local function getPlaceName()
+    local name = CDID_PLACES[game.PlaceId]
+    if not name then
+        pcall(function()
+            local MarketplaceService = game:GetService("MarketplaceService")
+            local info = MarketplaceService:GetProductInfo(game.PlaceId)
+            if info and info.Name then
+                name = info.Name
+            end
+        end)
+    end
+    return name or "Car Driving Indonesia"
+end
+
 local CDIDModule = {}
 CDIDModule.GameId = "cdid"
-CDIDModule.GameName = "CDID Jawa Timur"
+CDIDModule.GameName = getPlaceName()
+CDIDModule.GetPlaceName = getPlaceName
 CDIDModule.CurrencyUnit = "Rp"
 CDIDModule.MetricUnit = "Trips"
 
@@ -1774,8 +1800,13 @@ end
 function CDIDModule.GetTelemetry()
     local st = TruckJob and TruckJob.GetState() or {}
     local elapsedSec = (st.IsFarming and st.FarmStartTime and st.FarmStartTime > 0) and math.floor(os.clock() - st.FarmStartTime) or 0
+    local placeName = getPlaceName()
+    local dynamicJob = st.IsFarming and "Truk Kargo" or "Standby"
     return {
         status = st.Status or "CONNECTED",
+        job = dynamicJob,
+        placeName = placeName,
+        gameName = placeName,
         currentRoute = st.CurrentRoute or "IDLE",
         tripCount = st.TripCount or 0,
         totalEarnings = st.TotalEarnings or 0,
@@ -2248,6 +2279,9 @@ function CDIDMenu.GetTelemetry()
     return {
         status = State.Status,
         isLobby = true,
+        job = "Server Gateway",
+        placeName = "CDID Main Menu",
+        gameName = "CDID Main Menu",
         autoJoinJatim = State.AutoJoinJatim,
         selectedMap = State.SelectedMap,
         serverCode = State.CurrentServerCode,
@@ -2350,13 +2384,37 @@ local activeGameModule = nil
 local pGui = LocalPlayer:FindFirstChild("PlayerGui")
 local isLobby = (placeId == 6911148748) or (pGui and pGui:FindFirstChild("Hub") ~= nil)
 
+local CDID_PLACES = {
+    [6911148748]        = "CDID Main Menu",
+    [110369730911937]   = "CDID Jawa Timur",
+    [14005966837]       = "CDID Jakarta",
+    [79488788685813]    = "CDID Bandung",
+    [9233343468]        = "CDID Jawa Barat",
+    [9508940498]        = "CDID Jawa Tengah",
+    [118108582994420]   = "CDID Bali",
+    [132986577553100]   = "CDID Seasonal"
+}
+
+local function getDetectedPlaceName()
+    local name = CDID_PLACES[placeId]
+    if not name then
+        pcall(function()
+            local MarketplaceService = game:GetService("MarketplaceService")
+            local info = MarketplaceService:GetProductInfo(placeId)
+            if info and info.Name then
+                name = info.Name
+            end
+        end)
+    end
+    return name or (isLobby and "CDID Main Menu" or "Car Driving Indonesia")
+end
+
+local detectedPlaceName = getDetectedPlaceName()
+local initialJob = isLobby and "Server Gateway" or "Standby"
+
 if isLobby then
     activeGameModule = requireModule("games/cdid_menu")
-elseif placeId == 110369730911937 then
-    -- Jawa Timur (Tempat Khusus Truck Driver)
-    activeGameModule = requireModule("games/cdid")
 else
-    -- Map CDID lainnya atau fallback
     activeGameModule = requireModule("games/cdid")
 end
 
@@ -2364,12 +2422,14 @@ end
 -- STATE & WEBSOCKET NETWORKING
 -- ============================================================================
 local WS_BASE_URL = "wss://externalhub.oneeight-project18.workers.dev/ws"
-local WS_URL = string.format("%s?role=bot&name=%s&gameId=%s&gameName=%s&placeId=%s",
+local WS_URL = string.format("%s?role=bot&name=%s&gameId=%s&gameName=%s&placeName=%s&placeId=%s&job=%s",
     WS_BASE_URL,
     HttpService:UrlEncode(LocalPlayer.Name),
     HttpService:UrlEncode(activeGameModule.GameId or "generic"),
-    HttpService:UrlEncode(activeGameModule.GameName or "Roblox"),
-    tostring(placeId)
+    HttpService:UrlEncode(detectedPlaceName),
+    HttpService:UrlEncode(detectedPlaceName),
+    tostring(placeId),
+    HttpService:UrlEncode(initialJob)
 )
 
 local CoreState = {
@@ -2548,7 +2608,9 @@ task.spawn(function()
             kickReason = Safety.KickReason,
             autoRejoin = Safety.AutoRejoin,
             gameId = activeGameModule.GameId,
-            gameName = activeGameModule.GameName,
+            gameName = gameTelem.gameName or detectedPlaceName,
+            placeName = gameTelem.placeName or detectedPlaceName,
+            job = gameTelem.job or initialJob,
             currencyUnit = activeGameModule.CurrencyUnit,
             metricUnit = activeGameModule.MetricUnit,
             placeId = tostring(game.PlaceId)

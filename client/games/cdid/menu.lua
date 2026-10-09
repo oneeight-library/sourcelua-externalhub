@@ -437,6 +437,9 @@ function CDIDMenu.GetTelemetry()
     return {
         status = State.Status,
         isLobby = true,
+        job = "Server Gateway",
+        placeName = "CDID Main Menu",
+        gameName = "CDID Main Menu",
         autoJoinJatim = State.AutoJoinJatim,
         selectedMap = State.SelectedMap,
         serverCode = State.CurrentServerCode,

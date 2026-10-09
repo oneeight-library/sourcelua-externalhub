@@ -101,11 +101,11 @@ export function FleetOverview({ bots, onSelectBot, onRejoinBot }) {
                         </div>
                         <div className="text-[10px] text-zinc-400 truncate mt-0.5">
                           {b.isKicked ? (
-                            <span className="text-rose-400 font-semibold">{gameCfg.name} • Terputus</span>
+                            <span className="text-rose-400 font-semibold">{b.placeName || b.gameName || gameCfg.name} • Terputus</span>
                           ) : b.isFarming ? (
-                            <span className="text-emerald-400 font-semibold">{gameCfg.name} • {b.job || gameCfg.defaultJob}</span>
+                            <span className="text-emerald-400 font-semibold">{b.placeName || b.gameName || gameCfg.name} • {b.job || gameCfg.defaultJob}</span>
                           ) : (
-                            <span>{gameCfg.name} • Standby</span>
+                            <span>{b.placeName || b.gameName || gameCfg.name} • {b.job || "Standby"}</span>
                           )}
                         </div>
                       </div>
