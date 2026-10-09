@@ -1,3 +1,4 @@
+import { useToast } from "./components/ui/toast.jsx";
 import * as React from "react";
 import { Navbar } from "@/components/Navbar.jsx";
 import { Sidebar } from "@/components/Sidebar.jsx";
@@ -7,6 +8,7 @@ import { Button } from "@/ui/button.jsx";
 import { useWebSocketHub } from "@/hooks/useWebSocketHub.js";
 
 export default function App() {
+  const { toast } = useToast();
   const {
     bots,
     selectedBotId,
@@ -26,6 +28,44 @@ export default function App() {
     buyCar,
     buyCarResult
   } = useWebSocketHub();
+
+  // Toast Notifikasi Respon Pembelian Mobil Realtime
+  React.useEffect(() => {
+    if (!buyCarResult) return;
+    if (buyCarResult.success) {
+      toast.success(
+        "Mobil Berhasil Dibeli!",
+        `Mobil ${buyCarResult.carId} (${buyCarResult.dealer || 'Dealer'}) sukses terbeli.`
+      );
+    } else {
+      toast.error(
+        "Gagal Membeli Mobil",
+        buyCarResult.message || "Saldo tidak mencukupi atau error CDID."
+      );
+    }
+  }, [buyCarResult]);
+
+  // Toast Notifikasi Event Bot (Connect & Kick)
+  const prevBotsRef = React.useRef(new Map());
+  const initialLoadRef = React.useRef(true);
+
+  React.useEffect(() => {
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      prevBotsRef.current = new Map(bots);
+      return;
+    }
+    const prev = prevBotsRef.current;
+    for (const [id, b] of bots.entries()) {
+      const old = prev.get(id);
+      if (!old) {
+        toast.info("Akun Terhubung", `${b.name || 'Bot'} (${b.gameName || 'Roblox'}) siap aktif.`);
+      } else if (!old.isKicked && b.isKicked) {
+        toast.error("Roblox Kick / Disconnect", `${b.name}: ${b.kickReason || 'Terputus dari server'}`);
+      }
+    }
+    prevBotsRef.current = new Map(bots);
+  }, [bots]);
 
   // Dealer showroom is scoped per-bot inside BotDetailView
 
