@@ -66,11 +66,8 @@ export function JobProgressView({ bot, onSendCommand }) {
           </div>
           <div>
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
-              Progress Level & Klaim Hadiah ({progress.jobName || "Barista"})
+              Klaim Hadiah
             </CardTitle>
-            <span className="text-[11px] text-zinc-400">
-              Sistem backend resmi (Levels 1 - 50) dengan hadiah uang tunai & income multiplier
-            </span>
           </div>
         </div>
 
