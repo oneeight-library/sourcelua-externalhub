@@ -77,7 +77,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
               <span className="text-[11px] text-zinc-400">Job Tersedia: Minigames Sumo Farm Arena</span>
             </div>
           </div>
-          <Badge variant="outline" className="border-cyan-700/60 text-cyan-300 bg-cyan-950/60 text-[10px] font-mono">
+          <Badge variant="outline" className="border-cyan-700/60 text-cyan-300 bg-cyan-950/60 text-[10px] font-semibold">
             SUMO ARENA
           </Badge>
         </div>
@@ -92,7 +92,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
               <span className="text-[11px] text-zinc-400">Job Tersedia: Pengiriman Truk Kargo</span>
             </div>
           </div>
-          <Badge variant="outline" className="border-emerald-700/60 text-emerald-300 bg-emerald-950/60 text-[10px] font-mono">
+          <Badge variant="outline" className="border-emerald-700/60 text-emerald-300 bg-emerald-950/60 text-[10px] font-semibold">
             CARGO EXPEDITION
           </Badge>
         </div>
@@ -180,15 +180,15 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
               </div>
               <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                 <span className="text-[10px] font-semibold uppercase text-zinc-400 block">Total Pengiriman</span>
-                <span className="text-xs font-bold text-emerald-400 font-mono block mt-0.5">{bot.tripCount || 0} Pengiriman</span>
+                <span className="text-xs font-bold text-emerald-400 tabular-nums block mt-0.5">{bot.tripCount || 0} Pengiriman</span>
               </div>
               <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                 <span className="text-[10px] font-semibold uppercase text-zinc-400 block">Kecepatan Truk</span>
-                <span className="text-xs font-bold text-zinc-100 font-mono block mt-0.5">{bot.speed || 0} KM/H</span>
+                <span className="text-xs font-bold text-zinc-100 tabular-nums block mt-0.5">{bot.speed || 0} KM/H</span>
               </div>
               <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                 <span className="text-[10px] font-semibold uppercase text-zinc-400 block">Jarak Tujuan</span>
-                <span className="text-xs font-bold text-zinc-100 font-mono block mt-0.5">{bot.distRemaining || "0m"}</span>
+                <span className="text-xs font-bold text-zinc-100 tabular-nums block mt-0.5">{bot.distRemaining || "0m"}</span>
               </div>
             </div>
           </CardContent>
@@ -282,7 +282,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
                 <span className="text-[10px] font-semibold uppercase text-zinc-400 block flex items-center gap-1">
                   <Trophy className="h-3 w-3 text-amber-400" /> Poin Minigame
                 </span>
-                <span className="text-xs font-bold text-amber-400 font-mono block mt-0.5">
+                <span className="text-xs font-bold text-amber-400 tabular-nums block mt-0.5">
                   {mg.points || 0} Poin
                 </span>
                 <span className="text-[10px] text-zinc-500 block">
@@ -294,7 +294,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
                 <span className="text-[10px] font-semibold uppercase text-zinc-400 block flex items-center gap-1">
                   <Swords className="h-3 w-3 text-emerald-400" /> Rekor Match
                 </span>
-                <span className="text-xs font-bold text-zinc-100 font-mono block mt-0.5">
+                <span className="text-xs font-bold text-zinc-100 tabular-nums block mt-0.5">
                   {mg.wins || 0}W / {mg.losses || 0}L
                 </span>
                 <span className="text-[10px] text-zinc-500 block">
@@ -306,7 +306,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
                 <span className="text-[10px] font-semibold uppercase text-zinc-400 block flex items-center gap-1">
                   <Package className="h-3 w-3 text-cyan-400" /> Box Terbuka
                 </span>
-                <span className="text-xs font-bold text-cyan-400 font-mono block mt-0.5">
+                <span className="text-xs font-bold text-cyan-400 tabular-nums block mt-0.5">
                   {mg.boxes || 0} Box
                 </span>
                 <span className="text-[10px] text-zinc-500 block">

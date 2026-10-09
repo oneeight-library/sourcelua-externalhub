@@ -451,7 +451,7 @@ export function DealershipPage({
                   className="h-8 sm:h-9 px-2.5 sm:px-3 gap-1.5 sm:gap-2 border-zinc-800 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-200 shadow-sm transition-all"
                 >
                   <Users className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span className="truncate max-w-[130px] sm:max-w-xs font-mono text-[11px] sm:text-xs">
+                  <span className="truncate max-w-[130px] sm:max-w-xs text-[11px] sm:text-xs font-semibold">
                     {accountTriggerLabel}
                   </span>
                   <ChevronDown className={`h-3.5 w-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${isAccountDropdownOpen ? "rotate-180" : ""}`} />
@@ -498,7 +498,7 @@ export function DealershipPage({
                             <span className="font-semibold text-xs text-zinc-100 truncate">
                               {b.name || b.botId}
                             </span>
-                            <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                            <span className="text-[10px] text-emerald-400 font-bold tabular-nums">
                               {formatRupiah(b.currentCash || 0)}
                             </span>
                           </div>
@@ -548,7 +548,7 @@ export function DealershipPage({
           {/* Sisi Kanan: Total Unit + Dropdown Pass + Dropdown Sort + Refresh */}
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-between md:justify-end">
             
-            <Badge variant="secondary" className="text-[10px] sm:text-xs font-mono px-2.5 py-1.5 bg-zinc-900 border-zinc-800 text-zinc-300 shrink-0">
+            <Badge variant="secondary" className="text-[10px] sm:text-xs font-bold tabular-nums px-2.5 py-1.5 bg-zinc-900 border-zinc-800 text-zinc-300 shrink-0">
               {filteredCars.length} Unit
             </Badge>
 
@@ -696,7 +696,7 @@ export function DealershipPage({
                     {/* Fallback Display */}
                     <div className={`car-fallback ${imgUrl ? "hidden" : "flex"} flex-col items-center justify-center text-zinc-600 absolute inset-0`}>
                       <Car className="h-7 w-7 sm:h-10 sm:w-10 text-zinc-700 mb-1" />
-                      <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">{car.dealer}</span>
+                      <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500 uppercase">{car.dealer}</span>
                     </div>
 
                     {/* Badges: LIMITED (Merah) & NEW (Hijau) Persis In-Game CDID */}
@@ -715,7 +715,7 @@ export function DealershipPage({
 
                     <Badge
                       variant="secondary"
-                      className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-[8px] sm:text-[9px] font-mono bg-zinc-900/90 text-zinc-300 border border-zinc-700/60 z-10 px-1.5 py-0"
+                      className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-[8px] sm:text-[9px] font-semibold bg-zinc-900/90 text-zinc-300 border border-zinc-700/60 z-10 px-1.5 py-0"
                     >
                       {car.dealer}
                     </Badge>
@@ -742,22 +742,22 @@ export function DealershipPage({
 
                       {/* Specs Badges: KM/H, HP, Seater */}
                       <div className="flex items-center gap-1 sm:gap-2 mt-1.5 sm:mt-2 flex-wrap">
-                        <span className="text-[9px] sm:text-[10px] text-zinc-400 font-mono flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
+                        <span className="text-[9px] sm:text-[10px] text-zinc-300 font-bold tabular-nums flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
                           <Gauge className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-cyan-400 shrink-0" />
                           {car.topSpeed || 0} KM/H
                         </span>
-                        <span className="text-[9px] sm:text-[10px] text-zinc-400 font-mono flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
+                        <span className="text-[9px] sm:text-[10px] text-zinc-300 font-bold tabular-nums flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
                           <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-400 shrink-0" />
                           {car.hp || 0} HP
                         </span>
                         {car.seater ? (
-                          <span className="text-[9px] sm:text-[10px] text-zinc-400 font-mono flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
+                          <span className="text-[9px] sm:text-[10px] text-zinc-300 font-bold tabular-nums flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
                             <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-400 shrink-0" />
                             {car.seater} Seater
                           </span>
                         ) : null}
                         {car.stock !== undefined && car.stock !== null && (
-                          <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-1 sm:px-1.5 py-0.5 rounded border ${
+                          <span className={`text-[9px] sm:text-[10px] font-bold tabular-nums px-1 sm:px-1.5 py-0.5 rounded border ${
                             car.stock === 0
                               ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
                               : "text-amber-400 bg-amber-500/10 border-amber-500/20"
@@ -771,7 +771,7 @@ export function DealershipPage({
                       {car.engine ? (
                         <div className="flex items-center gap-1 sm:gap-1.5 mt-1.5 text-[9px] sm:text-[10px] text-zinc-400 bg-zinc-900/50 px-1.5 py-0.5 sm:py-1 rounded border border-zinc-800/80">
                           <Cpu className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-indigo-400 shrink-0" />
-                          <span className="truncate font-mono text-zinc-300" title={car.engine}>
+                          <span className="truncate font-medium text-zinc-300" title={car.engine}>
                             {car.engine}
                           </span>
                         </div>
@@ -851,7 +851,7 @@ export function DealershipPage({
                 )}
               </div>
 
-              <Badge variant="secondary" className="absolute top-2.5 right-2.5 text-[9px] font-mono bg-zinc-900/90 border border-zinc-700 text-zinc-300">
+              <Badge variant="secondary" className="absolute top-2.5 right-2.5 text-[9px] font-semibold bg-zinc-900/90 border border-zinc-700 text-zinc-300">
                 {modalCar.dealer}
               </Badge>
             </div>
@@ -859,7 +859,7 @@ export function DealershipPage({
             {/* Nama & Harga Mobil (Tanpa Kotak Kalkulasi Sisa Saldo) */}
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest font-bold block">
+                <span className="text-[10px] text-emerald-400 uppercase tracking-widest font-bold block">
                   Konfirmasi Pembelian
                 </span>
                 <h3 className="text-sm sm:text-base font-bold text-zinc-100 mt-0.5 truncate">
@@ -902,7 +902,7 @@ export function DealershipPage({
 
             {/* Info Spesifikasi Modal (Speed, HP, Seater & Engine) */}
             <div className="flex flex-col gap-1.5 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80">
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[10px] font-mono text-zinc-400">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[10px] font-bold tabular-nums text-zinc-300">
                 <span className="flex items-center gap-1 bg-zinc-900/80 px-2 py-0.5 rounded border border-zinc-800">
                   <Gauge className="h-2.5 w-2.5 text-cyan-400" />
                   {modalCar.topSpeed || 0} KM/H
@@ -919,7 +919,7 @@ export function DealershipPage({
                 ) : null}
               </div>
               {modalCar.engine ? (
-                <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-300">
+                <div className="flex items-center gap-1.5 text-[10px] font-medium text-zinc-300">
                   <Cpu className="h-3 w-3 text-indigo-400 shrink-0" />
                   <span className="truncate" title={modalCar.engine}>{modalCar.engine}</span>
                 </div>
@@ -935,7 +935,7 @@ export function DealershipPage({
                 </span>
                 <span className="font-semibold text-zinc-200 flex items-center gap-1.5">
                   <span>{activeBot?.name || "Akun Bot"}</span>
-                  <span className="font-mono text-emerald-400 text-[10px]">
+                  <span className="text-emerald-400 text-[10px] font-bold tabular-nums">
                     ({formatRupiah(activeBot?.currentCash || 0)})
                   </span>
                 </span>

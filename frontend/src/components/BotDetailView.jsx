@@ -457,7 +457,7 @@ export function BotDetailView({
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
                   <span className="text-xs text-zinc-400">Status Gateway</span>
-                  <Badge variant="emerald" className="text-[10px] font-mono">
+                  <Badge variant="emerald" className="text-[10px] font-bold">
                     {bot.status || "LOBBY_READY"}
                   </Badge>
                 </div>
@@ -484,7 +484,7 @@ export function BotDetailView({
                   <Trophy className="h-4 w-4 text-cyan-400" />
                   Keuangan & Hadiah Minigames
                 </CardTitle>
-                <Badge variant={isMinigameActive ? "cyan" : "secondary"} className="text-[10px] font-mono font-bold">
+                <Badge variant={isMinigameActive ? "cyan" : "secondary"} className="text-[10px] font-bold">
                   {isMinigameActive ? "AKTIF" : "STANDBY"}
                 </Badge>
               </CardHeader>
@@ -492,34 +492,34 @@ export function BotDetailView({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Saldo Akun</span>
-                    <div className="text-base sm:text-lg font-black text-emerald-400 font-mono mt-0.5">
+                    <div className="text-base sm:text-lg font-black text-emerald-400 tabular-nums tracking-tight mt-0.5">
                       {gameCfg.formatMoney(bot.currentCash)}
                     </div>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-800/40">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 block">Poin Minigame</span>
-                    <div className="text-base sm:text-lg font-black text-cyan-300 font-mono mt-0.5">
+                    <div className="text-base sm:text-lg font-black text-cyan-300 tabular-nums tracking-tight mt-0.5">
                       {mg.points || 0} Poin
                     </div>
-                    <span className="text-[10px] text-cyan-500/90 font-mono block mt-0.5">
+                    <span className="text-[10px] text-cyan-500/90 font-medium tabular-nums block mt-0.5">
                       +{mg.pointsEarned || 0} didapat sesi ini
                     </span>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Box Terbuka</span>
-                    <div className="text-base sm:text-lg font-black text-purple-400 font-mono mt-0.5">
+                    <div className="text-base sm:text-lg font-black text-purple-400 tabular-nums tracking-tight mt-0.5">
                       {mg.boxes || 0} Box
                     </div>
-                    <span className="text-[10px] text-zinc-500 font-mono block mt-0.5">
+                    <span className="text-[10px] text-zinc-500 font-medium block mt-0.5">
                       {autoOpenBox ? "Auto Beli: AKTIF" : "Manual"}
                     </span>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Uang Didapat</span>
-                    <div className="text-base sm:text-lg font-black text-emerald-400 font-mono mt-0.5">
+                    <div className="text-base sm:text-lg font-black text-emerald-400 tabular-nums tracking-tight mt-0.5">
                       +{gameCfg.formatMoney(mg.cashEarned || 0)}
                     </div>
                   </div>
@@ -539,7 +539,7 @@ export function BotDetailView({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                     <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Rekor Match</span>
-                    <span className="text-xs font-bold text-zinc-100 font-mono mt-0.5 block">
+                    <span className="text-xs font-bold text-zinc-100 tabular-nums mt-0.5 block">
                       {mg.wins || 0} Menang / {mg.losses || 0} Kalah
                     </span>
                     <span className="text-[10px] text-zinc-500 block mt-0.5">Hasil Akhir: {mg.lastResult || "-"}</span>
@@ -664,7 +664,7 @@ export function BotDetailView({
                   <Truck className="h-4 w-4 text-emerald-400" />
                   Keuangan & Ekspedisi Kargo
                 </CardTitle>
-                <Badge variant={isFarming && !isMinigameActive ? "emerald" : "secondary"} className="text-[10px] font-mono font-bold">
+                <Badge variant={isFarming && !isMinigameActive ? "emerald" : "secondary"} className="text-[10px] font-bold">
                   {isFarming && !isMinigameActive ? "BEKERJA" : "STANDBY"}
                 </Badge>
               </CardHeader>
@@ -672,7 +672,7 @@ export function BotDetailView({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Saldo Akun</span>
-                    <div className="text-base sm:text-lg font-black text-emerald-400 font-mono mt-0.5">
+                    <div className="text-base sm:text-lg font-black text-emerald-400 tabular-nums tracking-tight mt-0.5">
                       {gameCfg.formatMoney(bot.currentCash)}
                     </div>
                   </div>
@@ -680,25 +680,25 @@ export function BotDetailView({
                   <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Hasil Sesi</span>
-                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40 font-semibold">
+                      <span className="text-[10px] text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40 font-bold tabular-nums">
                         {trips} Trips
                       </span>
                     </div>
-                    <div className="text-base sm:text-lg font-black text-emerald-400 font-mono mt-0.5">
+                    <div className="text-base sm:text-lg font-black text-emerald-400 tabular-nums tracking-tight mt-0.5">
                       +{gameCfg.formatMoney(earnings)}
                     </div>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Durasi Jalan</span>
-                    <div className="text-base sm:text-lg font-black text-zinc-200 font-mono mt-0.5">
+                    <div className="text-base sm:text-lg font-black text-zinc-200 tabular-nums tracking-tight mt-0.5">
                       {farmActiveTime}
                     </div>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Avg / Jam</span>
-                    <div className="text-xs sm:text-sm font-black text-emerald-400 font-mono mt-1">
+                    <div className="text-xs sm:text-sm font-black text-emerald-400 tabular-nums tracking-tight mt-1">
                       {avgPerHourStr}
                     </div>
                   </div>
@@ -724,14 +724,14 @@ export function BotDetailView({
 
                   <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                     <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Kecepatan Truk</span>
-                    <span className="text-xs font-bold text-emerald-400 mt-0.5 block font-mono">
+                    <span className="text-xs font-bold text-emerald-400 tabular-nums mt-0.5 block">
                       {bot.speed || 0} KM/H
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                     <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Sisa Jarak</span>
-                    <span className="text-xs font-bold text-zinc-100 mt-0.5 block font-mono">
+                    <span className="text-xs font-bold text-zinc-100 tabular-nums mt-0.5 block">
                       {bot.distRemaining || "0m"}
                     </span>
                   </div>

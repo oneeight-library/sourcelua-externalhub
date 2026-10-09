@@ -171,7 +171,7 @@ export function Navbar({ bots, selectedBotId, onSelectBot }) {
                             <span className="font-bold text-xs text-zinc-100 truncate">{b.name || "Bot"}</span>
                             <span className="text-[10px]">{bGameCfg.icon}</span>
                           </div>
-                          <div className="text-[11px] font-mono text-emerald-400 font-semibold">
+                          <div className="text-[11px] text-emerald-400 font-bold tabular-nums">
                             {b.currentCash > 0 ? bGameCfg.formatMoney(b.currentCash) : "Memuat..."}
                           </div>
                           <div className="text-[10px] text-zinc-400 truncate">

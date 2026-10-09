@@ -51,7 +51,7 @@ export function CDIDMenuTab({ bot, onSendCommand }) {
               <span className="text-[10px] uppercase font-bold text-zinc-500 block tracking-wider">Kode Aktif</span>
               <div className="mt-1 flex items-center gap-2">
                 {hasCode ? (
-                  <span className="font-mono text-sm font-semibold text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 px-2.5 py-1 rounded-md">
+                  <span className="text-sm font-bold tabular-nums text-emerald-400 tracking-wider bg-emerald-950/30 border border-emerald-800/40 px-2.5 py-1 rounded-md">
                     {activeCode}
                   </span>
                 ) : (

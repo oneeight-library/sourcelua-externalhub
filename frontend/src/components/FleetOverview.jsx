@@ -96,7 +96,7 @@ export function FleetOverview({ bots, onSelectBot, onRejoinBot }) {
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold text-xs text-zinc-100 truncate">{b.name || "Bot"}</span>
                         </div>
-                        <div className="text-xs font-mono text-emerald-400 font-semibold mt-0.5">
+                        <div className="text-xs text-emerald-400 font-bold tabular-nums mt-0.5">
                           {gameCfg.formatMoney(b.currentCash)}
                         </div>
                         <div className="text-[10px] text-zinc-400 truncate mt-0.5">
