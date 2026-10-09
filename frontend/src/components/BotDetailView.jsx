@@ -241,7 +241,9 @@ export function BotDetailView({
           
           <div className="flex items-center gap-4">
             <Avatar className="h-14 w-14 border-2 border-zinc-700 shadow-xl rounded-2xl shrink-0">
-              {bot.avatarUrl && <AvatarImage src={bot.avatarUrl} alt={bot.name} />}
+              {(bot.avatarUrl || (typeof window !== "undefined" && localStorage.getItem(`oe_avatar_${(bot.name || "").toLowerCase()}`))) && (
+                <AvatarImage src={bot.avatarUrl || localStorage.getItem(`oe_avatar_${(bot.name || "").toLowerCase()}`)} alt={bot.name} />
+              )}
               <AvatarFallback className="rounded-2xl text-base font-black">
                 {initial}
               </AvatarFallback>
@@ -252,41 +254,6 @@ export function BotDetailView({
                 <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-zinc-100">
                   {bot.name || "Roblox Player"}
                 </h2>
-                {isKicked ? (
-                  <Badge variant="rose" className="text-[11px] font-bold flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" /> Terputus
-                  </Badge>
-                ) : bot.isReconnecting ? (
-                  <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 text-amber-400 text-[11px] font-bold flex items-center gap-1.5 animate-pulse">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
-                    Reconnecting...
-                  </Badge>
-                ) : isLobby ? (
-                  <Badge variant="secondary" className="text-[11px] font-semibold">
-                    <span className="h-1.5 w-1.5 rounded-full mr-1.5 bg-blue-400" />
-                    Main Menu Lobi
-                  </Badge>
-                ) : isBaristaActive ? (
-                  <Badge variant="amber" className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-bold flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    Barista Aktif
-                  </Badge>
-                ) : isMinigameActive ? (
-                  <Badge variant="cyan" className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                    Minigame Aktif
-                  </Badge>
-                ) : isFarming ? (
-                  <Badge variant="emerald" className="text-[11px] font-bold flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Bekerja
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="text-[11px] font-semibold">
-                    <span className="h-1.5 w-1.5 rounded-full mr-1.5 bg-zinc-500" />
-                    Standby
-                  </Badge>
-                )}
               </div>
 
               <div className="flex items-center gap-3 mt-1.5 text-xs text-zinc-400 flex-wrap">

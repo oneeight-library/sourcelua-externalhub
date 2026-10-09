@@ -1,3 +1,20 @@
+
+function getCachedAvatar(name) {
+  try {
+    return localStorage.getItem(`oe_avatar_${(name || "").toLowerCase()}`) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setCachedAvatar(name, url) {
+  try {
+    if (name && url) {
+      localStorage.setItem(`oe_avatar_${(name || "").toLowerCase()}`, url);
+    }
+  } catch (e) {}
+}
+
 import { useState, useEffect, useRef, useCallback } from "react";
 
 export function useWebSocketHub() {
@@ -157,6 +174,8 @@ export function useWebSocketHub() {
                   map.delete(id);
                 }
               }
+              if (b.avatarUrl) setCachedAvatar(b.name, b.avatarUrl);
+              else if (getCachedAvatar(b.name)) b.avatarUrl = getCachedAvatar(b.name);
               map.set(b.botId || b.id, b);
             });
             setBots(map);
@@ -186,6 +205,8 @@ export function useWebSocketHub() {
                   next.delete(id);
                 }
               }
+              if (data.bot.avatarUrl) setCachedAvatar(data.bot.name, data.bot.avatarUrl);
+              else if (getCachedAvatar(data.bot.name)) data.bot.avatarUrl = getCachedAvatar(data.bot.name);
               next.set(data.bot.botId, data.bot);
               return next;
             });
@@ -206,7 +227,10 @@ export function useWebSocketHub() {
               const next = new Map(prev);
               const target = next.get(data.botId);
               if (target) {
-                next.set(data.botId, { ...target, ...(data.payload || {}) });
+                const merged = { ...target, ...(data.payload || {}) };
+                if (merged.avatarUrl) setCachedAvatar(merged.name, merged.avatarUrl);
+                else if (getCachedAvatar(merged.name)) merged.avatarUrl = getCachedAvatar(merged.name);
+                next.set(data.botId, merged);
               }
               return next;
             });

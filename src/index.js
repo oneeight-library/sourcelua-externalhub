@@ -1,4 +1,5 @@
 const THUMB_CACHE = new Map(); // assetId -> direct CDN url
+const AVATAR_CACHE = new Map(); // userId or name -> avatar url
 import { robloxService } from "./services/roblox.js";
 import { handleApiRequest } from "./api/router.js";
 ﻿import { getWebDashboardHTML } from "./dashboard.js";
@@ -130,8 +131,11 @@ export class HubRoom {
 
     ws.send(JSON.stringify({ type: "INIT_ACK", botId, buildId: AGENT_BUILD_ID, message: "Connected to OneEight External Hub" }));
 
-    // Fetch avatar asynchronously jika belum ada
-    if (!botInfo.avatarUrl) {
+    // Fetch avatar with multi-layer cache (Memory -> Roblox CDN)
+    const cachedAv = AVATAR_CACHE.get(String(userId)) || AVATAR_CACHE.get(name.toLowerCase());
+    if (cachedAv) {
+      botInfo.avatarUrl = cachedAv;
+    } else if (!botInfo.avatarUrl) {
       (async () => {
         let resolvedUserId = userId || botInfo.userId;
         if (!resolvedUserId && name) {
@@ -146,6 +150,8 @@ export class HubRoom {
           const avatar = await robloxService.getAvatarHeadshot(resolvedUserId, "150x150");
           if (avatar) {
             botInfo.avatarUrl = avatar;
+            AVATAR_CACHE.set(String(resolvedUserId), avatar);
+            AVATAR_CACHE.set(name.toLowerCase(), avatar);
             this.broadcastToControllers({
               type: "BOT_TELEMETRY",
               botId,
@@ -386,6 +392,40 @@ export default {
       const id = env.HUB_ROOM.idFromName("GLOBAL_HUB");
       const obj = env.HUB_ROOM.get(id);
       return obj.fetch(request);
+    }
+
+        if (url.pathname === "/api/avatar") {
+      const id = url.searchParams.get("userId") || url.searchParams.get("id");
+      if (!id) return new Response("Missing id", { status: 400 });
+
+      const cache = caches.default;
+      const cacheKey = new Request(url.toString(), request);
+      try {
+        const cached = await cache.match(cacheKey);
+        if (cached) return cached;
+      } catch (e) {}
+
+      try {
+        let imgUrl = AVATAR_CACHE.get(String(id));
+        if (!imgUrl) {
+          imgUrl = await robloxService.getAvatarHeadshot(id, "150x150", true);
+          if (imgUrl) AVATAR_CACHE.set(String(id), imgUrl);
+        }
+
+        if (imgUrl) {
+          const imgRes = await fetch(imgUrl);
+          const response = new Response(imgRes.body, {
+            headers: {
+              "Content-Type": "image/png",
+              "Cache-Control": "public, max-age=2592000, s-maxage=2592000",
+              "Access-Control-Allow-Origin": "*"
+            }
+          });
+          ctx.waitUntil(cache.put(cacheKey, response.clone()));
+          return response;
+        }
+      } catch (e) {}
+      return new Response("Not Found", { status: 404 });
     }
 
     if (url.pathname === "/api/car-thumbnail") {

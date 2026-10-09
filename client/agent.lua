@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv148nap)
+    Version: 3.3.0 (Build: v3.3.mv152kec)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv148nap"
+local AGENT_BUILD_ID = "v3.3.mv152kec"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -5073,9 +5073,11 @@ end
 -- STATE & WEBSOCKET NETWORKING
 -- ============================================================================
 local WS_BASE_URL = "wss://externalhub.oneeight-project18.workers.dev/ws"
-local WS_URL = string.format("%s?role=bot&name=%s&gameId=%s&gameName=%s&placeName=%s&placeId=%s&job=%s",
+local WS_URL = string.format("%s?role=bot&name=%s&userId=%s&displayName=%s&gameId=%s&gameName=%s&placeName=%s&placeId=%s&job=%s",
     WS_BASE_URL,
     HttpService:UrlEncode(LocalPlayer.Name),
+    tostring(LocalPlayer.UserId or 0),
+    HttpService:UrlEncode(LocalPlayer.DisplayName or LocalPlayer.Name),
     HttpService:UrlEncode(activeGameModule.GameId or "generic"),
     HttpService:UrlEncode(detectedPlaceName),
     HttpService:UrlEncode(detectedPlaceName),
