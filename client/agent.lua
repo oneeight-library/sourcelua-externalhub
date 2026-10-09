@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv17mrkt)
+    Version: 3.3.0 (Build: v3.3.mv17wsyd)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv17mrkt"
+local AGENT_BUILD_ID = "v3.3.mv17wsyd"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -5441,8 +5441,8 @@ local function performHotReload(targetBuildId)
     -- 4. Unduh & eksekusi build agen terbaru secara in-memory
     task.delay(0.6, function()
         local loadOk, loadErr = pcall(function()
-            local targetUrl = LOADER_URL or "https://externalhub.oneeight-project18.workers.dev/loader"
-            local src = game:HttpGet(targetUrl .. "?t=" .. tostring(os.time()))
+            local targetUrl = "https://externalhub.oneeight-project18.workers.dev/client/agent.lua?t=" .. tostring(os.time())
+            local src = game:HttpGet(targetUrl)
             src = src:gsub("^\239\187\191", "")
             local fn, compileErr = loadstring(src, "OE_ExternalAgent")
             if not fn then
@@ -5553,10 +5553,15 @@ local function connectWebSocket()
             print("[OE-External] Terdaftar dengan Bot ID: " .. tostring(CoreState.BotId))
             sendLog(string.format("Akun aktif di %s (%s) & terhubung ke Web Hub! [Build: %s]", activeGameModule.GameName, tostring(game.PlaceId), tostring(AGENT_BUILD_ID or "N/A")), "SUCCESS")
 
-            -- Cek versi build: jika build server berbeda dengan build lokal agen, otomatis Hot-Reload
+            -- Cek versi build: jika build server berbeda dengan build lokal agen, otomatis Hot-Reload (dengan Loop Guard)
             if data.buildId and AGENT_BUILD_ID and data.buildId ~= AGENT_BUILD_ID then
-                print(string.format("[OE-External OTA] Build server (%s) berbeda dengan build lokal (%s). Memulai Hot-Reload...", tostring(data.buildId), tostring(AGENT_BUILD_ID)))
-                task.delay(0.2, function()
+                if _G.OE_LastReloadAttempt == data.buildId then
+                    -- Sudah pernah dicoba reload ke build ini dalam sesi, cegah loop berulang!
+                    return
+                end
+                _G.OE_LastReloadAttempt = data.buildId
+                sendLog(string.format("Build server baru (%s) terdeteksi. Memulai Hot-Reload otomatis...", tostring(data.buildId)), "INFO")
+                task.delay(0.5, function()
                     performHotReload(data.buildId)
                 end)
                 return
@@ -5589,6 +5594,7 @@ local function connectWebSocket()
             print("[OE-External] Menerima Perintah: " .. tostring(action))
 
             if action == "HOT_RELOAD" then
+                _G.OE_LastReloadAttempt = nil
                 sendLog("Menerima perintah Hot-Reload manual dari Web Console...", "WARN")
                 task.delay(0.1, function()
                     performHotReload(data.payload and data.payload.buildId or "MANUAL_TRIGGER")

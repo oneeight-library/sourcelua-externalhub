@@ -497,7 +497,7 @@ export default {
     OneEight External Hub - Delta WebSocket Client Agent
     Version: 2.0.0
 --]]
-local src = game:HttpGet("${url.origin}/client/agent.lua")
+local src = game:HttpGet("${url.origin}/client/agent.lua?t=" .. tostring(os.time()))
 src = src:gsub("^\\239\\187\\191", "")
 local fn, err = loadstring(src, "OE_ExternalAgent")
 if not fn then
@@ -505,14 +505,24 @@ if not fn then
 end
 fn()`;
       return new Response(loaderCode, {
-        headers: { "Content-Type": "text/plain; charset=utf-8", "Access-Control-Allow-Origin": "*" }
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0, s-maxage=0",
+          "Pragma": "no-cache"
+        }
       });
     }
 
     if (url.pathname === "/client/agent.lua") {
       const agentLua = getAgentLuaCode(url.origin);
       return new Response(agentLua, {
-        headers: { "Content-Type": "text/plain; charset=utf-8", "Access-Control-Allow-Origin": "*" }
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0, s-maxage=0",
+          "Pragma": "no-cache"
+        }
       });
     }
 
