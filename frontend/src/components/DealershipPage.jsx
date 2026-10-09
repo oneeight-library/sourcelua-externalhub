@@ -20,30 +20,37 @@ import {
   Clock
 } from "lucide-react";
 
-// Komponen live countdown badge untuk limited cars (H:M:S)
-function CountdownBadge({ timeLeft, className = "" }) {
-  if (!timeLeft || timeLeft === "00:00:00") return null;
+// Komponen live countdown badge untuk limited cars berbasis backend timestamp (expiresAt)
+function CountdownBadge({ timeLeft, expiresAt, serverTime, className = "" }) {
+  if (!timeLeft && !expiresAt) return null;
 
-  const targetTimeRef = React.useRef(null);
-  const [display, setDisplay] = React.useState(timeLeft);
-
-  React.useEffect(() => {
-    if (!timeLeft) return;
-    const parts = timeLeft.split(":").map(Number);
-    let seconds = 0;
-    if (parts.length === 3) {
-      seconds = (parts[0] || 0) * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
-    } else if (parts.length === 2) {
-      seconds = (parts[0] || 0) * 60 + (parts[1] || 0);
+  // Hitung target expiry time berbasis Unix timestamp backend
+  const targetExpiryMs = React.useMemo(() => {
+    if (expiresAt && expiresAt > 0) {
+      if (serverTime && serverTime > 0) {
+        const diffSec = expiresAt - serverTime;
+        return Date.now() + Math.max(0, diffSec) * 1000;
+      }
+      const isSeconds = expiresAt < 10000000000;
+      return isSeconds ? expiresAt * 1000 : expiresAt;
     }
-    targetTimeRef.current = Date.now() + seconds * 1000;
-    setDisplay(timeLeft);
-  }, [timeLeft]);
+    if (timeLeft) {
+      const parts = timeLeft.split(":").map(Number);
+      let sec = 0;
+      if (parts.length === 3) sec = (parts[0] || 0) * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
+      else if (parts.length === 2) sec = (parts[0] || 0) * 60 + (parts[1] || 0);
+      return Date.now() + sec * 1000;
+    }
+    return null;
+  }, [expiresAt, serverTime, timeLeft]);
+
+  const [display, setDisplay] = React.useState(() => timeLeft || "00:00:00");
 
   React.useEffect(() => {
-    const timer = setInterval(() => {
-      if (!targetTimeRef.current) return;
-      const diffMs = targetTimeRef.current - Date.now();
+    if (!targetExpiryMs) return;
+
+    const updateTimer = () => {
+      const diffMs = targetExpiryMs - Date.now();
       if (diffMs <= 0) {
         setDisplay("00:00:00");
         return;
@@ -55,10 +62,14 @@ function CountdownBadge({ timeLeft, className = "" }) {
       setDisplay(
         `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
       );
-    }, 1000);
+    };
 
+    updateTimer();
+    const timer = setInterval(updateTimer, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [targetExpiryMs]);
+
+  if (display === "00:00:00" && !timeLeft) return null;
 
   return (
     <span
@@ -759,8 +770,8 @@ export function DealershipPage({
                           LIMITED!
                         </span>
                       )}
-                      {car.timeLeft && car.timeLeft !== "00:00:00" && (
-                        <CountdownBadge timeLeft={car.timeLeft} />
+                      {(car.timeLeft || car.expiresAt) && (
+                        <CountdownBadge timeLeft={car.timeLeft} expiresAt={car.expiresAt} serverTime={car.serverTime} />
                       )}
                       {car.isNew && (
                         <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500/80 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none">
@@ -890,8 +901,8 @@ export function DealershipPage({
                     LIMITED!
                   </span>
                 )}
-                {modalCar.timeLeft && modalCar.timeLeft !== "00:00:00" && (
-                  <CountdownBadge timeLeft={modalCar.timeLeft} className="text-[9px] px-2 py-0.5 rounded-md" />
+                {(modalCar.timeLeft || modalCar.expiresAt) && (
+                  <CountdownBadge timeLeft={modalCar.timeLeft} expiresAt={modalCar.expiresAt} serverTime={modalCar.serverTime} className="text-[9px] px-2 py-0.5 rounded-md" />
                 )}
                 {modalCar.isNew && (
                   <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500 shadow-md shadow-emerald-600/30 px-2 py-0.5 rounded-md leading-none">

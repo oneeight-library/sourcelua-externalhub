@@ -112,8 +112,48 @@ function DealershipFeature.GetCars(dealerTarget)
     local cleanTarget = tostring(dealerTarget or ""):lower():gsub("%s+", "")
     if cleanTarget == "komersil" then cleanTarget = "komersial" end
 
-    -- Extract live countdown time map dari PlayerGui Dealership bila ada
+    -- 1. Ambil Server Time resmi dari Backend Remote CDID (Network.GetServerTime)
+    local serverTime = os.time()
+    pcall(function()
+        local mod = ReplicatedStorage:FindFirstChild("Modules")
+        if mod and mod:FindFirstChild("Network") then
+            local Network = require(mod.Network)
+            local st = Network:InvokeServer("GetServerTime")
+            if type(st) == "number" and st > 0 then
+                serverTime = st
+            end
+        end
+    end)
+
+    -- 2. Ambil jadwal limited langsung dari Backend Memory Game (end_ts)
     local timeMap = {}
+    pcall(function()
+        if getgc then
+            for _, t in ipairs(getgc(true)) do
+                if type(t) == "table" and (rawget(t, "2022TokomaYarisJunior") or rawget(t, "2021Mcsena765LT") or rawget(t, "2018AMCygnetV8")) then
+                    for carId, entry in pairs(t) do
+                        if type(entry) == "table" and entry.end_ts and type(entry.end_ts) == "table" then
+                            local expTs = os.time(entry.end_ts)
+                            local diffSec = expTs - serverTime
+                            if diffSec > 0 then
+                                local h = math.floor(diffSec / 3600)
+                                local m = math.floor((diffSec % 3600) / 60)
+                                local s = diffSec % 60
+                                timeMap[tostring(carId):lower()] = {
+                                    timeLeft = string.format("%02i:%02i:%02i", h, m, s),
+                                    expiresAt = expTs,
+                                    serverTime = serverTime
+                                }
+                            end
+                        end
+                    end
+                    break
+                end
+            end
+        end
+    end)
+
+    -- 3. Fallback: Ambil dari TextLabel UI jika memory schedule tidak terjangkau
     pcall(function()
         local pGui = LocalPlayer:FindFirstChild("PlayerGui")
         local dGui = pGui and pGui:FindFirstChild("Dealership")
@@ -121,9 +161,21 @@ function DealershipFeature.GetCars(dealerTarget)
         if dList then
             for _, dFolder in ipairs(dList:GetChildren()) do
                 for _, cFrame in ipairs(dFolder:GetChildren()) do
-                    local tLbl = cFrame:FindFirstChild("Frame") and cFrame.Frame:FindFirstChild("Time")
-                    if tLbl and tLbl:IsA("TextLabel") and tLbl.Text ~= "" and tLbl.Text ~= "00:00:00" then
-                        timeMap[cFrame.Name:lower()] = tLbl.Text
+                    local lowerName = cFrame.Name:lower()
+                    if not timeMap[lowerName] then
+                        local tLbl = cFrame:FindFirstChild("Frame") and cFrame.Frame:FindFirstChild("Time")
+                        if tLbl and tLbl:IsA("TextLabel") and tLbl.Text ~= "" and tLbl.Text ~= "00:00:00" then
+                            local h, m, s = tLbl.Text:match("(%d+):(%d+):(%d+)")
+                            local sec = 0
+                            if h and m and s then
+                                sec = tonumber(h) * 3600 + tonumber(m) * 60 + tonumber(s)
+                            end
+                            timeMap[lowerName] = {
+                                timeLeft = tLbl.Text,
+                                expiresAt = (sec > 0) and (serverTime + sec) or nil,
+                                serverTime = serverTime
+                            }
+                        end
                     end
                 end
             end
@@ -166,7 +218,9 @@ function DealershipFeature.GetCars(dealerTarget)
                     isGamepass = true
                 end
 
-                local timeLeft = timeMap[lowerId] or ""
+                local timeInfo = timeMap[lowerId]
+                local timeLeft = timeInfo and timeInfo.timeLeft or ""
+                local expiresAt = timeInfo and timeInfo.expiresAt or nil
                 local isLimited = false
                 if maps.Limited[lowerId] or car:FindFirstChild("Limited") or timeLeft ~= "" then
                     isLimited = true
@@ -203,7 +257,9 @@ function DealershipFeature.GetCars(dealerTarget)
                     isLimited = isLimited,
                     isNew = isNew,
                     stock = stockVal,
-                    timeLeft = timeLeft
+                    timeLeft = timeLeft,
+                    expiresAt = expiresAt,
+                    serverTime = serverTime
                 })
             end
         end
