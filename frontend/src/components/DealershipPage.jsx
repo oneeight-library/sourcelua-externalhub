@@ -17,7 +17,8 @@ import {
   ChevronDown,
   Users,
   Cpu,
-  Clock
+  Clock,
+  Flame
 } from "lucide-react";
 
 // Komponen live countdown badge untuk limited cars berbasis backend timestamp (expiresAt)
@@ -180,6 +181,7 @@ export function DealershipPage({
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortBy, setSortBy] = React.useState("new_limited");
   const [selectedPass, setSelectedPass] = React.useState("all");
+  const [isUpcomingOnly, setIsUpcomingOnly] = React.useState(false);
   const [modalCar, setModalCar] = React.useState(null);
   const [selectedColor, setSelectedColor] = React.useState(PRESET_COLORS[0]);
   const [buyStatus, setBuyStatus] = React.useState(null);
@@ -275,10 +277,10 @@ export function DealershipPage({
     }
   };
 
-  // Reset pagination saat dealer, filter pass, atau search query berganti
+  // Reset pagination saat dealer, filter pass, sortBy, atau mode upcoming berganti
   React.useEffect(() => {
     setVisibleCount(36);
-  }, [selectedDealer, searchQuery, selectedPass, sortBy]);
+  }, [selectedDealer, searchQuery, selectedPass, sortBy, isUpcomingOnly]);
 
   // Sync initialDealer if URL prop changes
   React.useEffect(() => {
@@ -320,6 +322,10 @@ export function DealershipPage({
   const dealerKey = (selectedDealer === "Semua Dealer" ? "all" : selectedDealer).toLowerCase().replace(/\s+/g, "");
   const rawCars = dealerCatalog[dealerKey] || dealerCatalog["all"] || [];
 
+  const upcomingCount = React.useMemo(() => {
+    return rawCars.filter((c) => c.isUpcoming).length;
+  }, [rawCars]);
+
   // PENGELOMPOKAN & FILTER 100% PERSIS SEPERTI IN-GAME CDID DEALERSHIP
   const filteredCars = React.useMemo(() => {
     const selLower = selectedDealer.toLowerCase().trim();
@@ -350,6 +356,10 @@ export function DealershipPage({
           matchesPass = cleanGp.includes("emergency");
         }
 
+        if (isUpcomingOnly && !car.isUpcoming) {
+          return false;
+        }
+
         return matchesDealer && matchesSearch && matchesPass;
       })
       .sort((a, b) => {
@@ -368,7 +378,7 @@ export function DealershipPage({
         if (sortBy === "hp_desc") return (b.hp || 0) - (a.hp || 0);
         return 0;
       });
-  }, [rawCars, selectedDealer, searchQuery, sortBy, selectedPass]);
+  }, [rawCars, selectedDealer, searchQuery, sortBy, selectedPass, isUpcomingOnly]);
 
   const displayedCars = React.useMemo(() => {
     return filteredCars.slice(0, visibleCount);
@@ -613,9 +623,26 @@ export function DealershipPage({
           {/* Sisi Kanan: Total Unit + Dropdown Pass + Dropdown Sort + Refresh */}
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-between md:justify-end">
             
-            <Badge variant="secondary" className="text-[10px] sm:text-xs font-bold tabular-nums px-2.5 py-1.5 bg-zinc-900 border-zinc-800 text-zinc-300 shrink-0">
-              {filteredCars.length} Unit
-            </Badge>
+            {/* Quick Sort / Filter Tombol Upcoming (Bocoran) Menggantikan Badge Unit */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsUpcomingOnly((prev) => !prev)}
+              className={`h-9 px-2.5 sm:px-3 gap-1.5 border transition-all shadow-sm shrink-0 font-bold text-xs cursor-pointer ${
+                isUpcomingOnly
+                  ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/70 ring-1 ring-amber-500/40 shadow-amber-500/10"
+                  : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 border-zinc-800"
+              }`}
+              title={isUpcomingOnly ? "Klik untuk kembali ke semua mobil" : "Klik untuk sortir cepat mobil bocoran upcoming"}
+            >
+              <Flame className={`h-3.5 w-3.5 ${isUpcomingOnly ? "text-amber-400 fill-amber-400 animate-pulse" : "text-amber-400"}`} />
+              <span>{isUpcomingOnly ? "Mode Bocoran" : "Upcoming"}</span>
+              <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded-full font-bold ${
+                isUpcomingOnly ? "bg-amber-500/30 text-amber-200" : "bg-zinc-800 text-zinc-400"
+              }`}>
+                {isUpcomingOnly ? `${filteredCars.length}` : `${upcomingCount}`}
+              </span>
+            </Button>
 
             {/* 1. Custom Dropdown Filter PASS (Sesuai In-Game FilterFrame.Pass) */}
             <div className="relative" ref={passDropdownRef}>
@@ -765,9 +792,15 @@ export function DealershipPage({
                       <span className="text-[8px] sm:text-[9px] font-semibold text-zinc-500 uppercase">{car.dealer}</span>
                     </div>
 
-                    {/* Badges Overlay: LIMITED, NEW, & GAMEPASS (Retro/Luxury) di Pojok Kiri Atas */}
+                    {/* Badges Overlay: LIMITED, UPCOMING, NEW, & GAMEPASS di Pojok Kiri Atas */}
                     <div className="absolute top-1 left-1 sm:top-1.5 sm:left-1.5 flex items-center gap-1 z-10 flex-wrap max-w-[85%]">
-                      {car.isLimited && (
+                      {car.isUpcoming && (
+                        <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950 border border-amber-400 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none flex items-center gap-0.5">
+                          <Flame className="h-2.5 w-2.5 fill-zinc-950" />
+                          UPCOMING
+                        </span>
+                      )}
+                      {car.isLimited && !car.isUpcoming && (
                         <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500/80 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none animate-pulse">
                           LIMITED!
                         </span>
@@ -840,16 +873,28 @@ export function DealershipPage({
                       ) : null}
                     </div>
 
-                    {/* Tombol Beli / Harga Terintegrasi */}
+                    {/* Tombol Beli / Info Upcoming Terintegrasi */}
                     <div className="pt-1.5 border-t border-zinc-800/70">
-                      <Button
-                        size="sm"
-                        onClick={() => handleOpenBuyModal(car)}
-                        className="w-full h-7 sm:h-8 text-[11px] sm:text-xs font-bold tracking-tight tabular-nums transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-sm shadow-emerald-500/10 rounded-lg cursor-pointer"
-                        title={`Beli mobil ini seharga ${formatRupiah(car.cost)}`}
-                      >
-                        {formatRupiah(car.cost)}
-                      </Button>
+                      {car.isUpcoming ? (
+                        <Button
+                          size="sm"
+                          onClick={() => handleOpenBuyModal(car)}
+                          className="w-full h-7 sm:h-8 text-[11px] sm:text-xs font-bold tracking-tight tabular-nums transition-all active:scale-95 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/10 rounded-lg cursor-pointer flex items-center justify-center gap-1.5"
+                          title={`Bocoran mobil upcoming: ${car.name}`}
+                        >
+                          <Flame className="h-3 w-3 text-amber-400 fill-amber-400" />
+                          <span>Upcoming</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => handleOpenBuyModal(car)}
+                          className="w-full h-7 sm:h-8 text-[11px] sm:text-xs font-bold tracking-tight tabular-nums transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-sm shadow-emerald-500/10 rounded-lg cursor-pointer"
+                          title={`Beli mobil ini seharga ${formatRupiah(car.cost)}`}
+                        >
+                          {formatRupiah(car.cost)}
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -925,8 +970,8 @@ export function DealershipPage({
             {/* Nama & Harga Mobil (Tanpa Kotak Kalkulasi Sisa Saldo) */}
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <span className="text-[10px] text-emerald-400 uppercase tracking-widest font-bold block">
-                  Konfirmasi Pembelian
+                <span className={`text-[10px] uppercase tracking-widest font-bold block ${modalCar.isUpcoming ? "text-amber-400" : "text-emerald-400"}`}>
+                  {modalCar.isUpcoming ? "Bocoran Mobil Upcoming (Belum Rilis)" : "Konfirmasi Pembelian"}
                 </span>
                 <h3 className="text-sm sm:text-base font-bold text-zinc-100 mt-0.5 truncate">
                   {modalCar.name}
@@ -1035,15 +1080,24 @@ export function DealershipPage({
                   <span>{buyErrorMessage || "Pembelian gagal di-proses oleh game CDID"}</span>
                 </div>
               )}
-              <Button
-                className={`flex-1 h-10 sm:h-9 font-black active:scale-95 ${
-                  buyStatus === "FAILED"
-                    ? "bg-rose-600 hover:bg-rose-500 text-white"
-                    : "bg-emerald-500 hover:bg-emerald-400 text-zinc-950"
-                }`}
-                onClick={buyStatus === "FAILED" ? () => setBuyStatus(null) : handleConfirmBuy}
-                disabled={selectedBotIds.length === 0 || buyStatus === "SUBMITTED"}
-              >
+              {modalCar.isUpcoming ? (
+                <Button
+                  className="flex-1 h-10 sm:h-9 font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-not-allowed flex items-center justify-center gap-1.5"
+                  disabled={true}
+                >
+                  <Flame className="h-4 w-4 text-amber-400 fill-amber-400" />
+                  Belum Rilis di Game (Upcoming)
+                </Button>
+              ) : (
+                <Button
+                  className={`flex-1 h-10 sm:h-9 font-black active:scale-95 ${
+                    buyStatus === "FAILED"
+                      ? "bg-rose-600 hover:bg-rose-500 text-white"
+                      : "bg-emerald-500 hover:bg-emerald-400 text-zinc-950"
+                  }`}
+                  onClick={buyStatus === "FAILED" ? () => setBuyStatus(null) : handleConfirmBuy}
+                  disabled={selectedBotIds.length === 0 || buyStatus === "SUBMITTED"}
+                >
                 {buyStatus === "SUBMITTED" ? (
                   <span className="flex items-center gap-1.5">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -1060,6 +1114,7 @@ export function DealershipPage({
                   "Konfirmasi Beli"
                 )}
               </Button>
+              )}
             </div>
 
           </div>

@@ -140,16 +140,33 @@ function DealershipFeature.GetCars(dealerTarget)
                         for carId, entry in pairs(t) do
                         if type(entry) == "table" and entry.end_ts and type(entry.end_ts) == "table" then
                             local expTs = os.time(entry.end_ts)
-                            local diffSec = expTs - serverTime
-                            if diffSec > 0 then
-                                local h = math.floor(diffSec / 3600)
-                                local m = math.floor((diffSec % 3600) / 60)
-                                local s = diffSec % 60
+                            local startTs = entry.start_ts and os.time(entry.start_ts) or 0
+                            if startTs > serverTime then
+                                -- Mobil terjadwal rilis di masa depan (Upcoming Bocoran)
+                                local diffStart = startTs - serverTime
+                                local h = math.floor(diffStart / 3600)
+                                local m = math.floor((diffStart % 3600) / 60)
+                                local s = diffStart % 60
                                 timeMap[tostring(carId):lower()] = {
                                     timeLeft = string.format("%02i:%02i:%02i", h, m, s),
                                     expiresAt = expTs,
+                                    startAt = startTs,
+                                    isUpcoming = true,
                                     serverTime = serverTime
                                 }
+                            else
+                                local diffSec = expTs - serverTime
+                                if diffSec > 0 then
+                                    local h = math.floor(diffSec / 3600)
+                                    local m = math.floor((diffSec % 3600) / 60)
+                                    local s = diffSec % 60
+                                    timeMap[tostring(carId):lower()] = {
+                                        timeLeft = string.format("%02i:%02i:%02i", h, m, s),
+                                        expiresAt = expTs,
+                                        isUpcoming = false,
+                                        serverTime = serverTime
+                                    }
+                                end
                             end
                         end
                     end
@@ -189,10 +206,23 @@ function DealershipFeature.GetCars(dealerTarget)
         end
     end)
 
+    local maps = getGamepassMaps()
+
     for _, car in ipairs(carData:GetChildren()) do
         local dealerVal = car:FindFirstChild("Dealership")
         local unobtainable = car:FindFirstChild("Unobtainable")
-        if dealerVal and not unobtainable then
+        local lowerId = car.Name:lower()
+        local timeInfo = timeMap[lowerId]
+
+        -- Deteksi mobil bocoran upcoming:
+        -- 1) Terjadwal rilis di memory game masa depan
+        -- 2) Terdaftar di Shared.NewCar tapi masih unobtainable di CarData (belum rilis publik)
+        local isUpcoming = false
+        if (timeInfo and timeInfo.isUpcoming) or (maps.New[lowerId] and unobtainable) then
+            isUpcoming = true
+        end
+
+        if dealerVal and (not unobtainable or isUpcoming) then
             local rawDealer = tostring(dealerVal.Value)
             local cleanDealer = rawDealer:lower():gsub("%s+", "")
             if cleanDealer == "komersil" then cleanDealer = "komersial" end
@@ -263,6 +293,7 @@ function DealershipFeature.GetCars(dealerTarget)
                     isGamepass = isGamepass,
                     isLimited = isLimited,
                     isNew = isNew,
+                    isUpcoming = isUpcoming,
                     stock = stockVal,
                     timeLeft = timeLeft,
                     expiresAt = expiresAt,
