@@ -5,6 +5,7 @@ const safetyFeature = fs.readFileSync("client/games/cdid/features/safety.lua", "
 const dealership = fs.readFileSync("client/games/cdid/features/dealership.lua", "utf8");
 const teleport = fs.readFileSync("client/games/cdid/features/teleport.lua", "utf8");
 const truck = fs.readFileSync("client/games/cdid/jobs/truck.lua", "utf8");
+const minigames = fs.readFileSync("client/games/cdid/jobs/minigames.lua", "utf8");
 const init = fs.readFileSync("client/games/cdid/init.lua", "utf8");
 const cdidMenu = fs.readFileSync("client/games/cdid/menu.lua", "utf8");
 const coreSafety = fs.readFileSync("client/core/safety.lua", "utf8");
@@ -47,6 +48,7 @@ agentLua = replaceModule(agentLua, "games/cdid/features/safety", safetyFeature);
 agentLua = replaceModule(agentLua, "games/cdid/features/dealership", dealership);
 agentLua = replaceModule(agentLua, "games/cdid/features/teleport", teleport);
 agentLua = replaceModule(agentLua, "games/cdid/jobs/truck", truck);
+agentLua = replaceModule(agentLua, "games/cdid/jobs/minigames", minigames);
 agentLua = replaceModule(agentLua, "games/cdid", init);
 agentLua = replaceModule(agentLua, "games/cdid_menu", cdidMenu);
 

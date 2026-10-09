@@ -43,6 +43,7 @@ local SafetyFeature = nil
 local DealershipFeature = nil
 local TeleportFeature = nil
 local TruckJob = nil
+local MinigameJob = nil
 
 function CDIDModule.Init(coreContext)
     Context = coreContext
@@ -53,8 +54,10 @@ function CDIDModule.Init(coreContext)
     DealershipFeature = requireModule("games/cdid/features/dealership")
     TeleportFeature = requireModule("games/cdid/features/teleport")
     TruckJob = requireModule("games/cdid/jobs/truck")
+    MinigameJob = requireModule("games/cdid/jobs/minigames")
 
     TruckJob.Init(coreContext)
+    if MinigameJob and MinigameJob.Init then MinigameJob.Init(coreContext) end
     if SafetyFeature and SafetyFeature.CheckCurrentLockState then
         pcall(SafetyFeature.CheckCurrentLockState)
     end
@@ -75,11 +78,29 @@ end
 
 function CDIDModule.HandleCommand(action, payload)
     if action == "START_FARM" then
-        TruckJob.Start()
+        local jobType = payload and payload.jobType or "truck"
+        if jobType == "minigame" then
+            if MinigameJob then MinigameJob.Start(payload) end
+        else
+            if TruckJob then TruckJob.Start() end
+        end
         return true
 
     elseif action == "STOP_FARM" then
-        TruckJob.Stop()
+        if TruckJob then TruckJob.Stop() end
+        if MinigameJob then MinigameJob.Stop() end
+        return true
+
+    elseif action == "START_MINIGAME_FARM" then
+        if MinigameJob then MinigameJob.Start(payload) end
+        return true
+
+    elseif action == "STOP_MINIGAME_FARM" then
+        if MinigameJob then MinigameJob.Stop() end
+        return true
+
+    elseif action == "BUY_MINIGAME_BOX" then
+        if MinigameJob then MinigameJob.BuyBox() end
         return true
 
     elseif action == "TELEPORT_HQ" then
@@ -197,20 +218,47 @@ end
 
 function CDIDModule.GetTelemetry()
     local st = TruckJob and TruckJob.GetState() or {}
-    local elapsedSec = (st.IsFarming and st.FarmStartTime and st.FarmStartTime > 0) and math.floor(os.clock() - st.FarmStartTime) or 0
+    local stMg = MinigameJob and MinigameJob.GetState() or {}
+    local isFarming = (st.IsFarming or stMg.IsFarming) or false
+    local elapsedSec = 0
+    if st.IsFarming and st.FarmStartTime and st.FarmStartTime > 0 then
+        elapsedSec = math.floor(os.clock() - st.FarmStartTime)
+    elseif stMg.IsFarming and stMg.FarmStartTime and stMg.FarmStartTime > 0 then
+        elapsedSec = math.floor(os.time() - stMg.FarmStartTime)
+    end
     local placeName = getPlaceName()
-    local dynamicJob = st.IsFarming and "Truk Kargo" or "Unemployed"
+    local dynamicJob = "Unemployed"
+    if stMg.IsFarming then
+        dynamicJob = "Minigames Sumo (" .. (stMg.Role or "Winner") .. ")"
+    elseif st.IsFarming then
+        dynamicJob = "Truk Kargo"
+    end
     return {
-        status = st.Status or "CONNECTED",
+        status = stMg.IsFarming and (stMg.Phase or "RUNNING") or (st.Status or "CONNECTED"),
         job = dynamicJob,
         placeName = placeName,
         gameName = placeName,
-        currentRoute = st.CurrentRoute or "IDLE",
+        currentRoute = stMg.IsFarming and ("Sumo Arena: " .. (stMg.Phase or "Lobby")) or (st.CurrentRoute or "IDLE"),
         tripCount = st.TripCount or 0,
-        totalEarnings = st.TotalEarnings or 0,
-        currentCash = st.CurrentCash or 0,
+        totalEarnings = (st.TotalEarnings or 0) + (stMg.CashEarned or 0),
+        currentCash = (st.CurrentCash and st.CurrentCash > 0) and st.CurrentCash or (stMg.CurrentCash or 0),
         startCash = st.StartCash or 0,
-        isFarming = st.IsFarming or false,
+        isFarming = isFarming,
+        minigame = {
+            isFarming = stMg.IsFarming or false,
+            role = stMg.Role or "Winner",
+            phase = stMg.Phase or "Standby",
+            points = stMg.CurrentPoints or 0,
+            pointsEarned = stMg.PointsEarned or 0,
+            cashEarned = stMg.CashEarned or 0,
+            wins = stMg.TotalWins or 0,
+            losses = stMg.TotalLosses or 0,
+            boxes = stMg.BoxesOpened or 0,
+            autoOpenBox = stMg.AutoOpenBox or false,
+            round = stMg.CurrentRound or 0,
+            maxRounds = stMg.MaxRounds or 10,
+            lastResult = stMg.LastMatchResult or "-"
+        },
         speed = st.Speed or 0,
         distRemaining = st.DistRemaining or "0m",
         lowRender = st.LowRender or false,
@@ -232,6 +280,7 @@ end
 
 function CDIDModule.Cleanup()
     if TruckJob then TruckJob.Stop() end
+    if MinigameJob then MinigameJob.Stop() end
 end
 
 return CDIDModule
