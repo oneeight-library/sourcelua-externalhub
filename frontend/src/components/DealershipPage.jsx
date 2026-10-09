@@ -926,21 +926,8 @@ export function DealershipPage({
               ) : null}
             </div>
 
-            {/* Info Akun Eksekusi */}
-            {isSingleBotMode ? (
-              <div className="text-[11px] text-zinc-400 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Store className="h-3.5 w-3.5 text-emerald-400" />
-                  Akun Pembeli:
-                </span>
-                <span className="font-semibold text-zinc-200 flex items-center gap-1.5">
-                  <span>{activeBot?.name || "Akun Bot"}</span>
-                  <span className="text-emerald-400 text-[10px] font-bold tabular-nums">
-                    ({formatRupiah(activeBot?.currentCash || 0)})
-                  </span>
-                </span>
-              </div>
-            ) : (
+            {/* Info Multi-Akun Eksekusi (Hanya muncul jika lebih dari 1 akun dipilih) */}
+            {!isSingleBotMode && selectedBotIds.length > 1 && (
               <div className="text-[11px] text-zinc-400 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5 text-zinc-400" />
