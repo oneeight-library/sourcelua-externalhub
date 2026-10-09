@@ -46,22 +46,24 @@ local function replaceLabel(v)
         local current = v.Text
         if not current or current == "" then return end
 
+        local orig = v:GetAttribute("OE_OriginalText") or current
+
         if StreamerMode.Enabled then
             local real = StreamerMode.RealName
             local disp = StreamerMode.RealDisplayName
-            local hasReal = (real and current:find(real, 1, true)) or (real and current:lower():find(real:lower(), 1, true))
-            local hasDisp = (disp and disp ~= "" and current:find(disp, 1, true))
+            local hasReal = (real and orig:find(real, 1, true)) or (real and orig:lower():find(real:lower(), 1, true))
+            local hasDisp = (disp and disp ~= "" and orig:find(disp, 1, true))
 
             if hasReal or hasDisp then
                 if not v:GetAttribute("OE_OriginalText") then
-                    v:SetAttribute("OE_OriginalText", current)
+                    v:SetAttribute("OE_OriginalText", orig)
                 end
-                v.Text = sanitizeText(current)
+                v.Text = sanitizeText(orig)
             end
         else
-            local orig = v:GetAttribute("OE_OriginalText")
-            if orig then
-                v.Text = orig
+            local origText = v:GetAttribute("OE_OriginalText")
+            if origText then
+                v.Text = origText
                 v:SetAttribute("OE_OriginalText", nil)
             end
         end
