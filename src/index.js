@@ -2,7 +2,7 @@ const THUMB_CACHE = new Map(); // assetId -> direct CDN url
 import { robloxService } from "./services/roblox.js";
 import { handleApiRequest } from "./api/router.js";
 ﻿import { getWebDashboardHTML } from "./dashboard.js";
-import { getAgentLuaCode } from "./agent_code.js";
+import { getAgentLuaCode, AGENT_BUILD_ID } from "./agent_code.js";
 
 export class HubRoom {
   constructor(state, env) {
@@ -128,7 +128,7 @@ export class HubRoom {
     const currentEntry = { ws, info: botInfo, disconnectTimer: null };
     this.bots.set(botId, currentEntry);
 
-    ws.send(JSON.stringify({ type: "INIT_ACK", botId, message: "Connected to OneEight External Hub" }));
+    ws.send(JSON.stringify({ type: "INIT_ACK", botId, buildId: AGENT_BUILD_ID, message: "Connected to OneEight External Hub" }));
 
     // Fetch avatar asynchronously jika belum ada
     if (!botInfo.avatarUrl) {
@@ -334,6 +334,9 @@ export class HubRoom {
   }
 
   routeCommandToBot(targetBotId, action, payload) {
+    if (action === "HOT_RELOAD") {
+      payload = { ...(payload || {}), buildId: AGENT_BUILD_ID };
+    }
     const cmdPacket = JSON.stringify({ type: "EXECUTE_COMMAND", action, payload });
 
     if (targetBotId === "ALL" || !targetBotId) {

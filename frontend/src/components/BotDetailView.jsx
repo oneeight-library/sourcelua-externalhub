@@ -1148,7 +1148,7 @@ export function BotDetailView({
           </Card>
 
           {/* Terminal Live Logs */}
-          <ConsoleTab bot={bot} logs={logs} onClearLogs={onClearLogs} />
+          <ConsoleTab bot={bot} logs={logs} onClearLogs={onClearLogs} onSendCommand={onSendCommand} />
         </div>
       )}
 

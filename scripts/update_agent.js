@@ -3,11 +3,16 @@ import path from "path";
 
 const projectRoot = ".";
 
+const buildTimestamp = Date.now().toString(36);
+const BUILD_ID = `v3.3.${buildTimestamp}`;
+
 const HEADER = `--[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (CDID Minigames Sumo, Cafe Kanji Jawa Barista & Modular VFS)
+    Version: 3.3.0 (Build: ${BUILD_ID})
 --]]
 
+local AGENT_BUILD_ID = "${BUILD_ID}"
+local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
 
@@ -92,6 +97,7 @@ fs.writeFileSync(path.join(projectRoot, "client/agent.lua"), agentLua, "utf8");
 console.log(`Successfully rebuilt client/agent.lua with all ${MODULES_CONFIG.length} modules and VFS requireModule intact!`);
 
 const jsCode = `// Auto-generated from client/agent.lua (UTF-8 without BOM)
+export const AGENT_BUILD_ID = "${BUILD_ID}";
 export const AGENT_LUA = ${JSON.stringify(agentLua)};
 
 export function getAgentLuaCode(origin) {

@@ -1,8 +1,10 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (CDID Minigames Sumo, Cafe Kanji Jawa Barista & Modular VFS)
+    Version: 3.3.0 (Build: v3.3.mv148nap)
 --]]
 
+local AGENT_BUILD_ID = "v3.3.mv148nap"
+local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
 
@@ -5133,6 +5135,127 @@ activeGameModule.Init({
 -- ============================================================================
 -- WEBSOCKET CONNECTION & COMMAND ROUTING
 -- ============================================================================
+
+-- ============================================================================
+-- OVER-THE-AIR (OTA) HOT-RELOAD & STATE PRESERVATION SYSTEM
+-- ============================================================================
+local function performHotReload(targetBuildId)
+    if CoreState.IsReloading then return end
+    CoreState.IsReloading = true
+    CoreState.IsTerminated = true
+
+    sendLog(string.format("Memulai Hot-Reload OTA ke build [%s] tanpa rejoin...", tostring(targetBuildId or "TERBARU")), "WARN")
+    print(string.format("[OE-External OTA] Executing Live Hot-Reload to Build: %s", tostring(targetBuildId or "TERBARU")))
+
+    -- 1. Tangkap status fitur aktif saat ini untuk auto-resume pasca reload
+    pcall(function()
+        local telem = activeGameModule and activeGameModule.GetTelemetry and activeGameModule.GetTelemetry()
+        local feats = telem and telem.features or {}
+        local activeJob = nil
+        if feats.kanjiJiwa then
+            activeJob = "kanji_jawa"
+        elseif feats.minigame then
+            activeJob = "minigames"
+        elseif feats.truck then
+            activeJob = "truck"
+        end
+
+        _G.OE_PreservedState = {
+            timestamp = os.time(),
+            activeJob = activeJob,
+            minigameRole = telem and telem.config and telem.config.minigameRole,
+            autoOpenBox = feats.autoOpenBox,
+            lowRender = feats.lowRender,
+            serverLocked = feats.serverLocked,
+            playerDetector = feats.playerDetector,
+            emergencyAction = telem and telem.config and telem.config.emergencyAction,
+            ignoreFriends = telem and telem.config and telem.config.ignoreFriends,
+            fullbright = feats.fullbright,
+            noFog = feats.noFog,
+            minDistance = telem and telem.minDistance
+        }
+        print("[OE-External OTA] State aktif berhasil diawetkan di _G.OE_PreservedState!")
+    end)
+
+    -- 2. Matikan modul aktif secara tertib (membersihkan UI, prompt, dan loop)
+    pcall(function()
+        if activeGameModule and activeGameModule.Cleanup then
+            activeGameModule.Cleanup()
+        end
+    end)
+
+    -- 3. Tutup WebSocket saat ini dengan status HOT_RELOAD
+    if CoreState.Socket then
+        pcall(function()
+            CoreState.Socket:Close(4001, "HOT_RELOAD")
+        end)
+        CoreState.Socket = nil
+    end
+
+    _G.OE_ExternalRunning = false
+
+    -- 4. Unduh & eksekusi build agen terbaru secara in-memory
+    task.delay(0.6, function()
+        local loadOk, loadErr = pcall(function()
+            local targetUrl = LOADER_URL or "https://externalhub.oneeight-project18.workers.dev/loader"
+            local src = game:HttpGet(targetUrl .. "?t=" .. tostring(os.time()))
+            src = src:gsub("^\239\187\191", "")
+            local fn, compileErr = loadstring(src, "OE_ExternalAgent")
+            if not fn then
+                error(tostring(compileErr))
+            end
+            fn()
+        end)
+        if not loadOk then
+            warn("[OE-External OTA] Gagal mengeksekusi loader:", tostring(loadErr))
+        end
+    end)
+end
+
+local function checkPreservedState()
+    local preserved = _G.OE_PreservedState
+    if preserved and (os.time() - (preserved.timestamp or 0) < 30) then
+        _G.OE_PreservedState = nil
+        print("[OE-External OTA] Ditemukan state tersimpan pasca Hot-Reload! Memulihkan dalam 1.5 detik...")
+        task.spawn(function()
+            task.wait(1.5)
+            if preserved.serverLocked ~= nil then
+                activeGameModule.HandleCommand("TOGGLE_SERVER_LOCK", { locked = preserved.serverLocked })
+            end
+            if preserved.fullbright then
+                activeGameModule.HandleCommand("TOGGLE_FULLBRIGHT", { enabled = true })
+            end
+            if preserved.noFog then
+                activeGameModule.HandleCommand("TOGGLE_NO_FOG", { enabled = true })
+            end
+            if preserved.playerDetector ~= nil then
+                activeGameModule.HandleCommand("SET_SAFETY_CONFIG", {
+                    playerDetector = preserved.playerDetector,
+                    emergencyAction = preserved.emergencyAction,
+                    ignoreFriends = preserved.ignoreFriends
+                })
+            end
+            if preserved.minDistance then
+                activeGameModule.HandleCommand("SET_MIN_DISTANCE", { minDistance = preserved.minDistance })
+            end
+
+            -- Pulihkan pekerjaan auto-farm yang sebelumnya sedang jalan
+            if preserved.activeJob == "kanji_jawa" then
+                sendLog("[OTA Auto-Resume] Melanjutkan pekerjaan Kanji Jiwa...", "SUCCESS")
+                activeGameModule.HandleCommand("START_KANJI_JAWA_FARM")
+            elseif preserved.activeJob == "minigames" then
+                sendLog("[OTA Auto-Resume] Melanjutkan Minigames Sumo...", "SUCCESS")
+                activeGameModule.HandleCommand("START_MINIGAME_FARM", { role = preserved.minigameRole, autoOpenBox = preserved.autoOpenBox })
+            elseif preserved.activeJob == "truck" then
+                sendLog("[OTA Auto-Resume] Melanjutkan Truk Kargo...", "SUCCESS")
+                activeGameModule.HandleCommand("START_FARM")
+            end
+        end)
+    else
+        _G.OE_PreservedState = nil
+    end
+end
+
 local function connectWebSocket()
     if CoreState.IsTerminated or not isInstanceAlive() then return end
     print("[OE-External] Menghubungkan ke Hub: " .. WS_URL)
@@ -5175,10 +5298,28 @@ local function connectWebSocket()
         local okParse, data = pcall(function() return HttpService:JSONDecode(msgRaw) end)
         if not okParse or not data then return end
 
-        if data.type == "INIT_ACK" then
-            CoreState.BotId = data.botId
+        if data.type == "INIT_ACK" or data.type == "SERVER_HANDSHAKE" then
+            CoreState.BotId = data.botId or CoreState.BotId
             print("[OE-External] Terdaftar dengan Bot ID: " .. tostring(CoreState.BotId))
-            sendLog(string.format("Akun aktif di %s (%s) & terhubung ke Web Hub!", activeGameModule.GameName, tostring(game.PlaceId)), "SUCCESS")
+            sendLog(string.format("Akun aktif di %s (%s) & terhubung ke Web Hub! [Build: %s]", activeGameModule.GameName, tostring(game.PlaceId), tostring(AGENT_BUILD_ID or "N/A")), "SUCCESS")
+
+            -- Cek versi build: jika build server berbeda dengan build lokal agen, otomatis Hot-Reload
+            if data.buildId and AGENT_BUILD_ID and data.buildId ~= AGENT_BUILD_ID then
+                print(string.format("[OE-External OTA] Build server (%s) berbeda dengan build lokal (%s). Memulai Hot-Reload...", tostring(data.buildId), tostring(AGENT_BUILD_ID)))
+                task.delay(0.2, function()
+                    performHotReload(data.buildId)
+                end)
+                return
+            end
+
+        elseif data.type == "OTA_UPDATE" then
+            if data.buildId and AGENT_BUILD_ID and data.buildId ~= AGENT_BUILD_ID then
+                print(string.format("[OE-External OTA] Menerima sinyal OTA_UPDATE (%s). Memulai Hot-Reload...", tostring(data.buildId)))
+                task.delay(0.2, function()
+                    performHotReload(data.buildId)
+                end)
+                return
+            end
 
         elseif data.type == "PONG" then
             CoreState.LastPong = os.time()
@@ -5197,7 +5338,13 @@ local function connectWebSocket()
             local payload = data.payload or {}
             print("[OE-External] Menerima Perintah: " .. tostring(action))
 
-            if action == "REJOIN_SERVER" then
+            if action == "HOT_RELOAD" then
+                sendLog("Menerima perintah Hot-Reload manual dari Web Console...", "WARN")
+                task.delay(0.1, function()
+                    performHotReload(data.payload and data.payload.buildId or "MANUAL_TRIGGER")
+                end)
+
+            elseif action == "REJOIN_SERVER" then
                 sendLog("Menerima perintah Rejoin Server...", "WARN")
                 Safety.RejoinNow()
 
@@ -5223,7 +5370,7 @@ local function connectWebSocket()
             return
         end
 
-        if string.find(closeReasonStr, "replaced") or string.find(closeReasonStr, "4001") then
+        if string.find(closeReasonStr, "replaced") or string.find(closeReasonStr, "4001") or string.find(closeReasonStr, "hot_reload") then
             print("[OE-External] Terdeteksi penutupan karena sesi baru (replaced). Menghentikan rekoneksi.")
             CoreState.IsTerminated = true
             return
