@@ -25,9 +25,22 @@ import {
 import { JobProgressView } from "@/components/JobProgressView.jsx";
 
 export function CDIDFarmTab({ bot, onSendCommand }) {
-  const isFarming = !!bot.isFarming;
-  const isMinigameActive = bot.job && bot.job.includes("Minigame");
-  const isBaristaActive = bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji Jawa") || bot.job.includes("Kanji Jiwa")) || !!bot.barista?.isFarming;
+  // SSOT: Single Source of Truth
+  const features = bot.features || {};
+
+  const isTruckFarming = features.truck !== undefined 
+    ? !!features.truck 
+    : (!!bot.isFarming && !(bot.job && bot.job.includes("Minigame")) && !(bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji"))));
+
+  const isBaristaActive = features.kanjiJiwa !== undefined
+    ? !!features.kanjiJiwa
+    : ((bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji Jawa") || bot.job.includes("Kanji Jiwa"))) || !!bot.barista?.isFarming);
+
+  const isMinigameActive = features.minigame !== undefined
+    ? !!features.minigame
+    : (bot.job && bot.job.includes("Minigame") || !!bot.minigame?.isFarming);
+
+  const isFarming = isTruckFarming || isBaristaActive || isMinigameActive || !!bot.isFarming;
 
   const placeLower = (bot.placeName || "").toLowerCase();
   const isJakarta = placeLower.includes("jakarta") || bot.placeId === "14005966837" || bot.placeId === 14005966837;
@@ -182,7 +195,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
           >
             <Truck className="h-4 w-4" />
             <span>Truk Kargo (Jatim)</span>
-            {isFarming && !isMinigameActive && !isBaristaActive && (
+            {isTruckFarming && (
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             )}
           </button>
@@ -330,19 +343,19 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
               <Truck className="h-4 w-4 text-emerald-400" />
               Kontrol Auto Farm Truk Kargo
             </CardTitle>
-            <Badge variant={isFarming && !isMinigameActive && !isBaristaActive ? "emerald" : "secondary"}>
-              {isFarming && !isMinigameActive && !isBaristaActive ? "SEDANG AKTIF" : "STANDBY"}
+            <Badge variant={isTruckFarming ? "emerald" : "secondary"}>
+              {isTruckFarming ? "SEDANG AKTIF" : "STANDBY"}
             </Badge>
           </CardHeader>
           <CardContent className="p-4 pt-1 space-y-4">
             <div className="flex items-center gap-3">
               <Button
-                variant={isFarming && !isMinigameActive && !isBaristaActive ? "destructive" : "emerald"}
+                variant={isTruckFarming ? "destructive" : "emerald"}
                 className="flex-1 font-bold text-sm h-11 gap-2 shadow-lg"
-                onClick={() => onSendCommand(bot.botId, isFarming ? "STOP_FARM" : "START_FARM", { jobType: "truck" })}
+                onClick={() => onSendCommand(bot.botId, isTruckFarming ? "STOP_FARM" : "START_FARM", { jobType: "truck" })}
               >
-                {isFarming && !isMinigameActive && !isBaristaActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {isFarming && !isMinigameActive && !isBaristaActive ? "Hentikan Auto Farm Truk" : "Mulai Auto Farm Truk Kargo"}
+                {isTruckFarming ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {isTruckFarming ? "Hentikan Auto Farm Truk" : "Mulai Auto Farm Truk Kargo"}
               </Button>
             </div>
 

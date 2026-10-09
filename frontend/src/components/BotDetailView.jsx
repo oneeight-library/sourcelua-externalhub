@@ -67,9 +67,23 @@ export function BotDetailView({
   const isKicked = bot.isKicked;
   const isLobby = bot.gameId === "cdid_menu";
   const initial = (bot.name || "B").substring(0, 2).toUpperCase();
-  const isFarming = !!bot.isFarming;
-  const isMinigameActive = bot.job && bot.job.includes("Minigame");
-  const isBaristaActive = (bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji Jawa") || bot.job.includes("Kanji Jiwa"))) || !!bot.barista?.isFarming;
+  // SSOT: Single Source of Truth
+  const features = bot.features || {};
+  const config = bot.config || {};
+
+  const isTruckFarming = features.truck !== undefined 
+    ? !!features.truck 
+    : (!!bot.isFarming && !(bot.job && bot.job.includes("Minigame")) && !(bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji"))));
+
+  const isBaristaActive = features.kanjiJiwa !== undefined
+    ? !!features.kanjiJiwa
+    : ((bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji Jawa") || bot.job.includes("Kanji Jiwa"))) || !!bot.barista?.isFarming);
+
+  const isMinigameActive = features.minigame !== undefined
+    ? !!features.minigame
+    : (bot.job && bot.job.includes("Minigame") || !!bot.minigame?.isFarming);
+
+  const isFarming = isTruckFarming || isBaristaActive || isMinigameActive || !!bot.isFarming;
 
   // Deteksi Map Akun
   const placeLower = (bot.placeName || "").toLowerCase();
@@ -126,33 +140,24 @@ export function BotDetailView({
     tabsContainerRef.current.scrollLeft = scrollLeftRef.current - walk;
   };
 
-  // State Minigames
-  const [role, setRole] = React.useState(bot.minigame?.role || "Winner");
-  const [autoOpenBox, setAutoOpenBox] = React.useState(bot.minigame?.autoOpenBox || false);
+  // State Minigames (SSOT Direct Sync)
+  const [role, setRole] = React.useState(config.minigameRole || bot.minigame?.role || "Winner");
+  const autoOpenBox = features.autoOpenBox !== undefined ? !!features.autoOpenBox : !!bot.minigame?.autoOpenBox;
 
   React.useEffect(() => {
-    if (bot.minigame?.role) setRole(bot.minigame.role);
-    if (bot.minigame?.autoOpenBox !== undefined) setAutoOpenBox(bot.minigame.autoOpenBox);
-  }, [bot.minigame]);
+    if (config.minigameRole) setRole(config.minigameRole);
+    else if (bot.minigame?.role) setRole(bot.minigame.role);
+  }, [config.minigameRole, bot.minigame?.role]);
 
-  // State Proteksi & Lighting
-  const [autoRejoin, setAutoRejoin] = React.useState(bot.autoRejoin !== false);
-  const [lowRender, setLowRender] = React.useState(!!bot.lowRender);
-  const [playerDetector, setPlayerDetector] = React.useState(bot.safety?.PlayerDetectorEnabled || false);
-  const [emergencyAction, setEmergencyAction] = React.useState(bot.safety?.EmergencyAction || "Warn Only");
-  const [ignoreFriends, setIgnoreFriends] = React.useState(bot.safety?.IgnoreFriends !== false);
-  const [serverLocked, setServerLocked] = React.useState(!!bot.safety?.ServerLocked);
-  const [fullbright, setFullbright] = React.useState(bot.lighting?.Fullbright || false);
-  const [noFog, setNoFog] = React.useState(bot.lighting?.NoFog || false);
-
-  React.useEffect(() => {
-    if (bot.safety?.ServerLocked !== undefined) setServerLocked(!!bot.safety.ServerLocked);
-    if (bot.safety?.PlayerDetectorEnabled !== undefined) setPlayerDetector(!!bot.safety.PlayerDetectorEnabled);
-    if (bot.safety?.EmergencyAction !== undefined) setEmergencyAction(bot.safety.EmergencyAction);
-    if (bot.safety?.IgnoreFriends !== undefined) setIgnoreFriends(bot.safety.IgnoreFriends !== false);
-    if (bot.lighting?.Fullbright !== undefined) setFullbright(!!bot.lighting.Fullbright);
-    if (bot.lighting?.NoFog !== undefined) setNoFog(!!bot.lighting.NoFog);
-  }, [bot.safety, bot.lighting]);
+  // State Proteksi & Lighting (SSOT Direct Sync)
+  const autoRejoin = bot.autoRejoin !== false;
+  const lowRender = features.lowRender !== undefined ? !!features.lowRender : !!bot.lowRender;
+  const playerDetector = features.playerDetector !== undefined ? !!features.playerDetector : !!bot.safety?.PlayerDetectorEnabled;
+  const emergencyAction = config.emergencyAction || bot.safety?.EmergencyAction || "Warn Only";
+  const ignoreFriends = config.ignoreFriends !== undefined ? config.ignoreFriends : (bot.safety?.IgnoreFriends !== false);
+  const serverLocked = features.serverLocked !== undefined ? !!features.serverLocked : !!bot.safety?.ServerLocked;
+  const fullbright = features.fullbright !== undefined ? !!features.fullbright : !!bot.lighting?.Fullbright;
+  const noFog = features.noFog !== undefined ? !!features.noFog : !!bot.lighting?.NoFog;
 
   const handleToggleAutoRejoin = (checked) => {
     setAutoRejoin(checked);
@@ -204,7 +209,6 @@ export function BotDetailView({
   };
 
   const trips = bot.tripCount || 0;
-  const isTruckFarming = isFarming && !isMinigameActive && !isBaristaActive;
   const truckEarnings = isTruckFarming 
     ? (bot.truckEarnings !== undefined ? bot.truckEarnings : (bot.totalEarnings || 0))
     : (trips > 0 ? (bot.truckEarnings !== undefined ? bot.truckEarnings : (bot.totalEarnings || 0)) : 0);
@@ -988,7 +992,7 @@ export function BotDetailView({
                 <Button
                   variant={isTruckFarming ? "destructive" : "emerald"}
                   className="w-full font-bold text-sm h-12 gap-2 shadow-lg"
-                  onClick={() => onSendCommand(bot.botId, isFarming ? "STOP_FARM" : "START_FARM", { jobType: "truck" })}
+                  onClick={() => onSendCommand(bot.botId, isTruckFarming ? "STOP_FARM" : "START_FARM", { jobType: "truck" })}
                 >
                   {isTruckFarming ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   {isTruckFarming ? "Hentikan Truk Kargo" : "Mulai Truk Kargo Sekarang"}

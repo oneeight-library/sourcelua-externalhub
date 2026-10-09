@@ -4383,7 +4383,10 @@ function CDIDModule.GetTelemetry()
     local stMg = MinigameJob and MinigameJob.GetState() or {}
     local stKj = KanjiJawaJob and KanjiJawaJob.GetState() or {}
 
-    local isFarming = (st.IsFarming or stMg.IsFarming or stKj.IsFarming) or false
+    local isTruckFarming = (st.IsFarming == true)
+    local isMinigameFarming = (stMg.IsFarming == true)
+    local isKanjiFarming = (stKj.IsFarming == true)
+    local isFarming = isTruckFarming or isMinigameFarming or isKanjiFarming
     local elapsedSec = 0
     if st.IsFarming and st.FarmStartTime and st.FarmStartTime > 0 then
         elapsedSec = math.floor(os.clock() - st.FarmStartTime)
@@ -4404,7 +4407,24 @@ function CDIDModule.GetTelemetry()
     end
 
     return {
-        status = stMg.IsFarming and (stMg.Phase or "RUNNING") or (stKj.IsFarming and (stKj.Phase or "RUNNING") or (st.Status or "CONNECTED")),
+        -- SSOT: Unified Active Features Flags (Single Source of Truth)
+        features = {
+            truck = isTruckFarming,
+            minigame = isMinigameFarming,
+            kanjiJiwa = isKanjiFarming,
+            lowRender = (st.LowRender == true),
+            serverLocked = (SafetyFeature and SafetyFeature.ServerLocked == true) or false,
+            playerDetector = (SafetyFeature and SafetyFeature.PlayerDetectorEnabled == true) or false,
+            fullbright = (LightingFeature and LightingFeature.Fullbright == true) or false,
+            noFog = (LightingFeature and LightingFeature.NoFog == true) or false,
+            autoOpenBox = (stMg.AutoOpenBox == true),
+        },
+        config = {
+            minigameRole = stMg.Role or "Winner",
+            emergencyAction = (SafetyFeature and SafetyFeature.EmergencyAction) or "Warn Only",
+            ignoreFriends = (SafetyFeature and SafetyFeature.IgnoreFriends ~= false),
+        },
+        status = isMinigameFarming and (stMg.Phase or "RUNNING") or (isKanjiFarming and (stKj.Phase or "RUNNING") or (st.Status or "CONNECTED")),
         job = dynamicJob,
         placeName = placeName,
         gameName = placeName,
