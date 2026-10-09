@@ -6,21 +6,17 @@
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
 
-if _G.OE_ExternalRunning then
-    print("[OE-External] Instance sebelumnya terdeteksi, mematikan instance lama...")
-    _G.OE_ExternalRunning = false
-    _G.OE_ExternalCurrentInstance = nil
-    if _G.OE_ExternalSocket then
-        pcall(function() _G.OE_ExternalSocket:Close() end)
-    end
-    task.wait(0.5)
+-- Tutup socket lama secara bersih jika ada instance sebelumnya
+if _G.OE_ExternalSocket then
+    pcall(function() _G.OE_ExternalSocket:Close() end)
 end
 
+-- Klaim ID instance aktif saat ini secara atomik
 _G.OE_ExternalCurrentInstance = MY_INSTANCE_ID
 _G.OE_ExternalRunning = true
 
 local function isInstanceAlive()
-    return _G.OE_ExternalRunning and (_G.OE_ExternalCurrentInstance == MY_INSTANCE_ID)
+    return (_G.OE_ExternalCurrentInstance == MY_INSTANCE_ID)
 end
 
 local HttpService = game:GetService("HttpService")
@@ -861,6 +857,17 @@ local function updateCash(txt)
             State.TotalEarnings = netDiff
         end
     end
+
+    -- Kirim instant telemetry packet saat saldo berubah/terdeteksi
+    if Context and Context.SendPacket then
+        pcall(function()
+            Context.SendPacket("TELEMETRY", {
+                currentCash = State.CurrentCash,
+                startCash = State.StartCash,
+                totalEarnings = State.TotalEarnings
+            })
+        end)
+    end
 end
 
 local function bindCashHUD()
@@ -1481,6 +1488,7 @@ end
 -- ============================================================================
 function TruckJob.Init(coreContext)
     Context = coreContext
+    _G.OE_TeleportQueued = nil
 
     bindCashHUD()
     LocalPlayer.CharacterAdded:Connect(function()
@@ -2026,15 +2034,18 @@ local function joinMap(mapKey, serverCode)
     mapKey = mapKey or State.SelectedMap or "JawaTimur"
     State.Status = "JOINING_" .. string.upper(mapKey)
 
-    -- Setup queue_on_teleport agar loader kembali berjalan di server tujuan
-    local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport) or queueonteleport
-    if queue_teleport then
-        pcall(function()
-            queue_teleport([[
-                task.wait(3.5)
-                loadstring(game:HttpGet("https://externalhub.oneeight-project18.workers.dev/loader"))()
-            ]])
-        end)
+    -- Setup queue_on_teleport agar loader kembali berjalan di server tujuan (Maksimal 1 kali agar tidak menumpuk)
+    if not _G.OE_TeleportQueued then
+        _G.OE_TeleportQueued = true
+        local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport) or queueonteleport
+        if queue_teleport then
+            pcall(function()
+                queue_teleport([[
+                    task.wait(3.5)
+                    loadstring(game:HttpGet("https://externalhub.oneeight-project18.workers.dev/loader"))()
+                ]])
+            end)
+        end
     end
 
     -- 1. Pastikan Kode Server Terisi
@@ -2425,7 +2436,9 @@ local function connectWebSocket()
         elseif data.type == "FORCE_DISCONNECT" then
             print("[OE-External] Sesi digantikan oleh koneksi baru: " .. tostring(data.message or "SUPERSEDED"))
             CoreState.IsTerminated = true
-            _G.OE_ExternalRunning = false
+            if _G.OE_ExternalCurrentInstance == MY_INSTANCE_ID then
+                _G.OE_ExternalRunning = false
+            end
             pcall(function() ws:Close() end)
             return
 
@@ -2479,7 +2492,7 @@ end
 -- TELEMETRY STREAM LOOP (1 Detik Sekali)
 -- ============================================================================
 task.spawn(function()
-    while _G.OE_ExternalRunning and isInstanceAlive() and not CoreState.IsTerminated do
+    while isInstanceAlive() and not CoreState.IsTerminated do
         local sessionSeconds = math.floor(os.clock() - CoreState.SessionStartTime)
         local h = math.floor(sessionSeconds / 3600)
         local m = math.floor((sessionSeconds % 3600) / 60)

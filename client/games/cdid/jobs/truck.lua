@@ -111,6 +111,17 @@ local function updateCash(txt)
             State.TotalEarnings = netDiff
         end
     end
+
+    -- Kirim instant telemetry packet saat saldo berubah/terdeteksi
+    if Context and Context.SendPacket then
+        pcall(function()
+            Context.SendPacket("TELEMETRY", {
+                currentCash = State.CurrentCash,
+                startCash = State.StartCash,
+                totalEarnings = State.TotalEarnings
+            })
+        end)
+    end
 end
 
 local function bindCashHUD()
@@ -731,6 +742,7 @@ end
 -- ============================================================================
 function TruckJob.Init(coreContext)
     Context = coreContext
+    _G.OE_TeleportQueued = nil
 
     bindCashHUD()
     LocalPlayer.CharacterAdded:Connect(function()

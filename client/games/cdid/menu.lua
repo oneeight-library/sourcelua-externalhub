@@ -264,15 +264,18 @@ local function joinMap(mapKey, serverCode)
     mapKey = mapKey or State.SelectedMap or "JawaTimur"
     State.Status = "JOINING_" .. string.upper(mapKey)
 
-    -- Setup queue_on_teleport agar loader kembali berjalan di server tujuan
-    local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport) or queueonteleport
-    if queue_teleport then
-        pcall(function()
-            queue_teleport([[
-                task.wait(3.5)
-                loadstring(game:HttpGet("https://externalhub.oneeight-project18.workers.dev/loader"))()
-            ]])
-        end)
+    -- Setup queue_on_teleport agar loader kembali berjalan di server tujuan (Maksimal 1 kali agar tidak menumpuk)
+    if not _G.OE_TeleportQueued then
+        _G.OE_TeleportQueued = true
+        local queue_teleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport) or queueonteleport
+        if queue_teleport then
+            pcall(function()
+                queue_teleport([[
+                    task.wait(3.5)
+                    loadstring(game:HttpGet("https://externalhub.oneeight-project18.workers.dev/loader"))()
+                ]])
+            end)
+        end
     end
 
     -- 1. Pastikan Kode Server Terisi
