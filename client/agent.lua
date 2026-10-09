@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv16so2d)
+    Version: 3.3.0 (Build: v3.3.mv175l2x)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv16so2d"
+local AGENT_BUILD_ID = "v3.3.mv175l2x"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -1115,6 +1115,204 @@ function JobProgressFeature.ClaimAll(jobName)
 end
 
 return JobProgressFeature
+end
+
+Modules["games/cdid/features/streamer_mode"] = function()
+--[[
+    OneEight External Hub - Streamer Mode (Name Spoofing Engine)
+    Fungsi:
+    - Menyamarkan username dan DisplayName akun menjadi nama samaran (default: "Warga_Sipil")
+    - Meliputi: Overhead Nametag karakter, Minimap radar dot, Menu HP CDID (BCA, E-Toll, KTP, Welcome Screen), CoreGui PlayerList, dan Dialog UI
+    - Beroperasi 100% pada layer visual lokal sehingga aman dan tidak merusak koneksi remote server
+--]]
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local StreamerMode = {}
+StreamerMode.Enabled = true
+StreamerMode.SpoofedName = "Warga_Sipil"
+StreamerMode.RealName = LocalPlayer.Name
+StreamerMode.RealDisplayName = LocalPlayer.DisplayName
+
+local Context = nil
+local isRunning = false
+local listenerConns = {}
+
+local function sanitizeText(text)
+    if not text or text == "" then return text end
+    local real = StreamerMode.RealName
+    local disp = StreamerMode.RealDisplayName
+    local spoof = StreamerMode.SpoofedName
+
+    local res = text
+    if real and real ~= "" then
+        res = res:gsub(real, spoof)
+        if res:find(real:lower(), 1, true) then
+            res = res:gsub(real:lower(), spoof)
+        end
+    end
+    if disp and disp ~= "" and disp ~= real then
+        res = res:gsub(disp, spoof)
+    end
+    return res
+end
+
+local function replaceLabel(v)
+    if not v or not (v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox")) then return end
+    pcall(function()
+        local current = v.Text
+        if not current or current == "" then return end
+
+        if StreamerMode.Enabled then
+            local real = StreamerMode.RealName
+            local disp = StreamerMode.RealDisplayName
+            local hasReal = (real and current:find(real, 1, true)) or (real and current:lower():find(real:lower(), 1, true))
+            local hasDisp = (disp and disp ~= "" and current:find(disp, 1, true))
+
+            if hasReal or hasDisp then
+                if not v:GetAttribute("OE_OriginalText") then
+                    v:SetAttribute("OE_OriginalText", current)
+                end
+                v.Text = sanitizeText(current)
+            end
+        else
+            local orig = v:GetAttribute("OE_OriginalText")
+            if orig then
+                v.Text = orig
+                v:SetAttribute("OE_OriginalText", nil)
+            end
+        end
+    end)
+end
+
+function StreamerMode.SweepAll()
+    pcall(function()
+        -- 1. Sweep PlayerGui
+        if LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui") then
+            for _, v in ipairs(LocalPlayer.PlayerGui:GetDescendants()) do
+                if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
+                    replaceLabel(v)
+                end
+            end
+        end
+
+        -- 2. Sweep Overhead Head Nametag in Workspace.Lives
+        local lives = Workspace:FindFirstChild("Lives")
+        local charLives = lives and lives:FindFirstChild(StreamerMode.RealName)
+        if charLives then
+            local head = charLives:FindFirstChild("Head")
+            local billboard = head and head:FindFirstChild("PlayerBillboard")
+            local frame = billboard and billboard:FindFirstChild("Frame")
+            local pName = frame and frame:FindFirstChild("PlayerName")
+            if pName and pName:IsA("TextLabel") then
+                replaceLabel(pName)
+            end
+        end
+
+        -- 3. Sweep Character Head if in Workspace direct
+        local char = LocalPlayer.Character
+        if char and char ~= charLives then
+            local head = char:FindFirstChild("Head")
+            local billboard = head and head:FindFirstChild("PlayerBillboard")
+            local frame = billboard and billboard:FindFirstChild("Frame")
+            local pName = frame and frame:FindFirstChild("PlayerName")
+            if pName and pName:IsA("TextLabel") then
+                replaceLabel(pName)
+            end
+        end
+
+        -- 4. Sweep CoreGui PlayerList
+        local core = (gethui and gethui()) or game:GetService("CoreGui")
+        local pList = core:FindFirstChild("PlayerList")
+        if pList then
+            for _, v in ipairs(pList:GetDescendants()) do
+                if v:IsA("TextLabel") then
+                    replaceLabel(v)
+                end
+            end
+        end
+    end)
+end
+
+function StreamerMode.Init(coreContext)
+    Context = coreContext
+
+    if _G.OE_PreservedState and _G.OE_PreservedState.streamerMode ~= nil then
+        StreamerMode.Enabled = _G.OE_PreservedState.streamerMode
+    end
+    if _G.OE_PreservedState and _G.OE_PreservedState.spoofedName then
+        StreamerMode.SpoofedName = _G.OE_PreservedState.spoofedName
+    end
+
+    for _, conn in ipairs(listenerConns) do
+        pcall(function() conn:Disconnect() end)
+    end
+    table.clear(listenerConns)
+
+    local function setupGuiListener()
+        pcall(function()
+            local pg = LocalPlayer:WaitForChild("PlayerGui", 5)
+            if pg then
+                local conn = pg.DescendantAdded:Connect(function(descendant)
+                    if not StreamerMode.Enabled then return end
+                    if descendant:IsA("TextLabel") or descendant:IsA("TextButton") or descendant:IsA("TextBox") then
+                        task.defer(function()
+                            replaceLabel(descendant)
+                        end)
+                    end
+                end)
+                table.insert(listenerConns, conn)
+            end
+        end)
+    end
+
+    setupGuiListener()
+
+    local charConn = LocalPlayer.CharacterAdded:Connect(function()
+        task.wait(1.0)
+        StreamerMode.SweepAll()
+    end)
+    table.insert(listenerConns, charConn)
+
+    if not isRunning then
+        isRunning = true
+        task.spawn(function()
+            while isRunning do
+                if StreamerMode.Enabled then
+                    StreamerMode.SweepAll()
+                end
+                task.wait(1.5)
+            end
+        end)
+    end
+
+    StreamerMode.SweepAll()
+end
+
+function StreamerMode.SetEnabled(enabled, newSpoofName, context)
+    StreamerMode.Enabled = (enabled == true)
+    if newSpoofName and tostring(newSpoofName) ~= "" then
+        StreamerMode.SpoofedName = tostring(newSpoofName)
+    end
+
+    if _G.OE_PreservedState then
+        _G.OE_PreservedState.streamerMode = StreamerMode.Enabled
+        _G.OE_PreservedState.spoofedName = StreamerMode.SpoofedName
+    end
+
+    StreamerMode.SweepAll()
+
+    if context and context.SendLog then
+        context.SendLog(string.format("Streamer Mode (Name Spoof): %s [Nama: %s]",
+            StreamerMode.Enabled and "AKTIF" or "NONAKTIF",
+            StreamerMode.SpoofedName), "INFO")
+    end
+end
+
+return StreamerMode
 end
 
 Modules["games/cdid/jobs/truck"] = function()
@@ -4178,6 +4376,7 @@ local TruckJob = nil
 local MinigameJob = nil
 local KanjiJawaJob = nil
 local JobProgressFeature = nil
+local StreamerModeFeature = nil
 
 function CDIDModule.Init(coreContext)
     Context = coreContext
@@ -4188,6 +4387,7 @@ function CDIDModule.Init(coreContext)
     DealershipFeature = requireModule("games/cdid/features/dealership")
     TeleportFeature = requireModule("games/cdid/features/teleport")
     JobProgressFeature = requireModule("games/cdid/features/job_progress")
+    StreamerModeFeature = requireModule("games/cdid/features/streamer_mode")
     TruckJob = requireModule("games/cdid/jobs/truck")
     MinigameJob = requireModule("games/cdid/jobs/minigames")
     KanjiJawaJob = requireModule("games/cdid/jobs/kanji_jawa")
@@ -4196,6 +4396,7 @@ function CDIDModule.Init(coreContext)
     if MinigameJob and MinigameJob.Init then MinigameJob.Init(coreContext) end
     if KanjiJawaJob and KanjiJawaJob.Init then KanjiJawaJob.Init(coreContext) end
     if JobProgressFeature and JobProgressFeature.Init then JobProgressFeature.Init(coreContext) end
+    if StreamerModeFeature and StreamerModeFeature.Init then StreamerModeFeature.Init(coreContext) end
     if SafetyFeature and SafetyFeature.CheckCurrentLockState then
         pcall(SafetyFeature.CheckCurrentLockState)
     end
@@ -4379,6 +4580,20 @@ function CDIDModule.HandleCommand(action, payload)
             DealershipFeature.Buy(payload.carId, payload.dealer, payload.color, Context)
         end
         return true
+
+    elseif action == "TOGGLE_STREAMER_MODE" then
+        if StreamerModeFeature then
+            local enable = (payload and payload.enabled ~= nil) and payload.enabled or not StreamerModeFeature.Enabled
+            local spoofName = (payload and payload.spoofedName) or StreamerModeFeature.SpoofedName
+            StreamerModeFeature.SetEnabled(enable, spoofName, Context)
+        end
+        return true
+
+    elseif action == "SET_SPOOFED_NAME" then
+        if StreamerModeFeature and payload and payload.spoofedName then
+            StreamerModeFeature.SetEnabled(StreamerModeFeature.Enabled, payload.spoofedName, Context)
+        end
+        return true
     end
 
     return false
@@ -4428,11 +4643,13 @@ function CDIDModule.GetTelemetry()
             fullbright = (LightingFeature and LightingFeature.Fullbright == true) or false,
             noFog = (LightingFeature and LightingFeature.NoFog == true) or false,
             autoOpenBox = (stMg.AutoOpenBox == true),
+            streamerMode = (StreamerModeFeature and StreamerModeFeature.Enabled == true) or false,
         },
         config = {
             minigameRole = stMg.Role or "Winner",
             emergencyAction = (SafetyFeature and SafetyFeature.EmergencyAction) or "Warn Only",
             ignoreFriends = (SafetyFeature and SafetyFeature.IgnoreFriends ~= false),
+            spoofedName = (StreamerModeFeature and StreamerModeFeature.SpoofedName) or "Warga_Sipil",
         },
         status = isTruckFarming and (st.Status or "CONNECTED") or (isKanjiFarming and (stKj.Phase or "RUNNING") or (isMinigameFarming and (stMg.Phase or "RUNNING") or "CONNECTED")),
         job = dynamicJob,
@@ -5194,6 +5411,8 @@ local function performHotReload(targetBuildId)
             ignoreFriends = telem and telem.config and telem.config.ignoreFriends,
             fullbright = feats.fullbright,
             noFog = feats.noFog,
+            streamerMode = (feats.streamerMode ~= nil and feats.streamerMode) or true,
+            spoofedName = (telem and telem.config and telem.config.spoofedName) or "Warga_Sipil",
             minDistance = telem and telem.minDistance
         }
         print("[OE-External OTA] State aktif berhasil diawetkan di _G.OE_PreservedState!")
@@ -5255,6 +5474,12 @@ local function checkPreservedState()
                     playerDetector = preserved.playerDetector,
                     emergencyAction = preserved.emergencyAction,
                     ignoreFriends = preserved.ignoreFriends
+                })
+            end
+            if preserved.streamerMode ~= nil then
+                activeGameModule.HandleCommand("TOGGLE_STREAMER_MODE", {
+                    enabled = preserved.streamerMode,
+                    spoofedName = preserved.spoofedName or "Warga_Sipil"
                 })
             end
             if preserved.minDistance then

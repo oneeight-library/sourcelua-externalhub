@@ -65,6 +65,7 @@ const MODULES_CONFIG = [
   { name: "games/cdid/features/dealership", file: path.join(process.cwd(), "client/games/cdid/features/dealership.lua") },
   { name: "games/cdid/features/teleport", file: path.join(projectRoot, "client/games/cdid/features/teleport.lua") },
   { name: "games/cdid/features/job_progress", file: path.join(projectRoot, "client/games/cdid/features/job_progress.lua") },
+  { name: "games/cdid/features/streamer_mode", file: path.join(projectRoot, "client/games/cdid/features/streamer_mode.lua") },
   { name: "games/cdid/jobs/truck", file: path.join(projectRoot, "client/games/cdid/jobs/truck.lua") },
   { name: "games/cdid/jobs/minigames", file: path.join(projectRoot, "client/games/cdid/jobs/minigames.lua") },
   { name: "games/cdid/jobs/kanji_jawa", file: path.join(projectRoot, "client/games/cdid/jobs/kanji_jawa.lua") },

@@ -199,6 +199,14 @@ export function BotDetailView({
     onSendCommand(bot.botId, "SET_LIGHTING_CONFIG", { fullbright, noFog: checked });
   };
 
+  // Streamer Mode (Name Spoofing)
+  const streamerMode = features.streamerMode !== undefined ? !!features.streamerMode : (bot.streamerMode?.enabled !== false);
+  const spoofedName = config.spoofedName || bot.streamerMode?.spoofedName || "Warga_Sipil";
+
+  const handleToggleStreamerMode = (checked) => {
+    onSendCommand(bot.botId, "TOGGLE_STREAMER_MODE", { enabled: checked, spoofedName });
+  };
+
   // Format Waktu
   const formatTime = (secs) => {
     if (!secs || isNaN(secs)) return "00:00:00";
@@ -971,6 +979,39 @@ export function BotDetailView({
       {activeTab === "safety" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-6 space-y-5">
+            
+            {/* Streamer Mode (Name Spoofing) Card */}
+            <Card className="border-purple-800/60 bg-gradient-to-br from-purple-950/20 via-zinc-900/60 to-zinc-950/80 shadow-lg">
+              <CardHeader className="p-4 pb-2 border-b border-purple-900/40 flex flex-row items-center justify-between">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
+                  <EyeOff className="h-4 w-4 text-purple-400" />
+                  Streamer Mode (Spoof Nama Akun)
+                </CardTitle>
+                <Badge variant={streamerMode ? "purple" : "secondary"} className={`text-[10px] font-bold ${streamerMode ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : ""}`}>
+                  {streamerMode ? "AKTIF" : "NONAKTIF"}
+                </Badge>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/50 border border-zinc-800/80">
+                  <div className="space-y-1 pr-3">
+                    <div className="font-semibold text-xs text-zinc-100 flex items-center gap-2 flex-wrap">
+                      <span>Samarkan Nama Akun di Layar</span>
+                      <span className="bg-purple-950/80 border border-purple-700/60 text-purple-300 font-mono text-[10px] px-2 py-0.5 rounded-md font-bold">
+                        {spoofedName}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-400 leading-relaxed">
+                      Menyamarkan nama akun asli di seluruh tampilan game (Overhead Nametag, Minimap, HP CDID, ATM BCA, E-Toll) menjadi <b>{spoofedName}</b> agar aman saat merekam video / live streaming.
+                    </div>
+                  </div>
+                  <Switch 
+                    checked={streamerMode} 
+                    onCheckedChange={handleToggleStreamerMode} 
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="border-zinc-800">
               <CardHeader className="p-4 pb-2 border-b border-zinc-800/60">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">

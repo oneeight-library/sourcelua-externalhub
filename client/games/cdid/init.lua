@@ -46,6 +46,7 @@ local TruckJob = nil
 local MinigameJob = nil
 local KanjiJawaJob = nil
 local JobProgressFeature = nil
+local StreamerModeFeature = nil
 
 function CDIDModule.Init(coreContext)
     Context = coreContext
@@ -56,6 +57,7 @@ function CDIDModule.Init(coreContext)
     DealershipFeature = requireModule("games/cdid/features/dealership")
     TeleportFeature = requireModule("games/cdid/features/teleport")
     JobProgressFeature = requireModule("games/cdid/features/job_progress")
+    StreamerModeFeature = requireModule("games/cdid/features/streamer_mode")
     TruckJob = requireModule("games/cdid/jobs/truck")
     MinigameJob = requireModule("games/cdid/jobs/minigames")
     KanjiJawaJob = requireModule("games/cdid/jobs/kanji_jawa")
@@ -64,6 +66,7 @@ function CDIDModule.Init(coreContext)
     if MinigameJob and MinigameJob.Init then MinigameJob.Init(coreContext) end
     if KanjiJawaJob and KanjiJawaJob.Init then KanjiJawaJob.Init(coreContext) end
     if JobProgressFeature and JobProgressFeature.Init then JobProgressFeature.Init(coreContext) end
+    if StreamerModeFeature and StreamerModeFeature.Init then StreamerModeFeature.Init(coreContext) end
     if SafetyFeature and SafetyFeature.CheckCurrentLockState then
         pcall(SafetyFeature.CheckCurrentLockState)
     end
@@ -247,6 +250,20 @@ function CDIDModule.HandleCommand(action, payload)
             DealershipFeature.Buy(payload.carId, payload.dealer, payload.color, Context)
         end
         return true
+
+    elseif action == "TOGGLE_STREAMER_MODE" then
+        if StreamerModeFeature then
+            local enable = (payload and payload.enabled ~= nil) and payload.enabled or not StreamerModeFeature.Enabled
+            local spoofName = (payload and payload.spoofedName) or StreamerModeFeature.SpoofedName
+            StreamerModeFeature.SetEnabled(enable, spoofName, Context)
+        end
+        return true
+
+    elseif action == "SET_SPOOFED_NAME" then
+        if StreamerModeFeature and payload and payload.spoofedName then
+            StreamerModeFeature.SetEnabled(StreamerModeFeature.Enabled, payload.spoofedName, Context)
+        end
+        return true
     end
 
     return false
@@ -296,11 +313,13 @@ function CDIDModule.GetTelemetry()
             fullbright = (LightingFeature and LightingFeature.Fullbright == true) or false,
             noFog = (LightingFeature and LightingFeature.NoFog == true) or false,
             autoOpenBox = (stMg.AutoOpenBox == true),
+            streamerMode = (StreamerModeFeature and StreamerModeFeature.Enabled == true) or false,
         },
         config = {
             minigameRole = stMg.Role or "Winner",
             emergencyAction = (SafetyFeature and SafetyFeature.EmergencyAction) or "Warn Only",
             ignoreFriends = (SafetyFeature and SafetyFeature.IgnoreFriends ~= false),
+            spoofedName = (StreamerModeFeature and StreamerModeFeature.SpoofedName) or "Warga_Sipil",
         },
         status = isTruckFarming and (st.Status or "CONNECTED") or (isKanjiFarming and (stKj.Phase or "RUNNING") or (isMinigameFarming and (stMg.Phase or "RUNNING") or "CONNECTED")),
         job = dynamicJob,
