@@ -832,26 +832,15 @@ export function BotDetailView({
               </CardHeader>
               <CardContent className="p-4 space-y-4">
                 
-                <div className="p-3.5 rounded-xl bg-zinc-900/70 border border-zinc-800/80 space-y-2">
-                  <span className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
-                    <Info className="h-3.5 w-3.5 text-amber-400" />
-                    Panduan & Informasi Job
-                  </span>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    Auto-farm Kanji Jiwa bekerja otomatis menyapa pelanggan, mengambil pesanan di kasir counter, meracik kopi/teh di tiap stasiun, menjalankan minigame espresso brewer, dan menyajikan minuman.
-                  </p>
-                  <div className="pt-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-xs font-semibold h-8 border-zinc-700 hover:bg-zinc-800 text-amber-300 gap-1.5"
-                      onClick={() => onSendCommand(bot.botId, "TELEPORT_CAFE")}
-                    >
-                      <MapPin className="h-3.5 w-3.5 text-amber-400" />
-                      Teleport Cepat ke Kanji Jiwa
-                    </Button>
-                  </div>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs font-semibold h-9 border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800 text-amber-300 gap-1.5"
+                  onClick={() => onSendCommand(bot.botId, "TELEPORT_CAFE")}
+                >
+                  <MapPin className="h-3.5 w-3.5 text-amber-400" />
+                  Teleport Cepat ke Kanji Jiwa
+                </Button>
 
                 {/* Tombol Utama Start / Stop Barista */}
                 <Button
