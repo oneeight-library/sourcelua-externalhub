@@ -128,10 +128,10 @@ const PRESET_COLORS = [
 // Opsi Sort persis sesuai in-game CDID FilterFrame.Sort
 const SORT_OPTIONS = [
   { value: "new_limited", label: "New & Limited" },
-  { value: "low_to_high", label: "Low to high (Harga Termurah)" },
-  { value: "high_to_low", label: "High to low (Harga Termahal)" },
-  { value: "speed_desc", label: "Top Speed Tertinggi" },
-  { value: "hp_desc", label: "Tenaga Kuda (HP)" },
+  { value: "low_to_high", label: "Low to high" },
+  { value: "high_to_low", label: "High to low" },
+  { value: "speed_desc", label: "Top Speed" },
+  { value: "hp_desc", label: "HP" },
 ];
 
 // Opsi Pass persis sesuai in-game CDID FilterFrame.Pass
@@ -600,27 +600,44 @@ export function DealershipPage({
             isPassDropdownOpen || isSortDropdownOpen ? "z-30" : "z-20"
           }`}>
           
-          {/* Input Search */}
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama mobil (Innova, RX7, Supra)..."
-              className="w-full h-9 pl-9 pr-8 rounded-xl bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-700 transition-colors"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-2.5 text-zinc-500 hover:text-zinc-300 p-0.5"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
+          {/* Sisi Kiri: Input Search + Refresh Button */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-80">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari nama mobil (Innova, RX7, Supra)..."
+                className="w-full h-9 pl-9 pr-8 rounded-xl bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-700 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-2.5 text-zinc-500 hover:text-zinc-300 p-0.5"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Refresh Button di Samping Search Input */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const targetId = queryBot?.botId || selectedBotIds[0] || (botList[0]?.botId) || "ALL";
+                const dKey = selectedDealer === "Semua Dealer" ? "all" : selectedDealer;
+                onFetchCars(targetId, dKey);
+              }}
+              title="Refresh Katalog dari Game"
+              className="h-9 w-9 p-0 border-zinc-800 hover:bg-zinc-800 shrink-0 active:scale-95 shadow-sm rounded-xl"
+            >
+              <RefreshCw className="h-3.5 w-3.5 text-zinc-400" />
+            </Button>
           </div>
 
-          {/* Sisi Kanan: Total Unit + Dropdown Pass + Dropdown Sort + Refresh */}
+          {/* Sisi Kanan: Bocoran + Dropdown Pass + Dropdown Sort */}
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-between md:justify-end">
             
             {/* Quick Sort / Filter Tombol Upcoming (Bocoran) Menggantikan Badge Unit */}
@@ -698,7 +715,7 @@ export function DealershipPage({
               >
                 <span className="text-zinc-400 font-normal hidden sm:inline">Sort:</span>
                 <span className="truncate max-w-[95px] sm:max-w-none text-cyan-400">
-                  {SORT_OPTIONS.find((s) => s.value === sortBy)?.label.replace(/\s*\(.*\)/, "") || "Sort"}
+                  {SORT_OPTIONS.find((s) => s.value === sortBy)?.label || "Sort"}
                 </span>
                 <ChevronDown className={`h-3.5 w-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${isSortDropdownOpen ? "rotate-180" : ""}`} />
               </Button>
@@ -731,21 +748,6 @@ export function DealershipPage({
                 </div>
               )}
             </div>
-
-            {/* Refresh Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const targetId = queryBot?.botId || selectedBotIds[0] || (botList[0]?.botId) || "ALL";
-                const dKey = selectedDealer === "Semua Dealer" ? "all" : selectedDealer;
-                onFetchCars(targetId, dKey);
-              }}
-              title="Refresh Katalog dari Game"
-              className="h-9 w-9 p-0 border-zinc-800 hover:bg-zinc-800 shrink-0 active:scale-95 shadow-sm"
-            >
-              <RefreshCw className="h-3.5 w-3.5 text-zinc-400" />
-            </Button>
           </div>
         </div>
 
