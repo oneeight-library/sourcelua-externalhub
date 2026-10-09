@@ -104,7 +104,7 @@ export class HubRoom {
         name,
         userId,
         displayName,
-        avatarUrl: null,
+        avatarUrl: `/api/avatar?id=${encodeURIComponent(userId || name)}`,
         job,
         placeId,
         placeName,
@@ -406,10 +406,21 @@ export default {
       } catch (e) {}
 
       try {
-        let imgUrl = AVATAR_CACHE.get(String(id));
+        const cacheKeyStr = String(id).toLowerCase();
+        let imgUrl = AVATAR_CACHE.get(cacheKeyStr);
         if (!imgUrl) {
-          imgUrl = await robloxService.getAvatarHeadshot(id, "150x150", true);
-          if (imgUrl) AVATAR_CACHE.set(String(id), imgUrl);
+          let targetUserId = id;
+          if (isNaN(Number(id))) {
+            const userObj = await robloxService.resolveUsername(id);
+            if (userObj) targetUserId = userObj.userId;
+          }
+          if (targetUserId) {
+            imgUrl = await robloxService.getAvatarHeadshot(targetUserId, "150x150", true);
+            if (imgUrl) {
+              AVATAR_CACHE.set(cacheKeyStr, imgUrl);
+              AVATAR_CACHE.set(String(targetUserId), imgUrl);
+            }
+          }
         }
 
         if (imgUrl) {
