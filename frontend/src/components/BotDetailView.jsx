@@ -14,6 +14,7 @@ import {
 import { ConsoleTab } from "@/components/tabs/ConsoleTab.jsx";
 import { CDIDMenuTab } from "@/components/tabs/CDIDMenuTab.jsx";
 import { DealershipPage } from "@/components/DealershipPage.jsx";
+import { JobProgressView } from "@/components/JobProgressView.jsx";
 import { getGameConfig } from "@/config/games.js";
 import { 
   Play, 
@@ -866,6 +867,11 @@ export function BotDetailView({
 
               </CardContent>
             </Card>
+          </div>
+
+          {/* Progres Level & Claim Hadiah (100% Backend-Driven via DataReplication) */}
+          <div className="lg:col-span-12">
+            <JobProgressView bot={bot} onSendCommand={onSendCommand} />
           </div>
 
         </div>

@@ -45,6 +45,7 @@ local TeleportFeature = nil
 local TruckJob = nil
 local MinigameJob = nil
 local KanjiJawaJob = nil
+local JobProgressFeature = nil
 
 function CDIDModule.Init(coreContext)
     Context = coreContext
@@ -54,6 +55,7 @@ function CDIDModule.Init(coreContext)
     SafetyFeature = requireModule("games/cdid/features/safety")
     DealershipFeature = requireModule("games/cdid/features/dealership")
     TeleportFeature = requireModule("games/cdid/features/teleport")
+    JobProgressFeature = requireModule("games/cdid/features/job_progress")
     TruckJob = requireModule("games/cdid/jobs/truck")
     MinigameJob = requireModule("games/cdid/jobs/minigames")
     KanjiJawaJob = requireModule("games/cdid/jobs/kanji_jawa")
@@ -61,6 +63,7 @@ function CDIDModule.Init(coreContext)
     TruckJob.Init(coreContext)
     if MinigameJob and MinigameJob.Init then MinigameJob.Init(coreContext) end
     if KanjiJawaJob and KanjiJawaJob.Init then KanjiJawaJob.Init(coreContext) end
+    if JobProgressFeature and JobProgressFeature.Init then JobProgressFeature.Init(coreContext) end
     if SafetyFeature and SafetyFeature.CheckCurrentLockState then
         pcall(SafetyFeature.CheckCurrentLockState)
     end
@@ -120,6 +123,20 @@ function CDIDModule.HandleCommand(action, payload)
 
     elseif action == "TELEPORT_CAFE" then
         if KanjiJawaJob then KanjiJawaJob.TeleportCafe() end
+        return true
+
+    elseif action == "CLAIM_JOB_LEVEL" then
+        if JobProgressFeature and payload and payload.level then
+            local job = (payload and payload.jobName) or "Barista"
+            JobProgressFeature.ClaimLevel(job, payload.level)
+        end
+        return true
+
+    elseif action == "CLAIM_ALL_JOB_LEVELS" then
+        if JobProgressFeature then
+            local job = (payload and payload.jobName) or "Barista"
+            JobProgressFeature.ClaimAll(job)
+        end
         return true
 
     elseif action == "TELEPORT_HQ" then
@@ -298,6 +315,7 @@ function CDIDModule.GetTelemetry()
             currentCustomer = stKj.CurrentCustomerName or "-",
             currentOrder = stKj.CurrentOrder or {}
         },
+        jobProgress = JobProgressFeature and JobProgressFeature.GetProgressData("Barista") or nil,
         speed = st.Speed or 0,
         distRemaining = st.DistRemaining or "0m",
         lowRender = st.LowRender or false,

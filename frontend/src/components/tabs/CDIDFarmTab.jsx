@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   RotateCcw
 } from "lucide-react";
+import { JobProgressView } from "@/components/JobProgressView.jsx";
 
 export function CDIDFarmTab({ bot, onSendCommand }) {
   const isFarming = !!bot.isFarming;
@@ -207,6 +208,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
           MODE 1: CAFE KANJI JAWA / BARISTA (MAP JAKARTA)
           ========================================================================= */}
       {(jobMode === "kanji_jawa" || (isJakarta && jobMode !== "minigame" && !isJatim)) && (
+        <>
         <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/60 via-amber-950/10 to-zinc-950/60">
           <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -312,6 +314,10 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Level Progress & Klaim Hadiah Barista */}
+        <JobProgressView bot={bot} onSendCommand={onSendCommand} />
+        </>
       )}
 
       {/* =========================================================================
