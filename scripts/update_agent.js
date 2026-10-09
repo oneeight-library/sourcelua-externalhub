@@ -5,7 +5,7 @@ const projectRoot = ".";
 
 const HEADER = `--[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.2.0 (CDID Minigames Sumo & Modular VFS)
+    Version: 3.3.0 (CDID Minigames Sumo, Cafe Kanji Jawa Barista & Modular VFS)
 --]]
 
 local HttpService = game:GetService("HttpService")
@@ -56,6 +56,7 @@ const MODULES_CONFIG = [
   { name: "games/cdid/features/teleport", file: path.join(projectRoot, "client/games/cdid/features/teleport.lua") },
   { name: "games/cdid/jobs/truck", file: path.join(projectRoot, "client/games/cdid/jobs/truck.lua") },
   { name: "games/cdid/jobs/minigames", file: path.join(projectRoot, "client/games/cdid/jobs/minigames.lua") },
+  { name: "games/cdid/jobs/kanji_jawa", file: path.join(projectRoot, "client/games/cdid/jobs/kanji_jawa.lua") },
   { name: "games/cdid", file: path.join(projectRoot, "client/games/cdid/init.lua") },
   { name: "games/cdid_menu", file: path.join(projectRoot, "client/games/cdid/menu.lua") },
   { name: "games/dds", file: path.join(projectRoot, "client/games/dds/init.lua") },
@@ -87,7 +88,7 @@ const runnerCode = (sepIdx !== -1 ? currentAgentLua.substring(sepIdx) : currentA
 const agentLua = `${HEADER.trim()}\n\n${modulesCode}${runnerCode}\n`;
 
 fs.writeFileSync(path.join(projectRoot, "client/agent.lua"), agentLua, "utf8");
-console.log("Successfully rebuilt client/agent.lua with all 11 modules and VFS requireModule intact!");
+console.log(`Successfully rebuilt client/agent.lua with all ${MODULES_CONFIG.length} modules and VFS requireModule intact!`);
 
 const jsCode = `// Auto-generated from client/agent.lua (UTF-8 without BOM)
 export const AGENT_LUA = ${JSON.stringify(agentLua)};

@@ -44,6 +44,7 @@ local DealershipFeature = nil
 local TeleportFeature = nil
 local TruckJob = nil
 local MinigameJob = nil
+local KanjiJawaJob = nil
 
 function CDIDModule.Init(coreContext)
     Context = coreContext
@@ -55,13 +56,15 @@ function CDIDModule.Init(coreContext)
     TeleportFeature = requireModule("games/cdid/features/teleport")
     TruckJob = requireModule("games/cdid/jobs/truck")
     MinigameJob = requireModule("games/cdid/jobs/minigames")
+    KanjiJawaJob = requireModule("games/cdid/jobs/kanji_jawa")
 
     TruckJob.Init(coreContext)
     if MinigameJob and MinigameJob.Init then MinigameJob.Init(coreContext) end
+    if KanjiJawaJob and KanjiJawaJob.Init then KanjiJawaJob.Init(coreContext) end
     if SafetyFeature and SafetyFeature.CheckCurrentLockState then
         pcall(SafetyFeature.CheckCurrentLockState)
     end
-    print("[OE-External CDID] Modular Coordinator Berhasil Diinisialisasi!")
+    print("[OE-External CDID] Modular Coordinator Berhasil Diinisialisasi (Truk, Minigames & Cafe Kanji Jawa)!")
 
     -- Auto-push katalog dealer saat inisialisasi agar web langsung punya data tanpa nunggu tombol
     task.spawn(function()
@@ -81,6 +84,8 @@ function CDIDModule.HandleCommand(action, payload)
         local jobType = payload and payload.jobType or "truck"
         if jobType == "minigame" then
             if MinigameJob then MinigameJob.Start(payload) end
+        elseif jobType == "kanji_jawa" or jobType == "barista" then
+            if KanjiJawaJob then KanjiJawaJob.Start() end
         else
             if TruckJob then TruckJob.Start() end
         end
@@ -89,6 +94,7 @@ function CDIDModule.HandleCommand(action, payload)
     elseif action == "STOP_FARM" then
         if TruckJob then TruckJob.Stop() end
         if MinigameJob then MinigameJob.Stop() end
+        if KanjiJawaJob then KanjiJawaJob.Stop() end
         return true
 
     elseif action == "START_MINIGAME_FARM" then
@@ -101,6 +107,18 @@ function CDIDModule.HandleCommand(action, payload)
 
     elseif action == "BUY_MINIGAME_BOX" then
         if MinigameJob then MinigameJob.BuyBox() end
+        return true
+
+    elseif action == "START_KANJI_JAWA_FARM" or action == "START_BARISTA_FARM" then
+        if KanjiJawaJob then KanjiJawaJob.Start() end
+        return true
+
+    elseif action == "STOP_KANJI_JAWA_FARM" or action == "STOP_BARISTA_FARM" then
+        if KanjiJawaJob then KanjiJawaJob.Stop() end
+        return true
+
+    elseif action == "TELEPORT_CAFE" then
+        if KanjiJawaJob then KanjiJawaJob.TeleportCafe() end
         return true
 
     elseif action == "TELEPORT_HQ" then
@@ -219,30 +237,38 @@ end
 function CDIDModule.GetTelemetry()
     local st = TruckJob and TruckJob.GetState() or {}
     local stMg = MinigameJob and MinigameJob.GetState() or {}
-    local isFarming = (st.IsFarming or stMg.IsFarming) or false
+    local stKj = KanjiJawaJob and KanjiJawaJob.GetState() or {}
+
+    local isFarming = (st.IsFarming or stMg.IsFarming or stKj.IsFarming) or false
     local elapsedSec = 0
     if st.IsFarming and st.FarmStartTime and st.FarmStartTime > 0 then
         elapsedSec = math.floor(os.clock() - st.FarmStartTime)
     elseif stMg.IsFarming and stMg.FarmStartTime and stMg.FarmStartTime > 0 then
         elapsedSec = math.floor(os.time() - stMg.FarmStartTime)
+    elseif stKj.IsFarming and stKj.FarmStartTime and stKj.FarmStartTime > 0 then
+        elapsedSec = math.floor(os.clock() - stKj.FarmStartTime)
     end
+
     local placeName = getPlaceName()
     local dynamicJob = "Unemployed"
     if stMg.IsFarming then
         dynamicJob = "Minigames Sumo (" .. (stMg.Role or "Winner") .. ")"
+    elseif stKj.IsFarming then
+        dynamicJob = "Cafe Kanji Jawa (Barista)"
     elseif st.IsFarming then
         dynamicJob = "Truk Kargo"
     end
+
     return {
-        status = stMg.IsFarming and (stMg.Phase or "RUNNING") or (st.Status or "CONNECTED"),
+        status = stMg.IsFarming and (stMg.Phase or "RUNNING") or (stKj.IsFarming and (stKj.Phase or "RUNNING") or (st.Status or "CONNECTED")),
         job = dynamicJob,
         placeName = placeName,
         gameName = placeName,
-        currentRoute = stMg.IsFarming and ("Sumo Arena: " .. (stMg.Phase or "Lobby")) or (st.CurrentRoute or "IDLE"),
+        currentRoute = stMg.IsFarming and ("Sumo Arena: " .. (stMg.Phase or "Lobby")) or (stKj.IsFarming and ("Cafe: " .. (stKj.Phase or "Standby")) or (st.CurrentRoute or "IDLE")),
         tripCount = st.TripCount or 0,
         truckEarnings = st.IsFarming and (st.TotalEarnings or 0) or (st.TripCount and st.TripCount > 0 and (st.TotalEarnings or 0) or 0),
-        totalEarnings = (st.IsFarming and (st.TotalEarnings or 0) or 0) + (stMg.IsFarming and (stMg.CashEarned or 0) or 0),
-        currentCash = (st.CurrentCash and st.CurrentCash > 0) and st.CurrentCash or (stMg.CurrentCash or 0),
+        totalEarnings = (st.IsFarming and (st.TotalEarnings or 0) or 0) + (stMg.IsFarming and (stMg.CashEarned or 0) or 0) + (stKj.IsFarming and (stKj.TotalEarned or 0) or 0),
+        currentCash = (st.CurrentCash and st.CurrentCash > 0) and st.CurrentCash or ((stMg.CurrentCash and stMg.CurrentCash > 0) and stMg.CurrentCash or (stKj.CurrentCash or 0)),
         startCash = st.StartCash or 0,
         isFarming = isFarming,
         minigame = {
@@ -259,6 +285,17 @@ function CDIDModule.GetTelemetry()
             round = stMg.CurrentRound or 0,
             maxRounds = stMg.MaxRounds or 10,
             lastResult = stMg.LastMatchResult or "-"
+        },
+        barista = {
+            isFarming = stKj.IsFarming or false,
+            phase = stKj.Phase or "Standby",
+            totalOrders = stKj.TotalOrders or 0,
+            ruinedOrders = stKj.RuinedOrders or 0,
+            totalEarned = stKj.TotalEarned or 0,
+            lastGaji = stKj.LastGaji or 0,
+            avgPerHour = stKj.AvgPerHour or 0,
+            currentCustomer = stKj.CurrentCustomerName or "-",
+            currentOrder = stKj.CurrentOrder or {}
         },
         speed = st.Speed or 0,
         distRemaining = st.DistRemaining or "0m",
@@ -282,6 +319,7 @@ end
 function CDIDModule.Cleanup()
     if TruckJob then TruckJob.Stop() end
     if MinigameJob then MinigameJob.Stop() end
+    if KanjiJawaJob then KanjiJawaJob.Stop() end
 end
 
 return CDIDModule

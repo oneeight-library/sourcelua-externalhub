@@ -32,6 +32,8 @@ import {
   Store,
   Gamepad2,
   Truck,
+  Coffee,
+  CheckCircle2,
   Trophy,
   Package,
   Swords,
@@ -66,6 +68,7 @@ export function BotDetailView({
   const initial = (bot.name || "B").substring(0, 2).toUpperCase();
   const isFarming = !!bot.isFarming;
   const isMinigameActive = bot.job && bot.job.includes("Minigame");
+  const isBaristaActive = (bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji Jawa"))) || !!bot.barista?.isFarming;
 
   // Deteksi Map Akun
   const placeLower = (bot.placeName || "").toLowerCase();
@@ -74,7 +77,15 @@ export function BotDetailView({
 
   // Persistent Tab State (Disimpan di localStorage agar refresh tidak reset)
   const storageKey = `oe_active_tab_${bot.gameId || "cdid"}`;
-  const defaultTab = isLobby ? "gateway" : (isJakarta ? "minigames" : (isJatim ? "truck" : "minigames"));
+  const defaultTab = isLobby
+    ? "gateway"
+    : isJakarta
+    ? isBaristaActive
+      ? "barista"
+      : "minigames"
+    : isJatim
+    ? "truck"
+    : "minigames";
 
   const [activeTab, setActiveTab] = React.useState(() => {
     try {
@@ -192,14 +203,13 @@ export function BotDetailView({
   };
 
   const trips = bot.tripCount || 0;
-  const isTruckFarming = isFarming && !isMinigameActive;
-  // Di truk kargo, hasil sesi HANYA terhitung saat job aktif berjalan (atau jika sudah pernah ada trip dalam sesi ini)
+  const isTruckFarming = isFarming && !isMinigameActive && !isBaristaActive;
   const truckEarnings = isTruckFarming 
     ? (bot.truckEarnings !== undefined ? bot.truckEarnings : (bot.totalEarnings || 0))
     : (trips > 0 ? (bot.truckEarnings !== undefined ? bot.truckEarnings : (bot.totalEarnings || 0)) : 0);
 
   const elapsedSec = (bot.farmDuration && bot.farmDuration > 0) ? bot.farmDuration : (trips > 0 ? trips * 50 : 0);
-  const farmActiveTime = isTruckFarming || trips > 0 ? formatTime(elapsedSec) : "00:00:00";
+  const farmActiveTime = isTruckFarming || trips > 0 || isBaristaActive ? formatTime(elapsedSec) : "00:00:00";
 
   let avgPerHourStr = "Menghitung...";
   if (isTruckFarming && trips > 0 && truckEarnings > 0) {
@@ -213,6 +223,7 @@ export function BotDetailView({
   }
 
   const mg = bot.minigame || {};
+  const barista = bot.barista || {};
 
   return (
     <div className="space-y-6">
@@ -248,75 +259,88 @@ export function BotDetailView({
                 ) : isLobby ? (
                   <Badge variant="secondary" className="text-[11px] font-semibold">
                     <span className="h-1.5 w-1.5 rounded-full mr-1.5 bg-blue-400" />
-                    Standby di Lobi
+                    Main Menu Lobi
+                  </Badge>
+                ) : isBaristaActive ? (
+                  <Badge variant="amber" className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-bold flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Barista Aktif
+                  </Badge>
+                ) : isMinigameActive ? (
+                  <Badge variant="cyan" className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                    Minigame Aktif
+                  </Badge>
+                ) : isFarming ? (
+                  <Badge variant="emerald" className="text-[11px] font-bold flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Bekerja
                   </Badge>
                 ) : (
-                  <Badge variant={isFarming ? "emerald" : "secondary"} className="text-[11px] font-bold">
-                    <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${isFarming ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                    {isFarming ? "Sedang Bekerja" : "Standby"}
+                  <Badge variant="secondary" className="text-[11px] font-semibold">
+                    <span className="h-1.5 w-1.5 rounded-full mr-1.5 bg-zinc-500" />
+                    Standby
                   </Badge>
                 )}
               </div>
 
-              {/* Info Game & Job */}
-              <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                <Badge variant="outline" className="border-zinc-700/80 bg-zinc-900/60 text-zinc-300 font-medium text-xs px-2.5 py-0.5">
-                  <MapPin className="h-3 w-3 mr-1 text-emerald-400 inline" />
-                  <span>{bot.placeName || bot.gameName || gameCfg.name}</span>
-                </Badge>
-                
-                {!isLobby && (
-                  <Badge variant={isFarming ? "emerald" : "secondary"} className={`font-medium text-xs gap-1.5 px-2.5 py-0.5 ${!isFarming ? 'bg-zinc-800 text-zinc-300' : ''}`}>
-                    <Briefcase className="h-3 w-3 text-zinc-400" />
-                    <span>Job: {bot.job || (isFarming ? "Bekerja" : "Unemployed")}</span>
-                  </Badge>
-                )}
+              <div className="flex items-center gap-3 mt-1.5 text-xs text-zinc-400 flex-wrap">
+                <span className="flex items-center gap-1.5 font-medium text-zinc-300">
+                  <MapPin className="h-3.5 w-3.5 text-blue-400" />
+                  {bot.placeName || "Car Driving Indonesia"}
+                </span>
+                <span className="text-zinc-600">•</span>
+                <span className="flex items-center gap-1.5">
+                  <Briefcase className="h-3.5 w-3.5 text-amber-400" />
+                  {bot.job || "Unemployed"}
+                </span>
               </div>
             </div>
           </div>
 
-          {isKicked && (
-            <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-3 self-end sm:self-center">
+            {isKicked && (
               <Button
-                variant="destructive"
+                variant="outline"
                 size="sm"
-                className="gap-1.5 font-bold text-xs h-9 shadow-lg"
-                onClick={() => onRejoinBot(bot.botId)}
+                className="text-xs h-9 font-semibold gap-1.5 border-rose-800/60 text-rose-300 hover:bg-rose-950/40"
+                onClick={() => onRejoinBot && onRejoinBot(bot.botId)}
               >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Rejoin Sekarang
+                <RotateCcw className="h-3.5 w-3.5 text-rose-400" />
+                Rejoin Server
               </Button>
-            </div>
-          )}
+            )}
+          </div>
 
         </div>
       </Card>
 
       {/* =========================================================================
-          2. MODULAR SCROLLABLE TABS BAR (TOUCH & MOUSE DRAGGABLE)
+          2. NAVIGASI TAB UTAMA (SCROLL HORIZONTAL DENGAN DRAG MOUSE)
           ========================================================================= */}
-      <div className="relative">
-        <div 
-          ref={tabsContainerRef}
-          onMouseDown={handleMouseDown}
-          onMouseLeave={handleMouseLeave}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-          className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth p-1.5 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 backdrop-blur-md cursor-grab active:cursor-grabbing select-none"
-        >
+      <div 
+        ref={tabsContainerRef}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+        className="w-full overflow-x-auto pb-1 scrollbar-none cursor-grab active:cursor-grabbing select-none"
+      >
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md w-max min-w-full">
           {isLobby ? (
             <>
+              {/* TAB KHUSUS LOBI GATEWAY */}
               <button
                 type="button"
                 onClick={() => handleSelectTab("gateway")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   activeTab === "gateway"
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/25 ring-1 ring-blue-400/40"
+                    : "text-zinc-400 hover:text-blue-300 hover:bg-zinc-800/60"
                 }`}
               >
-                <MapPin className="h-4 w-4" />
-                <span>Gateway & Pilih Map</span>
+                <MapPin className="h-4 w-4 text-blue-400" />
+                <span>Gateway Lobi</span>
               </button>
 
               <button
@@ -324,11 +348,11 @@ export function BotDetailView({
                 onClick={() => handleSelectTab("dealership")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   activeTab === "dealership"
-                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-                    : "text-zinc-400 hover:text-emerald-300 hover:bg-zinc-800/60"
+                    ? "bg-amber-600 text-white shadow-md shadow-amber-500/25 ring-1 ring-amber-400/40"
+                    : "text-zinc-400 hover:text-amber-300 hover:bg-zinc-800/60"
                 }`}
               >
-                <Store className="h-4 w-4 text-emerald-400" />
+                <Store className="h-4 w-4 text-amber-400" />
                 <span>Dealerships</span>
               </button>
 
@@ -342,7 +366,7 @@ export function BotDetailView({
                 }`}
               >
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                <span>Proteksi Keamanan</span>
+                <span>Proteksi</span>
               </button>
 
               <button
@@ -360,7 +384,7 @@ export function BotDetailView({
             </>
           ) : (
             <>
-              {/* TAB 1: MINIGAMES */}
+              {/* TAB 1: MINIGAMES SUMO (JAKARTA) */}
               <button
                 type="button"
                 onClick={() => handleSelectTab("minigames")}
@@ -372,9 +396,25 @@ export function BotDetailView({
               >
                 <Gamepad2 className="h-4 w-4 text-cyan-400" />
                 <span>Minigames</span>
+                {isMinigameActive && <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />}
               </button>
 
-              {/* TAB 2: TRUK KARGO */}
+              {/* TAB 2: CAFE KANJI JAWA / BARISTA (JAKARTA) */}
+              <button
+                type="button"
+                onClick={() => handleSelectTab("barista")}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
+                  activeTab === "barista"
+                    ? "bg-amber-600 text-white shadow-md shadow-amber-500/25 ring-1 ring-amber-400/40"
+                    : "text-zinc-400 hover:text-amber-300 hover:bg-zinc-800/60"
+                }`}
+              >
+                <Coffee className="h-4 w-4 text-amber-400" />
+                <span>Cafe Kanji Jawa</span>
+                {isBaristaActive && <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />}
+              </button>
+
+              {/* TAB 3: TRUK KARGO (JAWA TIMUR) */}
               <button
                 type="button"
                 onClick={() => handleSelectTab("truck")}
@@ -386,9 +426,10 @@ export function BotDetailView({
               >
                 <Truck className="h-4 w-4 text-emerald-400" />
                 <span>Truk Kargo</span>
+                {isTruckFarming && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />}
               </button>
 
-              {/* TAB 3: DEALERSHIPS */}
+              {/* TAB 4: DEALERSHIPS */}
               <button
                 type="button"
                 onClick={() => handleSelectTab("dealership")}
@@ -402,7 +443,7 @@ export function BotDetailView({
                 <span>Dealerships</span>
               </button>
 
-              {/* TAB 4: PROTEKSI KEAMANAN */}
+              {/* TAB 5: PROTEKSI KEAMANAN */}
               <button
                 type="button"
                 onClick={() => handleSelectTab("safety")}
@@ -416,7 +457,7 @@ export function BotDetailView({
                 <span>Proteksi Keamanan</span>
               </button>
 
-              {/* TAB 5: KONSOL & OPTIMASI */}
+              {/* TAB 6: KONSOL & OPTIMASI */}
               <button
                 type="button"
                 onClick={() => handleSelectTab("console")}
@@ -482,7 +523,7 @@ export function BotDetailView({
         </div>
       )}
 
-      {/* C. TAMPILAN MINIGAMES (JAKARTA) */}
+      {/* C1. TAMPILAN MINIGAMES (JAKARTA) */}
       {!isLobby && activeTab === "minigames" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
@@ -664,6 +705,172 @@ export function BotDetailView({
         </div>
       )}
 
+      {/* C2. TAMPILAN CAFE KANJI JAWA / BARISTA (JAKARTA) */}
+      {!isLobby && activeTab === "barista" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* Kolom Kiri: Live Telemetri Barista */}
+          <div className="lg:col-span-6 space-y-5">
+            
+            {/* Card Saldo & Performa Barista */}
+            <Card className="border-zinc-800">
+              <CardHeader className="p-4 pb-2 border-b border-zinc-800/60 flex flex-row items-center justify-between">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                  <Coffee className="h-4 w-4 text-amber-400" />
+                  Keuangan & Penjualan Kopi
+                </CardTitle>
+                <Badge variant={isBaristaActive ? "amber" : "secondary"} className={`text-[10px] font-bold ${isBaristaActive ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : ""}`}>
+                  {isBaristaActive ? "BARISTA AKTIF" : "STANDBY"}
+                </Badge>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Saldo Akun</span>
+                    <div className="text-base sm:text-lg font-black text-emerald-400 tabular-nums tracking-tight mt-0.5">
+                      {gameCfg.formatMoney(bot.currentCash)}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-800/40">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">Cup Disajikan</span>
+                    <div className="text-base sm:text-lg font-black text-amber-300 tabular-nums tracking-tight mt-0.5">
+                      {barista.totalOrders || 0} Cup
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-medium tabular-nums block mt-0.5">
+                      {barista.ruinedOrders ? `${barista.ruinedOrders} rusak dibuang` : "100% Sempurna"}
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Gaji Terakhir</span>
+                    <div className="text-base sm:text-lg font-black text-amber-400 tabular-nums tracking-tight mt-0.5">
+                      {gameCfg.formatMoney(barista.lastGaji || 0)}
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-medium block mt-0.5">
+                      Per cup pesanan selesai
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Hasil Sesi Barista</span>
+                    <div className="text-base sm:text-lg font-black text-emerald-400 tabular-nums tracking-tight mt-0.5">
+                      +{gameCfg.formatMoney(barista.totalEarned || 0)}
+                    </div>
+                    <span className="text-[10px] text-emerald-500/90 font-medium block mt-0.5">
+                      {barista.avgPerHour ? `${gameCfg.formatMoney(barista.avgPerHour)} / jam` : "Menghitung rate..."}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Card Status Pesanan Aktif */}
+            <Card className="border-zinc-800">
+              <CardHeader className="p-4 pb-2 border-b border-zinc-800/60">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-400" />
+                  Status Pesanan & Racikan Meja Barista
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
+                    <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Fase / Aktivitas</span>
+                    <span className="text-xs font-bold text-amber-300 mt-0.5 block truncate">
+                      {barista.phase || (isBaristaActive ? "Berjalan" : "Standby")}
+                    </span>
+                    <span className="text-[10px] text-zinc-500 block mt-0.5">
+                      Durasi: {farmActiveTime}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
+                    <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Customer Counter</span>
+                    <span className="text-xs font-bold text-zinc-100 mt-0.5 block truncate">
+                      {barista.currentCustomer && barista.currentCustomer !== "-" ? barista.currentCustomer : "Menunggu Customer"}
+                    </span>
+                    <span className="text-[10px] text-zinc-500 block mt-0.5">
+                      {barista.currentOrder?.OrderId ? `Order ID #${barista.currentOrder.OrderId}` : "Meja Kasir"}
+                    </span>
+                  </div>
+                </div>
+
+                {barista.currentOrder?.MenuId && (
+                  <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-800/40 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between font-bold text-amber-200">
+                      <span>Menu: {barista.currentOrder.MenuId} {barista.currentOrder.Flavour && `(${barista.currentOrder.Flavour})`}</span>
+                      <span className="font-mono text-amber-400">Progres: {barista.currentOrder.DoneCount || 0} / {barista.currentOrder.StepCount || "?"}</span>
+                    </div>
+                    <div className="text-[11px] text-zinc-400 flex items-center justify-between">
+                      <span>Stasiun Tujuan: <strong className="text-zinc-200">{barista.currentOrder.NextStation || barista.currentOrder.NextStep || "Selesai"}</strong></span>
+                      <span className="text-emerald-400 font-semibold">{barista.currentOrder.Done ? "Siap Disajikan!" : "Sedang Diracik..."}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+          </div>
+
+          {/* Kolom Kanan: Kontrol Barista */}
+          <div className="lg:col-span-6 space-y-5">
+            <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/70 to-zinc-950/70">
+              <CardHeader className="p-4 pb-2 border-b border-zinc-800/60 flex flex-row items-center justify-between">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                  <Coffee className="h-4 w-4 text-amber-400" />
+                  Kontrol Cafe Kanji Jawa
+                </CardTitle>
+                <Badge variant={isBaristaActive ? "amber" : "secondary"} className={`text-[10px] font-bold ${isBaristaActive ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : ""}`}>
+                  {isBaristaActive ? "BERJALAN" : "BERHENTI"}
+                </Badge>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                
+                <div className="p-3.5 rounded-xl bg-zinc-900/70 border border-zinc-800/80 space-y-2">
+                  <span className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
+                    <Info className="h-3.5 w-3.5 text-amber-400" />
+                    Panduan & Informasi Job
+                  </span>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    Auto-farm Cafe Kanji Jawa bekerja otomatis menyapa pelanggan, mengambil pesanan di kasir counter, meracik kopi/teh di tiap stasiun, menjalankan minigame espresso brewer, dan menyajikan minuman.
+                  </p>
+                  <div className="pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs font-semibold h-8 border-zinc-700 hover:bg-zinc-800 text-amber-300 gap-1.5"
+                      onClick={() => onSendCommand(bot.botId, "TELEPORT_CAFE")}
+                    >
+                      <MapPin className="h-3.5 w-3.5 text-amber-400" />
+                      Teleport Cepat ke Cafe Kanji Jawa
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Tombol Utama Start / Stop Barista */}
+                <Button
+                  variant={isBaristaActive ? "destructive" : "amber"}
+                  className={`w-full font-bold text-sm h-12 gap-2 shadow-lg ${!isBaristaActive ? "bg-amber-600 hover:bg-amber-500 text-white" : ""}`}
+                  onClick={() => {
+                    if (isBaristaActive) {
+                      onSendCommand(bot.botId, "STOP_KANJI_JAWA_FARM");
+                    } else {
+                      onSendCommand(bot.botId, "START_KANJI_JAWA_FARM");
+                    }
+                  }}
+                >
+                  {isBaristaActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {isBaristaActive ? "Hentikan Auto Farm Cafe Kanji Jawa" : "Mulai Auto Farm Cafe Kanji Jawa"}
+                </Button>
+
+              </CardContent>
+            </Card>
+          </div>
+
+        </div>
+      )}
+
       {/* D. TAMPILAN TRUK KARGO (JAWA TIMUR) */}
       {!isLobby && activeTab === "truck" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -676,8 +883,8 @@ export function BotDetailView({
                   <Truck className="h-4 w-4 text-emerald-400" />
                   Keuangan & Ekspedisi Kargo
                 </CardTitle>
-                <Badge variant={isFarming && !isMinigameActive ? "emerald" : "secondary"} className="text-[10px] font-bold">
-                  {isFarming && !isMinigameActive ? "BEKERJA" : "STANDBY"}
+                <Badge variant={isTruckFarming ? "emerald" : "secondary"} className="text-[10px] font-bold">
+                  {isTruckFarming ? "BEKERJA" : "STANDBY"}
                 </Badge>
               </CardHeader>
               <CardContent className="p-4">
@@ -767,21 +974,19 @@ export function BotDetailView({
                   <Truck className="h-4 w-4 text-emerald-400" />
                   Kontrol Truk Kargo (Jawa Timur)
                 </CardTitle>
-                <Badge variant={isFarming && !isMinigameActive ? "emerald" : "secondary"} className="text-[10px] font-bold">
-                  {isFarming && !isMinigameActive ? "BERJALAN" : "BERHENTI"}
+                <Badge variant={isTruckFarming ? "emerald" : "secondary"} className="text-[10px] font-bold">
+                  {isTruckFarming ? "BERJALAN" : "BERHENTI"}
                 </Badge>
               </CardHeader>
               <CardContent className="p-4 space-y-3">
                 <Button
-                  variant={isFarming && !isMinigameActive ? "destructive" : "emerald"}
+                  variant={isTruckFarming ? "destructive" : "emerald"}
                   className="w-full font-bold text-sm h-12 gap-2 shadow-lg"
                   onClick={() => onSendCommand(bot.botId, isFarming ? "STOP_FARM" : "START_FARM", { jobType: "truck" })}
                 >
-                  {isFarming && !isMinigameActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  {isFarming && !isMinigameActive ? "Hentikan Truk Kargo" : "Mulai Truk Kargo Sekarang"}
+                  {isTruckFarming ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {isTruckFarming ? "Hentikan Truk Kargo" : "Mulai Truk Kargo Sekarang"}
                 </Button>
-
-
               </CardContent>
             </Card>
           </div>
