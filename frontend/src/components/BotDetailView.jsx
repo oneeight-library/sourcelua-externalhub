@@ -33,8 +33,6 @@ import {
   MapPin,
   Car,
   Building2,
-  Wrench,
-  Fuel,
   ShieldAlert,
   Lock,
   Unlock,
@@ -140,9 +138,6 @@ export function BotDetailView({
     onSendCommand(bot.botId, "TOGGLE_NO_FOG", { enabled: checked });
   };
 
-  const handleQuickTeleport = (target) => {
-    onSendCommand(bot.botId, "QUICK_TELEPORT", { target });
-  };
 
   // Hitung durasi aktif farming yang bisa dipause
   const formatTime = (totalSec) => {
@@ -501,23 +496,23 @@ export function BotDetailView({
               </CardContent>
             </Card>
 
-            {/* Section 2: Utilitas & Teleportasi Peta CDID */}
+            {/* Section 2: Remote Dealership CDID */}
             <Card className="border-zinc-800">
               <CardHeader className="p-4 pb-2 border-b border-zinc-800/60 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-cyan-400" />
-                  Remote Dealership & Teleport
+                  <Store className="h-4 w-4 text-emerald-400" />
+                  Remote Dealership CDID
                 </CardTitle>
                 <Badge variant="secondary" className="text-[9px] uppercase font-mono tracking-wider">
-                  OneEight Util
+                  OE Dealer
                 </Badge>
               </CardHeader>
-              <CardContent className="p-4 space-y-4">
+              <CardContent className="p-4">
                 {/* Dealership Controller */}
                 <div className="space-y-2 p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-zinc-200">Katalog Dealer CDID</span>
-                    <span className="text-[10px] text-zinc-500 font-mono">Buka dari mana saja</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">Buka & Beli dari mana saja</span>
                   </div>
                   <Button
                     variant="emerald"
@@ -530,42 +525,6 @@ export function BotDetailView({
                     <Store className="h-4 w-4" />
                     Buka Dealership
                   </Button>
-                </div>
-
-                {/* Quick Map Waypoints */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">
-                    Teleportasi Lokasi Cepat
-                  </span>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs font-medium border-zinc-800 hover:bg-zinc-850 gap-1.5"
-                      onClick={() => handleQuickTeleport("bengkel")}
-                    >
-                      <Wrench className="h-3 w-3 text-amber-400" />
-                      Bengkel
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs font-medium border-zinc-800 hover:bg-zinc-850 gap-1.5"
-                      onClick={() => handleQuickTeleport("dealer")}
-                    >
-                      <Building2 className="h-3 w-3 text-cyan-400" />
-                      Dealer
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs font-medium border-zinc-800 hover:bg-zinc-850 gap-1.5"
-                      onClick={() => handleQuickTeleport("rest_area")}
-                    >
-                      <Fuel className="h-3 w-3 text-emerald-400" />
-                      Rest Area
-                    </Button>
-                  </div>
                 </div>
               </CardContent>
             </Card>
