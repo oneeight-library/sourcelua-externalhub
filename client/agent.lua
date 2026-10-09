@@ -1723,8 +1723,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Helpers = {}
-local State = nil
-local Config = nil
 
 function Helpers.Init(stateInstance, configInstance)
     State = stateInstance
@@ -2181,9 +2179,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local NetworkHandler = {}
-local State = nil
-local Helpers = nil
-local Config = nil
 local NetworkModule = nil
 
 function NetworkHandler.Init(stateInstance, helpersInstance, configInstance)
@@ -2313,12 +2308,7 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
 local AutoFarm = {}
-local State = nil
-local Helpers = nil
-local NetworkHandler = nil
-local Context = nil
 local Utils = nil
-local Config = nil
 
 local isRunning = false
 local farmThread = nil
