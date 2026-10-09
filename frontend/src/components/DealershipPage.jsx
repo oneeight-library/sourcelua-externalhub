@@ -16,8 +16,60 @@ import {
   X,
   ChevronDown,
   Users,
-  Cpu
+  Cpu,
+  Clock
 } from "lucide-react";
+
+// Komponen live countdown badge untuk limited cars (H:M:S)
+function CountdownBadge({ timeLeft, className = "" }) {
+  if (!timeLeft || timeLeft === "00:00:00") return null;
+
+  const targetTimeRef = React.useRef(null);
+  const [display, setDisplay] = React.useState(timeLeft);
+
+  React.useEffect(() => {
+    if (!timeLeft) return;
+    const parts = timeLeft.split(":").map(Number);
+    let seconds = 0;
+    if (parts.length === 3) {
+      seconds = (parts[0] || 0) * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
+    } else if (parts.length === 2) {
+      seconds = (parts[0] || 0) * 60 + (parts[1] || 0);
+    }
+    targetTimeRef.current = Date.now() + seconds * 1000;
+    setDisplay(timeLeft);
+  }, [timeLeft]);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      if (!targetTimeRef.current) return;
+      const diffMs = targetTimeRef.current - Date.now();
+      if (diffMs <= 0) {
+        setDisplay("00:00:00");
+        return;
+      }
+      const totalSec = Math.floor(diffMs / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      setDisplay(
+        `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+      );
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <span
+      className={`text-[7.5px] sm:text-[8.5px] font-bold font-mono bg-zinc-950/90 text-rose-300 border border-rose-500/40 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none backdrop-blur-md flex items-center gap-0.5 ${className}`}
+      title={`Sisa waktu limited: ${display}`}
+    >
+      <Clock className="h-2.5 w-2.5 text-rose-400 shrink-0" />
+      <span>{display}</span>
+    </span>
+  );
+}
 
 // Daftar dealer resmi CDID 100% persis sesuai nilai car.Dealership.Value di in-game CarData
 const CDID_DEALERS_LIST = [
@@ -701,11 +753,14 @@ export function DealershipPage({
                     </div>
 
                     {/* Badges Overlay: LIMITED, NEW, & GAMEPASS (Retro/Luxury) di Pojok Kiri Atas */}
-                    <div className="absolute top-1 left-1 sm:top-1.5 sm:left-1.5 flex items-center gap-1 z-10 flex-wrap max-w-[70%]">
+                    <div className="absolute top-1 left-1 sm:top-1.5 sm:left-1.5 flex items-center gap-1 z-10 flex-wrap max-w-[85%]">
                       {car.isLimited && (
                         <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500/80 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none animate-pulse">
                           LIMITED!
                         </span>
+                      )}
+                      {car.timeLeft && car.timeLeft !== "00:00:00" && (
+                        <CountdownBadge timeLeft={car.timeLeft} />
                       )}
                       {car.isNew && (
                         <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500/80 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none">
@@ -834,6 +889,9 @@ export function DealershipPage({
                   <span className="text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500 shadow-md shadow-rose-600/30 px-2 py-0.5 rounded-md leading-none">
                     LIMITED!
                   </span>
+                )}
+                {modalCar.timeLeft && modalCar.timeLeft !== "00:00:00" && (
+                  <CountdownBadge timeLeft={modalCar.timeLeft} className="text-[9px] px-2 py-0.5 rounded-md" />
                 )}
                 {modalCar.isNew && (
                   <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500 shadow-md shadow-emerald-600/30 px-2 py-0.5 rounded-md leading-none">

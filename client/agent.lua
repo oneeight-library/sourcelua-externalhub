@@ -541,6 +541,24 @@ function DealershipFeature.GetCars(dealerTarget)
     local cleanTarget = tostring(dealerTarget or ""):lower():gsub("%s+", "")
     if cleanTarget == "komersil" then cleanTarget = "komersial" end
 
+    -- Extract live countdown time map dari PlayerGui Dealership bila ada
+    local timeMap = {}
+    pcall(function()
+        local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local dGui = pGui and pGui:FindFirstChild("Dealership")
+        local dList = dGui and dGui:FindFirstChild("Container") and dGui.Container:FindFirstChild("Dealership") and dGui.Container.Dealership:FindFirstChild("Dealerlist")
+        if dList then
+            for _, dFolder in ipairs(dList:GetChildren()) do
+                for _, cFrame in ipairs(dFolder:GetChildren()) do
+                    local tLbl = cFrame:FindFirstChild("Frame") and cFrame.Frame:FindFirstChild("Time")
+                    if tLbl and tLbl:IsA("TextLabel") and tLbl.Text ~= "" and tLbl.Text ~= "00:00:00" then
+                        timeMap[cFrame.Name:lower()] = tLbl.Text
+                    end
+                end
+            end
+        end
+    end)
+
     for _, car in ipairs(carData:GetChildren()) do
         local dealerVal = car:FindFirstChild("Dealership")
         local unobtainable = car:FindFirstChild("Unobtainable")
@@ -577,8 +595,9 @@ function DealershipFeature.GetCars(dealerTarget)
                     isGamepass = true
                 end
 
+                local timeLeft = timeMap[lowerId] or ""
                 local isLimited = false
-                if maps.Limited[lowerId] or car:FindFirstChild("Limited") then
+                if maps.Limited[lowerId] or car:FindFirstChild("Limited") or timeLeft ~= "" then
                     isLimited = true
                 end
 
@@ -612,7 +631,8 @@ function DealershipFeature.GetCars(dealerTarget)
                     isGamepass = isGamepass,
                     isLimited = isLimited,
                     isNew = isNew,
-                    stock = stockVal
+                    stock = stockVal,
+                    timeLeft = timeLeft
                 })
             end
         end
