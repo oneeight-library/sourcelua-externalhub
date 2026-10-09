@@ -2094,17 +2094,7 @@ function CDIDMenu.Init(coreContext)
     Context = coreContext
     print("[OE-External CDID] Modul Main Menu / Lobby CDID aktif!")
 
-    -- Auto-Rejoin queue removed (Clean Mode)
 
-        if rejoinTarget then
-            print(string.format("[OE-External CDID] ⚡ Auto-Rejoin ke Private Server: Map %s, Kode %s", tostring(rejoinTarget.map), tostring(rejoinTarget.code)))
-            if Context and Context.SendLog then
-                Context.SendLog(string.format("Menyambung kembali ke Private Server %s (Kode: %s)...", tostring(rejoinTarget.map), tostring(rejoinTarget.code)), "WARN")
-            end
-            task.wait(0.5)
-            joinMap(rejoinTarget.map, rejoinTarget.code)
-        end
-    end)
 
     -- Initial scan kode server
     scanAllSources()
