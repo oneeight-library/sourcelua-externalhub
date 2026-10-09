@@ -157,21 +157,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
               </Button>
             </div>
 
-            {/* Tombol Depot HQ Truk CDID */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
-              <div>
-                <div className="font-semibold text-xs text-zinc-200">Teleport Depot Truk (HQ)</div>
-                <div className="text-[11px] text-zinc-400">Pindahkan karakter langsung ke pangkalan truk</div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs font-semibold"
-                onClick={() => onSendCommand(bot.botId, "TELEPORT_HQ")}
-              >
-                Teleport HQ
-              </Button>
-            </div>
+
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
               <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
