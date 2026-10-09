@@ -18,7 +18,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 local KanjiJawaJob = {}
-KanjiJawaJob.JobName = "Cafe Kanji Jawa (Barista)"
+KanjiJawaJob.JobName = "Kanji Jiwa (Barista)"
 KanjiJawaJob.PlaceIds = { 14005966837 } -- CDID Jakarta
 
 local Context = nil
@@ -30,7 +30,7 @@ local CurrentHookConn = nil
 -- 1. CONFIGURATION
 -- ==============================================================================
 local Config = {
-    JobName = "Cafe Kanji Jawa (Barista)",
+    JobName = "Kanji Jiwa (Barista)",
     PlaceIds = { 14005966837 },
     KitchenFloorY = 22.9,
     CafeCenter = Vector3.new(-32.5, 22.9, 8420.0),
@@ -728,7 +728,7 @@ function AutoFarm.Start()
         local _, hrp = Helpers.GetValidHumanoid()
         if hrp and (hrp.Position - Config.CafeCenter).Magnitude > 75 then
             if Context and Context.SendLog then
-                Context.SendLog("Menuju lokasi Cafe Kanji Jawa...", "INFO")
+                Context.SendLog("Menuju lokasi Kanji Jiwa...", "INFO")
             end
             Helpers.TeleportToCafe()
             task.wait(1.5)
@@ -1103,21 +1103,21 @@ end
 function KanjiJawaJob.Start()
     AutoFarm.Start()
     if Context and Context.SendLog then
-        Context.SendLog("Auto Farm Cafe Kanji Jawa (Barista) Dimulai!", "SUCCESS")
+        Context.SendLog("Auto Farm Kanji Jiwa (Barista) Dimulai!", "SUCCESS")
     end
 end
 
 function KanjiJawaJob.Stop()
     AutoFarm.Stop()
     if Context and Context.SendLog then
-        Context.SendLog("Auto Farm Cafe Kanji Jawa (Barista) Dihentikan.", "WARN")
+        Context.SendLog("Auto Farm Kanji Jiwa (Barista) Dihentikan.", "WARN")
     end
 end
 
 function KanjiJawaJob.TeleportCafe()
     Helpers.TeleportToCafe()
     if Context and Context.SendLog then
-        Context.SendLog("Teleport ke Cafe Kanji Jawa.", "INFO")
+        Context.SendLog("Teleport ke Kanji Jiwa.", "INFO")
     end
 end
 

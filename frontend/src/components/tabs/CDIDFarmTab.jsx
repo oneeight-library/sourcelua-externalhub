@@ -27,7 +27,7 @@ import { JobProgressView } from "@/components/JobProgressView.jsx";
 export function CDIDFarmTab({ bot, onSendCommand }) {
   const isFarming = !!bot.isFarming;
   const isMinigameActive = bot.job && bot.job.includes("Minigame");
-  const isBaristaActive = bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji Jawa")) || !!bot.barista?.isFarming;
+  const isBaristaActive = bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji Jawa") || bot.job.includes("Kanji Jiwa")) || !!bot.barista?.isFarming;
 
   const placeLower = (bot.placeName || "").toLowerCase();
   const isJakarta = placeLower.includes("jakarta") || bot.placeId === "14005966837" || bot.placeId === 14005966837;
@@ -107,7 +107,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
             </div>
             <div>
               <span className="font-bold text-amber-200 block">Map CDID Jakarta Terdeteksi</span>
-              <span className="text-[11px] text-zinc-400">Pilih job: Cafe Kanji Jawa (Barista) atau Minigames Sumo Arena</span>
+              <span className="text-[11px] text-zinc-400">Pilih job: Kanji Jiwa (Barista) atau Minigames Sumo Arena</span>
             </div>
           </div>
 
@@ -122,7 +122,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
               }`}
             >
               <Coffee className="h-3.5 w-3.5" />
-              <span>Cafe Kanji Jawa</span>
+              <span>Kanji Jiwa</span>
               {isBaristaActive && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />}
             </button>
             <button
@@ -166,7 +166,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
             }`}
           >
             <Coffee className="h-4 w-4" />
-            <span>Cafe Kanji Jawa (Barista)</span>
+            <span>Kanji Jiwa (Barista)</span>
             {isBaristaActive && (
               <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
             )}
@@ -213,7 +213,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
           <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <Coffee className="h-4 w-4 text-amber-400" />
-              Kontrol Auto Farm Cafe Kanji Jawa (Barista)
+              Kontrol Auto Farm Kanji Jiwa (Barista)
             </CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant={isBaristaActive ? "amber" : "secondary"} className={isBaristaActive ? "bg-amber-500/20 text-amber-300 border-amber-500/30" : ""}>
@@ -229,7 +229,7 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
                 onClick={isBaristaActive ? handleStopBarista : handleStartBarista}
               >
                 {isBaristaActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {isBaristaActive ? "Hentikan Barista Farm" : "Mulai Auto Farm Cafe Kanji Jawa"}
+                {isBaristaActive ? "Hentikan Barista Farm" : "Mulai Auto Farm Kanji Jiwa"}
               </Button>
 
               <Button

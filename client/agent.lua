@@ -3012,7 +3012,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 local KanjiJawaJob = {}
-KanjiJawaJob.JobName = "Cafe Kanji Jawa (Barista)"
+KanjiJawaJob.JobName = "Kanji Jiwa (Barista)"
 KanjiJawaJob.PlaceIds = { 14005966837 } -- CDID Jakarta
 
 local Context = nil
@@ -3024,7 +3024,7 @@ local CurrentHookConn = nil
 -- 1. CONFIGURATION
 -- ==============================================================================
 local Config = {
-    JobName = "Cafe Kanji Jawa (Barista)",
+    JobName = "Kanji Jiwa (Barista)",
     PlaceIds = { 14005966837 },
     KitchenFloorY = 22.9,
     CafeCenter = Vector3.new(-32.5, 22.9, 8420.0),
@@ -3722,7 +3722,7 @@ function AutoFarm.Start()
         local _, hrp = Helpers.GetValidHumanoid()
         if hrp and (hrp.Position - Config.CafeCenter).Magnitude > 75 then
             if Context and Context.SendLog then
-                Context.SendLog("Menuju lokasi Cafe Kanji Jawa...", "INFO")
+                Context.SendLog("Menuju lokasi Kanji Jiwa...", "INFO")
             end
             Helpers.TeleportToCafe()
             task.wait(1.5)
@@ -4097,21 +4097,21 @@ end
 function KanjiJawaJob.Start()
     AutoFarm.Start()
     if Context and Context.SendLog then
-        Context.SendLog("Auto Farm Cafe Kanji Jawa (Barista) Dimulai!", "SUCCESS")
+        Context.SendLog("Auto Farm Kanji Jiwa (Barista) Dimulai!", "SUCCESS")
     end
 end
 
 function KanjiJawaJob.Stop()
     AutoFarm.Stop()
     if Context and Context.SendLog then
-        Context.SendLog("Auto Farm Cafe Kanji Jawa (Barista) Dihentikan.", "WARN")
+        Context.SendLog("Auto Farm Kanji Jiwa (Barista) Dihentikan.", "WARN")
     end
 end
 
 function KanjiJawaJob.TeleportCafe()
     Helpers.TeleportToCafe()
     if Context and Context.SendLog then
-        Context.SendLog("Teleport ke Cafe Kanji Jawa.", "INFO")
+        Context.SendLog("Teleport ke Kanji Jiwa.", "INFO")
     end
 end
 
@@ -4398,7 +4398,7 @@ function CDIDModule.GetTelemetry()
     if stMg.IsFarming then
         dynamicJob = "Minigames Sumo (" .. (stMg.Role or "Winner") .. ")"
     elseif stKj.IsFarming then
-        dynamicJob = "Cafe Kanji Jawa (Barista)"
+        dynamicJob = "Kanji Jiwa (Barista)"
     elseif st.IsFarming then
         dynamicJob = "Truk Kargo"
     end
@@ -4408,7 +4408,7 @@ function CDIDModule.GetTelemetry()
         job = dynamicJob,
         placeName = placeName,
         gameName = placeName,
-        currentRoute = stMg.IsFarming and ("Sumo Arena: " .. (stMg.Phase or "Lobby")) or (stKj.IsFarming and ("Cafe: " .. (stKj.Phase or "Standby")) or (st.CurrentRoute or "IDLE")),
+        currentRoute = stMg.IsFarming and ("Sumo Arena: " .. (stMg.Phase or "Lobby")) or (stKj.IsFarming and ("Kanji Jiwa: " .. (stKj.Phase or "Standby")) or (st.CurrentRoute or "IDLE")),
         tripCount = st.TripCount or 0,
         truckEarnings = st.IsFarming and (st.TotalEarnings or 0) or (st.TripCount and st.TripCount > 0 and (st.TotalEarnings or 0) or 0),
         totalEarnings = (st.IsFarming and (st.TotalEarnings or 0) or 0) + (stMg.IsFarming and (stMg.CashEarned or 0) or 0) + (stKj.IsFarming and (stKj.TotalEarned or 0) or 0),
@@ -4504,7 +4504,7 @@ local State = {
 
 local CDID_MAPS = {
     { Key = "JawaTimur",   Name = "Jawa Timur",   PlaceId = 110369730911937, Desc = "Pusat Truck Cargo Auto Farm", Icon = "truck", Primary = true },
-    { Key = "Jakarta",     Name = "Jakarta",      PlaceId = 14005966837,     Desc = "Kurir BCA & Cafe Kanji Jawa",  Icon = "building" },
+    { Key = "Jakarta",     Name = "Jakarta",      PlaceId = 14005966837,     Desc = "Kurir BCA & Kanji Jiwa",  Icon = "building" },
     { Key = "Bandung",     Name = "Bandung",      PlaceId = 79488788685813,  Desc = "Kota Kembang",                Icon = "compass" },
     { Key = "JawaBarat",   Name = "Jawa Barat",   PlaceId = 9233343468,      Desc = "Tol & Pegunungan",            Icon = "compass" },
     { Key = "JawaTengah",  Name = "Jawa Tengah",  PlaceId = 9508940498,      Desc = "Semarang & Solo",             Icon = "compass" },

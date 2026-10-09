@@ -69,7 +69,7 @@ export function BotDetailView({
   const initial = (bot.name || "B").substring(0, 2).toUpperCase();
   const isFarming = !!bot.isFarming;
   const isMinigameActive = bot.job && bot.job.includes("Minigame");
-  const isBaristaActive = (bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji Jawa"))) || !!bot.barista?.isFarming;
+  const isBaristaActive = (bot.job && (bot.job.includes("Barista") || bot.job.includes("Kanji Jawa") || bot.job.includes("Kanji Jiwa"))) || !!bot.barista?.isFarming;
 
   // Deteksi Map Akun
   const placeLower = (bot.placeName || "").toLowerCase();
@@ -411,7 +411,7 @@ export function BotDetailView({
                 }`}
               >
                 <Coffee className="h-4 w-4 text-amber-400" />
-                <span>Cafe Kanji Jawa</span>
+                <span>Kanji Jiwa</span>
                 {isBaristaActive && <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />}
               </button>
 
@@ -820,7 +820,7 @@ export function BotDetailView({
               <CardHeader className="p-4 pb-2 border-b border-zinc-800/60 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
                   <Coffee className="h-4 w-4 text-amber-400" />
-                  Kontrol Cafe Kanji Jawa
+                  Kontrol Kanji Jiwa
                 </CardTitle>
                 <Badge variant={isBaristaActive ? "amber" : "secondary"} className={`text-[10px] font-bold ${isBaristaActive ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : ""}`}>
                   {isBaristaActive ? "BERJALAN" : "BERHENTI"}
@@ -834,7 +834,7 @@ export function BotDetailView({
                     Panduan & Informasi Job
                   </span>
                   <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    Auto-farm Cafe Kanji Jawa bekerja otomatis menyapa pelanggan, mengambil pesanan di kasir counter, meracik kopi/teh di tiap stasiun, menjalankan minigame espresso brewer, dan menyajikan minuman.
+                    Auto-farm Kanji Jiwa bekerja otomatis menyapa pelanggan, mengambil pesanan di kasir counter, meracik kopi/teh di tiap stasiun, menjalankan minigame espresso brewer, dan menyajikan minuman.
                   </p>
                   <div className="pt-1">
                     <Button
@@ -844,7 +844,7 @@ export function BotDetailView({
                       onClick={() => onSendCommand(bot.botId, "TELEPORT_CAFE")}
                     >
                       <MapPin className="h-3.5 w-3.5 text-amber-400" />
-                      Teleport Cepat ke Cafe Kanji Jawa
+                      Teleport Cepat ke Kanji Jiwa
                     </Button>
                   </div>
                 </div>
@@ -862,7 +862,7 @@ export function BotDetailView({
                   }}
                 >
                   {isBaristaActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  {isBaristaActive ? "Hentikan Auto Farm Cafe Kanji Jawa" : "Mulai Auto Farm Cafe Kanji Jawa"}
+                  {isBaristaActive ? "Hentikan Auto Farm Kanji Jiwa" : "Mulai Auto Farm Kanji Jiwa"}
                 </Button>
 
               </CardContent>
