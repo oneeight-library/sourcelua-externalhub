@@ -73,11 +73,11 @@ function CountdownBadge({ timeLeft, expiresAt, serverTime, className = "" }) {
 
   return (
     <span
-      className={`text-[9px] sm:text-[10px] font-bold font-mono bg-zinc-950/90 text-rose-300 border border-rose-500/50 shadow-md shadow-rose-950/40 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md leading-none backdrop-blur-md flex items-center gap-1 ${className}`}
+      className={`text-[11px] sm:text-xs font-black font-mono bg-zinc-950/95 text-white border border-rose-500/70 shadow-lg shadow-black/80 px-2 sm:px-2.5 py-1 rounded-lg leading-none backdrop-blur-md flex items-center gap-1.5 ${className}`}
       title={`Sisa waktu limited: ${display}`}
     >
-      <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-rose-400 shrink-0" />
-      <span>{display}</span>
+      <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-rose-400 shrink-0" />
+      <span className="text-white tracking-tight">{display}</span>
     </span>
   );
 }
@@ -784,7 +784,7 @@ export function DealershipPage({
 
                     {/* Badge Countdown Waktu Limited di Pojok Kiri Bawah Gambar */}
                     {(car.timeLeft || car.expiresAt) && (
-                      <div className="absolute bottom-1 left-1 sm:bottom-1.5 sm:left-1.5 z-10">
+                      <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 z-10">
                         <CountdownBadge timeLeft={car.timeLeft} expiresAt={car.expiresAt} serverTime={car.serverTime} />
                       </div>
                     )}
