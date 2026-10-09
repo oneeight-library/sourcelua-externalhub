@@ -1939,8 +1939,27 @@ local function requestServerCode()
         Context.SendLog("Meminta server CDID untuk generate kode private baru...", "INFO")
     end
 
+    local triggered = false
+    pcall(function()
+        local ps = LocalPlayer.PlayerGui.Hub.Container.Window.PrivateServer
+        local genBtn = ps and ps:FindFirstChild("GenerateButton") and ps.GenerateButton:FindFirstChild("TextButton")
+        if genBtn then
+            local conns = getconnections and getconnections(genBtn.MouseButton1Down) or {}
+            for _, c in ipairs(conns) do
+                if c.Function then
+                    pcall(c.Function)
+                    triggered = true
+                end
+            end
+            if not triggered and typeof(firesignal) == "function" then
+                firesignal(genBtn.MouseButton1Down)
+                triggered = true
+            end
+        end
+    end)
+
     local net = getCDIDNetwork()
-    if net and net.FireServer then
+    if not triggered and net and net.FireServer then
         pcall(function()
             net:FireServer("PrivateServer", "Create")
         end)
@@ -1962,22 +1981,7 @@ end
 local function selectMapNative(mapKey)
     State.SelectedMap = mapKey
 
-    -- 1. Sync ke real UIAnimation di GC
-    local realUI = getRealUIAnimation()
-    if realUI then
-        pcall(function() realUI.SelectedMap = mapKey end)
-    end
-
-    -- 2. Sync ke Controller UIAnimation CDID
-    pcall(function()
-        local controller = ReplicatedStorage:FindFirstChild("Controller")
-        if controller and controller:FindFirstChild("UIAnimation") then
-            local uiMod = require(controller.UIAnimation)
-            if uiMod then uiMod.SelectedMap = mapKey end
-        end
-    end)
-
-    -- 3. Trigger tombol map di PlayerGui.Hub
+    -- 1. Klik tombol map asli di UI CDID (MouseButton1Down & Activated)
     pcall(function()
         local mapWin = LocalPlayer.PlayerGui.Hub.Container.Window:FindFirstChild("MapSelection")
         local targetMapFrame = mapWin and mapWin:FindFirstChild(mapKey)
@@ -1990,6 +1994,30 @@ local function selectMapNative(mapKey)
             if typeof(firesignal) == "function" then
                 pcall(firesignal, btn.MouseButton1Down)
             end
+            local actConns = getconnections and getconnections(btn.Activated) or {}
+            for _, c in ipairs(actConns) do
+                if c.Function then pcall(c.Function) end
+            end
+        end
+    end)
+
+    -- 2. Sync ke real UIAnimation di GC & SetMapSelected
+    local realUI = getRealUIAnimation()
+    if realUI then
+        realUI.SelectedMap = mapKey
+        pcall(function()
+            if realUI.WindowModule and realUI.WindowModule.HubContainer and realUI.WindowModule.HubContainer.SetMapSelected then
+                realUI.WindowModule.HubContainer:SetMapSelected(mapKey:upper())
+            end
+        end)
+    end
+
+    -- 3. Sync ke Controller UIAnimation CDID
+    pcall(function()
+        local controller = ReplicatedStorage:FindFirstChild("Controller")
+        if controller and controller:FindFirstChild("UIAnimation") then
+            local uiMod = require(controller.UIAnimation)
+            if uiMod then uiMod.SelectedMap = mapKey end
         end
     end)
 end
@@ -2003,14 +2031,8 @@ local function joinMap(mapKey, serverCode)
     if queue_teleport then
         pcall(function()
             queue_teleport([[
-                task.wait(2)
-                pcall(function()
-                    loadstring(game:HttpGet("http://localhost:16384/script.luau"))()
-                end)
-                task.wait(2)
-                pcall(function()
-                    loadstring(game:HttpGet("https://externalhub.oneeight-project18.workers.dev/loader"))()
-                end)
+                task.wait(3.5)
+                loadstring(game:HttpGet("https://externalhub.oneeight-project18.workers.dev/loader"))()
             ]])
         end)
     end
@@ -2037,22 +2059,9 @@ local function joinMap(mapKey, serverCode)
     end
 
     selectMapNative(mapKey)
-    task.wait(0.3)
+    task.wait(0.5)
 
-    -- Tutup websocket lama secara bersih agar tidak ada duplikat di backend
-    if _G.OE_ExternalSocket then
-        pcall(function() _G.OE_ExternalSocket:Close() end)
-    end
-
-    -- Pemicu 1: Remote CDID Network (Utama - Persis OneEight Hub)
-    local net = getCDIDNetwork()
-    if net and net.FireServer and codeToUse and codeToUse ~= "" then
-        pcall(function()
-            net:FireServer("PrivateServer", "Join", tostring(codeToUse), mapKey)
-        end)
-    end
-
-    -- Pemicu 2: Klik tombol Join bawaan UI CDID
+    -- Pemicu 1: Klik tombol Join asli game via connections
     pcall(function()
         local ps = LocalPlayer.PlayerGui.Hub.Container.Window.PrivateServer
         if ps and ps:FindFirstChild("ServerLabel") and codeToUse and #codeToUse > 0 then
@@ -2068,21 +2077,18 @@ local function joinMap(mapKey, serverCode)
             if typeof(firesignal) == "function" then
                 pcall(firesignal, joinBtn.MouseButton1Down)
             end
+            local actConns = getconnections and getconnections(joinBtn.Activated) or {}
+            for _, c in ipairs(actConns) do
+                if c.Function then pcall(c.Function) end
+            end
         end
     end)
 
-    -- Pemicu 3: TeleportService Fallback (Jika server code gagal atau join public)
-    task.wait(2.0)
-    local targetPlaceId = nil
-    for _, m in ipairs(CDID_MAPS) do
-        if m.Key == mapKey then
-            targetPlaceId = m.PlaceId
-            break
-        end
-    end
-    if targetPlaceId then
+    -- Pemicu 2: Backup langsung via Network Remote
+    local net = getCDIDNetwork()
+    if net and net.FireServer and codeToUse and codeToUse ~= "" then
         pcall(function()
-            TeleportService:Teleport(targetPlaceId, LocalPlayer)
+            net:FireServer("PrivateServer", "Join", tostring(codeToUse), mapKey)
         end)
     end
 end
