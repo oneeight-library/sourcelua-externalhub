@@ -126,9 +126,9 @@ const PRESET_COLORS = [
 
 // Opsi Sort persis sesuai in-game CDID FilterFrame.Sort
 const SORT_OPTIONS = [
+  { value: "new_limited", label: "New & Limited" },
   { value: "low_to_high", label: "Low to high (Harga Termurah)" },
   { value: "high_to_low", label: "High to low (Harga Termahal)" },
-  { value: "new_limited", label: "New & Limited" },
   { value: "speed_desc", label: "Top Speed Tertinggi" },
   { value: "hp_desc", label: "Tenaga Kuda (HP)" },
 ];
@@ -178,7 +178,7 @@ export function DealershipPage({
 }) {
   const [selectedDealer, setSelectedDealer] = React.useState(initialDealer);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [sortBy, setSortBy] = React.useState("low_to_high");
+  const [sortBy, setSortBy] = React.useState("new_limited");
   const [selectedPass, setSelectedPass] = React.useState("all");
   const [modalCar, setModalCar] = React.useState(null);
   const [selectedColor, setSelectedColor] = React.useState(PRESET_COLORS[0]);
@@ -355,8 +355,10 @@ export function DealershipPage({
       .sort((a, b) => {
         // Sort persis sesuai in-game CDID (FilterFrame.Sort)
         if (sortBy === "new_limited") {
-          const aPriority = (a.isLimited ? 2 : 0) + (a.isNew ? 1 : 0);
-          const bPriority = (b.isLimited ? 2 : 0) + (b.isNew ? 1 : 0);
+          const aHasTimer = (a.timeLeft && a.timeLeft !== "00:00:00") || (a.expiresAt && a.expiresAt > 0) ? 2 : 0;
+          const bHasTimer = (b.timeLeft && b.timeLeft !== "00:00:00") || (b.expiresAt && b.expiresAt > 0) ? 2 : 0;
+          const aPriority = (a.isLimited ? 2 : 0) + (a.isNew ? 1 : 0) + aHasTimer;
+          const bPriority = (b.isLimited ? 2 : 0) + (b.isNew ? 1 : 0) + bHasTimer;
           if (aPriority !== bPriority) return bPriority - aPriority;
           return a.cost - b.cost;
         }
