@@ -23,7 +23,8 @@ export default function App() {
     rejoinBot,
     dealerCatalog,
     fetchDealerCars,
-    buyCar
+    buyCar,
+    buyCarResult
   } = useWebSocketHub();
 
   // Dealer showroom is scoped per-bot inside BotDetailView
@@ -78,6 +79,7 @@ export default function App() {
                 dealerCatalog={dealerCatalog}
                 onFetchCars={fetchDealerCars}
                 onBuyCar={buyCar}
+                buyCarResult={buyCarResult}
               />
             ) : (
               /* State Teleportasi / Menghubungkan Ulang: Jangan melempar user ke home */

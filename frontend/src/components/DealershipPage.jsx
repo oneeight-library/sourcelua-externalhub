@@ -104,7 +104,8 @@ export function DealershipPage({
   onBuyCar,
   onBackToDashboard,
   isEmbedded = false,
-  isSingleBotMode = false
+  isSingleBotMode = false,
+  buyCarResult
 }) {
   const [selectedDealer, setSelectedDealer] = React.useState(initialDealer);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -113,6 +114,7 @@ export function DealershipPage({
   const [modalCar, setModalCar] = React.useState(null);
   const [selectedColor, setSelectedColor] = React.useState(PRESET_COLORS[0]);
   const [buyStatus, setBuyStatus] = React.useState(null);
+  const [buyErrorMessage, setBuyErrorMessage] = React.useState("");
   const [visibleCount, setVisibleCount] = React.useState(36);
 
   // Dropdown UI Open States (Custom Context Menus - NO default browser select)
@@ -304,7 +306,26 @@ export function DealershipPage({
     setModalCar(car);
     setSelectedColor(PRESET_COLORS[0]);
     setBuyStatus(null);
+    setBuyErrorMessage("");
   };
+
+  // Real-time listener respon beli mobil asli dari client Roblox
+  React.useEffect(() => {
+    if (!buyCarResult || !modalCar) return;
+    if (buyCarResult.carId === modalCar.id) {
+      if (buyCarResult.success) {
+        setBuyStatus("SUCCESS");
+        setBuyErrorMessage("");
+        setTimeout(() => {
+          setModalCar(null);
+          setBuyStatus(null);
+        }, 1800);
+      } else {
+        setBuyStatus("FAILED");
+        setBuyErrorMessage(buyCarResult.message || "Gagal membeli mobil (Uang tidak cukup atau error game)");
+      }
+    }
+  }, [buyCarResult, modalCar]);
 
   const handleConfirmBuy = () => {
     if (!modalCar) return;
@@ -939,21 +960,33 @@ export function DealershipPage({
               >
                 Batal
               </Button>
+              {buyStatus === "FAILED" && (
+                <div className="w-full p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{buyErrorMessage || "Pembelian gagal di-proses oleh game CDID"}</span>
+                </div>
+              )}
               <Button
-                className="flex-1 h-10 sm:h-9 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black active:scale-95"
-                onClick={handleConfirmBuy}
-                disabled={selectedBotIds.length === 0 || buyStatus !== null}
+                className={`flex-1 h-10 sm:h-9 font-black active:scale-95 ${
+                  buyStatus === "FAILED"
+                    ? "bg-rose-600 hover:bg-rose-500 text-white"
+                    : "bg-emerald-500 hover:bg-emerald-400 text-zinc-950"
+                }`}
+                onClick={buyStatus === "FAILED" ? () => setBuyStatus(null) : handleConfirmBuy}
+                disabled={selectedBotIds.length === 0 || buyStatus === "SUBMITTED"}
               >
                 {buyStatus === "SUBMITTED" ? (
                   <span className="flex items-center gap-1.5">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    Mengirim...
+                    Memproses di Roblox...
                   </span>
                 ) : buyStatus === "SUCCESS" ? (
                   <span className="flex items-center gap-1.5 text-emerald-950">
                     <Check className="h-4 w-4" />
                     Berhasil Dibeli!
                   </span>
+                ) : buyStatus === "FAILED" ? (
+                  "Coba Lagi"
                 ) : (
                   "Konfirmasi Beli"
                 )}

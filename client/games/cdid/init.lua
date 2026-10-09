@@ -180,6 +180,8 @@ function CDIDModule.GetTelemetry()
         currentCash = st.CurrentCash or 0,
         startCash = st.StartCash or 0,
         isFarming = st.IsFarming or false,
+        speed = st.Speed or 0,
+        distRemaining = st.DistRemaining or "0m",
         lowRender = st.LowRender or false,
         minDistance = st.MinDistance or 100000,
         farmDuration = elapsedSec,

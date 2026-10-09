@@ -161,6 +161,13 @@ export class HubRoom {
             dealer: data.payload?.dealer || data.dealer || "all",
             cars: cars
           });
+        } else if (data.type === "BUY_CAR_RESULT") {
+          this.broadcastToControllers({
+            type: "BUY_CAR_RESULT",
+            botId,
+            botName: botInfo.name,
+            payload: data.payload || {}
+          });
         } else if (data.type === "CLIENT_KICKED") {
           botInfo.isKicked = true;
           botInfo.kickReason = data.payload?.reason || "Roblox Disconnected";

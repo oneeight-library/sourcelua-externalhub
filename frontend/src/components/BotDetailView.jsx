@@ -53,7 +53,8 @@ export function BotDetailView({
   onRejoinBot,
   dealerCatalog = {},
   onFetchCars,
-  onBuyCar
+  onBuyCar,
+  buyCarResult
 }) {
   const gameCfg = getGameConfig(bot.gameId);
   const isKicked = bot.isKicked;
@@ -286,6 +287,7 @@ export function BotDetailView({
           dealerCatalog={dealerCatalog}
           onFetchCars={onFetchCars}
           onBuyCar={onBuyCar}
+          buyCarResult={buyCarResult}
           isEmbedded={true}
           isSingleBotMode={true}
           onBackToDashboard={() => onTabChange && onTabChange("overview")}

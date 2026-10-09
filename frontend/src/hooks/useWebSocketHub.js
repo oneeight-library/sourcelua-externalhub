@@ -16,6 +16,7 @@ export function useWebSocketHub() {
   const [dealerCatalog, setDealerCatalog] = useState({});
   const [wsStatus, setWsStatus] = useState("Menghubungkan");
   const [isWsOnline, setIsWsOnline] = useState(false);
+  const [buyCarResult, setBuyCarResult] = useState(null);
 
   // 2. Persist Logs History di SessionStorage (agar saat F5 / Refresh riwayat log tidak hilang)
   const [logsHistory, setLogsHistory] = useState(() => {
@@ -210,6 +211,14 @@ export function useWebSocketHub() {
             });
             addLog(data.botName || "Bot", `ROBLOX KICK: ${data.reason || data.payload?.reason || 'Disconnect'}`, "ERROR", data.botId);
 
+          } else if (data.type === "BUY_CAR_RESULT") {
+            setBuyCarResult({
+              ...data.payload,
+              botId: data.botId,
+              botName: data.botName,
+              timestamp: Date.now()
+            });
+            addLog(data.botName || "Bot", `Respon beli mobil: ${data.payload?.success ? 'BERHASIL' : 'GAGAL'} (${data.payload?.message || ''})`, data.payload?.success ? "SUCCESS" : "WARN", data.botId);
           } else if (data.type === "DEALER_CARS_DATA") {
             const dealerKey = (data.dealer || "all").toLowerCase().replace(/\s+/g, "");
             setDealerCatalog((prev) => ({
@@ -251,6 +260,7 @@ export function useWebSocketHub() {
     rejoinBot,
     dealerCatalog,
     fetchDealerCars,
-    buyCar
+    buyCar,
+    buyCarResult
   };
 }

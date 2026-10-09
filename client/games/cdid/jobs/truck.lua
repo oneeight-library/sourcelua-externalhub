@@ -807,7 +807,34 @@ function TruckJob.TeleportHQ()
     Helpers.TeleportPlayerToHQ()
 end
 
+function TruckJob.GetMetrics()
+    local car = DriveEngine.GetPlayerCar()
+    local hum, hrp = DriveEngine.GetValidHumanoid()
+    local speedKmh = 0
+    local distRemainingStr = "0m"
+
+    if car and car.PrimaryPart then
+        speedKmh = math.floor(car.PrimaryPart.AssemblyLinearVelocity.Magnitude * 3.6)
+    elseif hrp then
+        speedKmh = math.floor(hrp.AssemblyLinearVelocity.Magnitude * 3.6)
+    end
+
+    if State.CurrentTargetPos and hrp then
+        local d = (hrp.Position - State.CurrentTargetPos).Magnitude
+        if d >= 1000 then
+            distRemainingStr = string.format("%.1f km", d / 1000)
+        else
+            distRemainingStr = string.format("%d m", math.floor(d))
+        end
+    end
+
+    return speedKmh, distRemainingStr
+end
+
 function TruckJob.GetState()
+    local speed, dist = TruckJob.GetMetrics()
+    State.Speed = speed
+    State.DistRemaining = dist
     return State
 end
 

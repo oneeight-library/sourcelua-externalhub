@@ -651,8 +651,20 @@ function DealershipFeature.Buy(carId, dealer, color, Context)
         local Network = require(ReplicatedStorage.Modules.Network)
         result = Network:InvokeServer("Dealership", "Buy", carId, colorName, dealer or "")
     end)
+    local isSuccess = (result == "Success")
     if Context and Context.SendLog then
-        Context.SendLog(string.format("Hasil beli mobil '%s' (%s, Warna %s): %s", carId, tostring(dealer), colorName, tostring(result)), result == "Success" and "SUCCESS" or "WARN")
+        Context.SendLog(string.format("Hasil beli mobil '%s' (%s, Warna %s): %s", carId, tostring(dealer), colorName, tostring(result)), isSuccess and "SUCCESS" or "WARN")
+    end
+    if Context and Context.SendPacket then
+        pcall(function()
+            Context.SendPacket("BUY_CAR_RESULT", {
+                carId = carId,
+                dealer = dealer or "",
+                color = colorName,
+                success = isSuccess,
+                message = tostring(result)
+            })
+        end)
     end
     return result
 end
@@ -1553,7 +1565,34 @@ function TruckJob.TeleportHQ()
     Helpers.TeleportPlayerToHQ()
 end
 
+function TruckJob.GetMetrics()
+    local car = DriveEngine.GetPlayerCar()
+    local hum, hrp = DriveEngine.GetValidHumanoid()
+    local speedKmh = 0
+    local distRemainingStr = "0m"
+
+    if car and car.PrimaryPart then
+        speedKmh = math.floor(car.PrimaryPart.AssemblyLinearVelocity.Magnitude * 3.6)
+    elseif hrp then
+        speedKmh = math.floor(hrp.AssemblyLinearVelocity.Magnitude * 3.6)
+    end
+
+    if State.CurrentTargetPos and hrp then
+        local d = (hrp.Position - State.CurrentTargetPos).Magnitude
+        if d >= 1000 then
+            distRemainingStr = string.format("%.1f km", d / 1000)
+        else
+            distRemainingStr = string.format("%d m", math.floor(d))
+        end
+    end
+
+    return speedKmh, distRemainingStr
+end
+
 function TruckJob.GetState()
+    local speed, dist = TruckJob.GetMetrics()
+    State.Speed = speed
+    State.DistRemaining = dist
     return State
 end
 
@@ -1743,6 +1782,8 @@ function CDIDModule.GetTelemetry()
         currentCash = st.CurrentCash or 0,
         startCash = st.StartCash or 0,
         isFarming = st.IsFarming or false,
+        speed = st.Speed or 0,
+        distRemaining = st.DistRemaining or "0m",
         lowRender = st.LowRender or false,
         minDistance = st.MinDistance or 100000,
         farmDuration = elapsedSec,

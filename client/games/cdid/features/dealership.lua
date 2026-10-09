@@ -216,8 +216,20 @@ function DealershipFeature.Buy(carId, dealer, color, Context)
         local Network = require(ReplicatedStorage.Modules.Network)
         result = Network:InvokeServer("Dealership", "Buy", carId, colorName, dealer or "")
     end)
+    local isSuccess = (result == "Success")
     if Context and Context.SendLog then
-        Context.SendLog(string.format("Hasil beli mobil '%s' (%s, Warna %s): %s", carId, tostring(dealer), colorName, tostring(result)), result == "Success" and "SUCCESS" or "WARN")
+        Context.SendLog(string.format("Hasil beli mobil '%s' (%s, Warna %s): %s", carId, tostring(dealer), colorName, tostring(result)), isSuccess and "SUCCESS" or "WARN")
+    end
+    if Context and Context.SendPacket then
+        pcall(function()
+            Context.SendPacket("BUY_CAR_RESULT", {
+                carId = carId,
+                dealer = dealer or "",
+                color = colorName,
+                success = isSuccess,
+                message = tostring(result)
+            })
+        end)
     end
     return result
 end
