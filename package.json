@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "build:frontend": "npm --prefix frontend run build && node ./scripts/sync_dashboard.js",
-    "deploy": "npm run build:frontend && wrangler deploy"
+    "deploy": "npm run build:frontend && npx wrangler deploy"
   }
 }

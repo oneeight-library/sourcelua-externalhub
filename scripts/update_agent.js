@@ -16,6 +16,11 @@ local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
 
+-- Stealth Mode: Matikan print & warn internal agar bersih dan tidak muncul di F9 Dev Console
+local OE_STEALTH_MODE = true
+local print = OE_STEALTH_MODE and (function(...) end) or print
+local warn = OE_STEALTH_MODE and (function(...) end) or warn
+
 -- Tutup socket lama secara bersih jika ada instance sebelumnya
 if _G.OE_ExternalSocket then
     pcall(function() _G.OE_ExternalSocket:Close() end)
