@@ -73,10 +73,10 @@ function CountdownBadge({ timeLeft, expiresAt, serverTime, className = "" }) {
 
   return (
     <span
-      className={`text-[7.5px] sm:text-[8.5px] font-bold font-mono bg-zinc-950/90 text-rose-300 border border-rose-500/40 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none backdrop-blur-md flex items-center gap-0.5 ${className}`}
+      className={`text-[9px] sm:text-[10px] font-bold font-mono bg-zinc-950/90 text-rose-300 border border-rose-500/50 shadow-md shadow-rose-950/40 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md leading-none backdrop-blur-md flex items-center gap-1 ${className}`}
       title={`Sisa waktu limited: ${display}`}
     >
-      <Clock className="h-2.5 w-2.5 text-rose-400 shrink-0" />
+      <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-rose-400 shrink-0" />
       <span>{display}</span>
     </span>
   );
@@ -770,9 +770,6 @@ export function DealershipPage({
                           LIMITED!
                         </span>
                       )}
-                      {(car.timeLeft || car.expiresAt) && (
-                        <CountdownBadge timeLeft={car.timeLeft} expiresAt={car.expiresAt} serverTime={car.serverTime} />
-                      )}
                       {car.isNew && (
                         <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500/80 shadow-sm px-1 sm:px-1.5 py-0.5 rounded leading-none">
                           NEW!
@@ -784,6 +781,13 @@ export function DealershipPage({
                         </span>
                       )}
                     </div>
+
+                    {/* Badge Countdown Waktu Limited di Pojok Kiri Bawah Gambar */}
+                    {(car.timeLeft || car.expiresAt) && (
+                      <div className="absolute bottom-1 left-1 sm:bottom-1.5 sm:left-1.5 z-10">
+                        <CountdownBadge timeLeft={car.timeLeft} expiresAt={car.expiresAt} serverTime={car.serverTime} />
+                      </div>
+                    )}
 
 
                   </div>
