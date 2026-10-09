@@ -780,21 +780,13 @@ export function DealershipPage({
                     </div>
 
                     <div className="pt-2 border-t border-zinc-800/80">
-                      <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                        <span className="text-[9px] sm:text-[10px] text-zinc-400 uppercase font-bold tracking-wider">
-                          Harga
-                        </span>
-                        <span className="text-[11px] sm:text-xs font-black text-emerald-400 font-mono truncate">
-                          {formatRupiah(car.cost)}
-                        </span>
-                      </div>
-
                       <Button
                         size="sm"
                         onClick={() => handleOpenBuyModal(car)}
-                        className="w-full h-7 sm:h-8 text-[11px] sm:text-xs font-bold transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black shadow-md shadow-emerald-500/10"
+                        className="w-full h-8 sm:h-9 text-xs sm:text-[13px] font-black font-mono tracking-tight transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/15 rounded-xl cursor-pointer"
+                        title={`Beli mobil ini seharga ${formatRupiah(car.cost)}`}
                       >
-                        Beli Mobil
+                        {formatRupiah(car.cost)}
                       </Button>
                     </div>
                   </CardContent>
