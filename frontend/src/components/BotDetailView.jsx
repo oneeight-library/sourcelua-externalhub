@@ -202,21 +202,37 @@ export function BotDetailView({
 
   // Streamer Mode (Name Spoofing)
   const streamerMode = features.streamerMode !== undefined ? !!features.streamerMode : (bot.streamerMode?.enabled !== false);
-  const spoofedName = config.spoofedName || bot.streamerMode?.spoofedName || "Warga_Sipil";
-  const [customSpoofInput, setCustomSpoofInput] = React.useState(spoofedName);
+  const serverSpoofedName = config.spoofedName || bot.streamerMode?.spoofedName || "Warga_Sipil";
+  const [localSpoofName, setLocalSpoofName] = React.useState(serverSpoofedName);
+  const [customSpoofInput, setCustomSpoofInput] = React.useState(serverSpoofedName);
+  const [isInputFocused, setIsInputFocused] = React.useState(false);
 
   React.useEffect(() => {
-    if (spoofedName) setCustomSpoofInput(spoofedName);
-  }, [spoofedName]);
+    if (serverSpoofedName) {
+      setLocalSpoofName(serverSpoofedName);
+      if (!isInputFocused) {
+        setCustomSpoofInput(serverSpoofedName);
+      }
+    }
+  }, [serverSpoofedName, isInputFocused]);
+
+  React.useEffect(() => {
+    setLocalSpoofName(serverSpoofedName);
+    setCustomSpoofInput(serverSpoofedName);
+  }, [bot?.botId]);
 
   const handleToggleStreamerMode = (checked) => {
-    onSendCommand(bot.botId, "TOGGLE_STREAMER_MODE", { enabled: checked, spoofedName: customSpoofInput || spoofedName });
+    onSendCommand(bot.botId, "TOGGLE_STREAMER_MODE", { 
+      enabled: checked, 
+      spoofedName: localSpoofName || customSpoofInput || "Warga_Sipil" 
+    });
   };
 
   const handleSendCustomSpoof = (e) => {
     if (e) e.preventDefault();
     const val = customSpoofInput ? customSpoofInput.trim() : "";
     if (!val) return;
+    setLocalSpoofName(val);
     onSendCommand(bot.botId, "SET_SPOOFED_NAME", { spoofedName: val });
   };
 
@@ -1000,17 +1016,23 @@ export function BotDetailView({
                   <EyeOff className="h-4 w-4 text-purple-400" />
                   Spoofing Name
                 </CardTitle>
-                <Badge variant={streamerMode ? "purple" : "secondary"} className={`text-[10px] font-bold ${streamerMode ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : ""}`}>
+                <Badge variant={streamerMode ? "purple" : "secondary"} className={`text-[10px] font-bold ${streamerMode ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-zinc-800 text-zinc-400"}`}>
                   {streamerMode ? "AKTIF" : "NONAKTIF"}
                 </Badge>
               </CardHeader>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/50 border border-zinc-800/80">
                   <div className="font-semibold text-xs text-zinc-100 flex items-center gap-2">
-                    <span>Spoofing Name</span>
-                    <span className="bg-purple-950/80 border border-purple-700/60 text-purple-300 font-mono text-[10px] px-2 py-0.5 rounded-md font-bold">
-                      {spoofedName}
-                    </span>
+                    <span>Nama Tampilan:</span>
+                    {streamerMode ? (
+                      <span className="bg-purple-950/80 border border-purple-700/60 text-purple-300 font-mono text-[10px] px-2 py-0.5 rounded-md font-bold">
+                        {localSpoofName || "Warga_Sipil"}
+                      </span>
+                    ) : (
+                      <span className="bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono text-[10px] px-2 py-0.5 rounded-md font-bold">
+                        {bot.name || "Nama Asli"} (Asli)
+                      </span>
+                    )}
                   </div>
                   <Switch 
                     checked={streamerMode} 
@@ -1022,6 +1044,8 @@ export function BotDetailView({
                   <input
                     type="text"
                     value={customSpoofInput}
+                    onFocus={() => setIsInputFocused(true)}
+                    onBlur={() => setIsInputFocused(false)}
                     onChange={(e) => setCustomSpoofInput(e.target.value)}
                     placeholder="Masukkan custom spoof name..."
                     className="flex-1 bg-zinc-950/80 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-purple-500 font-mono"
