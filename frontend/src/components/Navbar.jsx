@@ -3,10 +3,10 @@ import { Badge } from "@/ui/badge.jsx";
 import { Button } from "@/ui/button.jsx";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/ui/sheet.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
-import { ChevronDown, Users, Terminal, Check } from "lucide-react";
+import { ChevronDown, Users, Code2, Check } from "lucide-react";
 import { getGameConfig } from "@/config/games.js";
 
-export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus }) {
+export function Navbar({ bots, selectedBotId, onSelectBot }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [copiedLoader, setCopiedLoader] = React.useState(false);
 
@@ -50,15 +50,15 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
     : (selectedBot ? selectedBot.name : "Pilih Akun");
 
   return (
-    <header className="h-16 w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md shrink-0 flex flex-col justify-center">
-      <div className="flex items-center justify-between px-4 sm:px-6">
+    <header className="h-14 sm:h-16 w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md shrink-0 flex flex-col justify-center">
+      <div className="flex items-center justify-between px-3 sm:px-6">
         
-        {/* Mobile Brand (hidden on desktop because sidebar has brand) */}
-        <div className="flex md:hidden items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-700 text-white font-black text-xs shadow-md">
+        {/* Mobile Brand (kompak dan proporsional untuk HP) */}
+        <div className="flex md:hidden items-center gap-2 shrink-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-700 text-white font-black text-xs shadow-md">
             18
           </div>
-          <span className="font-bold text-sm text-zinc-100">OneEight Hub</span>
+          <span className="font-extrabold text-xs sm:text-sm text-zinc-100 tracking-tight">OneEight</span>
         </div>
 
         {/* Desktop Breadcrumb / View Context */}
@@ -77,18 +77,18 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
           )}
         </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right Actions (Loader + Switcher Akun, Bersih tanpa Badge Online) */}
+        <div className="flex items-center gap-2">
           
-          {/* Tombol Salin Loader */}
+          {/* Tombol Loader (Icon Code2 & Teks 'Loader') */}
           <Button
             variant="outline"
             size="sm"
             onClick={handleCopyLoader}
-            className={`flex items-center gap-1.5 h-9 px-2.5 sm:px-3 text-xs font-semibold transition-all border-zinc-800 shadow-sm ${
+            className={`flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 text-xs font-bold transition-all border-zinc-800 rounded-xl shadow-sm ${
               copiedLoader
                 ? "bg-emerald-950/50 border-emerald-500/50 text-emerald-300"
-                : "bg-zinc-900/60 hover:bg-zinc-800/90 text-zinc-200 hover:text-white"
+                : "bg-zinc-900/70 hover:bg-zinc-800/90 text-zinc-200 hover:text-white"
             }`}
             title="Klik untuk salin script loader ke executor Roblox"
           >
@@ -99,8 +99,8 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
               </>
             ) : (
               <>
-                <Terminal className="h-3.5 w-3.5 text-indigo-400" />
-                <span className="text-[11px] sm:text-xs font-semibold">Salin Loader</span>
+                <Code2 className="h-3.5 w-3.5 text-indigo-400" />
+                <span className="text-[11px] sm:text-xs font-bold">Loader</span>
               </>
             )}
           </Button>
@@ -111,10 +111,10 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
               variant="outline"
               size="sm"
               onClick={() => setIsOpen(true)}
-              className="flex items-center gap-2 h-9 px-3 bg-zinc-900/60 border-zinc-800 text-xs font-semibold"
+              className="flex items-center gap-1.5 h-8 px-2.5 bg-zinc-900/70 border-zinc-800 text-xs font-bold rounded-xl"
             >
-              <span className="truncate max-w-[130px]">{currentLabel}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
+              <span className="truncate max-w-[95px] sm:max-w-[140px]">{currentLabel}</span>
+              <ChevronDown className="h-3 w-3 text-zinc-400 shrink-0" />
             </Button>
 
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -188,12 +188,6 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
                 </div>
               </SheetContent>
             </Sheet>
-          </div>
-
-          {/* WebSocket Status Indicator */}
-          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border border-zinc-800/80 bg-zinc-900/60 shrink-0">
-            <span className={`h-2 w-2 rounded-full ${isWsOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse' : 'bg-rose-500'}`} />
-            <span className="text-xs font-semibold text-zinc-300 hidden md:inline">{wsStatus}</span>
           </div>
 
         </div>
