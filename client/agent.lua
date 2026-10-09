@@ -2328,11 +2328,12 @@ local CoreState = {
     Socket = nil,
     BotId = nil,
     SessionStartTime = os.clock(),
-    AutoRejoin = true
+    AutoRejoin = true,
+    IsTerminated = false
 }
 
 local function sendPacket(packetType, payload)
-    if not CoreState.Socket then return end
+    if not CoreState.Socket or CoreState.IsTerminated then return end
     pcall(function()
         local data = HttpService:JSONEncode({
             type = packetType,
@@ -2343,7 +2344,7 @@ local function sendPacket(packetType, payload)
 end
 
 local function sendLog(msg, level)
-    if not CoreState.Socket then return end
+    if not CoreState.Socket or CoreState.IsTerminated then return end
     pcall(function()
         local data = HttpService:JSONEncode({
             type = "LOG",
@@ -2376,6 +2377,7 @@ activeGameModule.Init({
 -- WEBSOCKET CONNECTION & COMMAND ROUTING
 -- ============================================================================
 local function connectWebSocket()
+    if CoreState.IsTerminated or not isInstanceAlive() then return end
     print("[OE-External] Menghubungkan ke Hub: " .. WS_URL)
     local ok, ws = pcall(function()
         if WebSocket and typeof(WebSocket.connect) == "function" then
@@ -2389,13 +2391,28 @@ local function connectWebSocket()
     if not ok or not ws then
         warn("[OE-External] Gagal membuka WebSocket: " .. tostring(ws))
         task.wait(5)
-        if _G.OE_ExternalRunning then return connectWebSocket() end
+        if _G.OE_ExternalRunning and not CoreState.IsTerminated then return connectWebSocket() end
         return
     end
 
     CoreState.Socket = ws
     _G.OE_ExternalSocket = ws
     print("[OE-External] WebSocket terhubung sukses!")
+
+    -- Heartbeat Ping Loop (Setiap 5 detik untuk menjaga koneksi tetap hidup)
+    task.spawn(function()
+        while isInstanceAlive() and not CoreState.IsTerminated and CoreState.Socket == ws do
+            task.wait(5)
+            if CoreState.Socket == ws and not CoreState.IsTerminated then
+                pcall(function()
+                    ws:Send(HttpService:JSONEncode({
+                        type = "PING",
+                        timestamp = os.time()
+                    }))
+                end)
+            end
+        end
+    end)
 
     ws.OnMessage:Connect(function(msgRaw)
         local okParse, data = pcall(function() return HttpService:JSONDecode(msgRaw) end)
@@ -2405,6 +2422,16 @@ local function connectWebSocket()
             CoreState.BotId = data.botId
             print("[OE-External] Terdaftar dengan Bot ID: " .. tostring(CoreState.BotId))
             sendLog(string.format("Akun aktif di %s (%s) & terhubung ke Web Hub!", activeGameModule.GameName, tostring(game.PlaceId)), "SUCCESS")
+
+        elseif data.type == "PONG" then
+            CoreState.LastPong = os.time()
+
+        elseif data.type == "FORCE_DISCONNECT" then
+            print("[OE-External] Sesi digantikan oleh koneksi baru: " .. tostring(data.message or "SUPERSEDED"))
+            CoreState.IsTerminated = true
+            _G.OE_ExternalRunning = false
+            pcall(function() ws:Close() end)
+            return
 
         elseif data.type == "EXECUTE_COMMAND" then
             local action = data.action
@@ -2428,15 +2455,25 @@ local function connectWebSocket()
         end
     end)
 
-    ws.OnClose:Connect(function()
+    ws.OnClose:Connect(function(codeOrReason, maybeReason)
         CoreState.Socket = nil
-        if not isInstanceAlive() then
-            print("[OE-External] Instance lama ditutup permanen, coroutine berhenti.")
+        local closeReasonStr = string.lower(tostring(codeOrReason or "") .. " " .. tostring(maybeReason or ""))
+
+        if CoreState.IsTerminated or not isInstanceAlive() then
+            print("[OE-External] Instance dihentikan atau ditutup permanen, coroutine berhenti.")
             return
         end
-        warn("[OE-External] WebSocket terputus! Mencoba rekoneksi dalam 3 detik...")
-        task.wait(3)
-        if isInstanceAlive() and not Safety.IsKicked then
+
+        if string.find(closeReasonStr, "replaced") or string.find(closeReasonStr, "4001") then
+            print("[OE-External] Terdeteksi penutupan karena sesi baru (replaced). Menghentikan rekoneksi.")
+            CoreState.IsTerminated = true
+            return
+        end
+
+        local retryDelay = math.random(3, 5)
+        warn(string.format("[OE-External] WebSocket terputus! Mencoba rekoneksi dalam %d detik...", retryDelay))
+        task.wait(retryDelay)
+        if isInstanceAlive() and not Safety.IsKicked and not CoreState.IsTerminated then
             connectWebSocket()
         end
     end)
@@ -2446,7 +2483,7 @@ end
 -- TELEMETRY STREAM LOOP (1 Detik Sekali)
 -- ============================================================================
 task.spawn(function()
-    while _G.OE_ExternalRunning do
+    while _G.OE_ExternalRunning and isInstanceAlive() and not CoreState.IsTerminated do
         local sessionSeconds = math.floor(os.clock() - CoreState.SessionStartTime)
         local h = math.floor(sessionSeconds / 3600)
         local m = math.floor((sessionSeconds % 3600) / 60)
@@ -2472,7 +2509,7 @@ task.spawn(function()
         end
 
         sendPacket("TELEMETRY", combinedPayload)
-        task.wait(1.0)
+        task.wait(1.5)
     end
 end)
 

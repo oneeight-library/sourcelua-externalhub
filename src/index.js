@@ -59,7 +59,12 @@ export class HubRoom {
     for (const [existingId, existingBot] of this.bots.entries()) {
       if (existingBot.info && existingBot.info.name && existingBot.info.name.toLowerCase() === name.toLowerCase()) {
         try {
-          existingBot.ws.close(1000, "Session replaced by new connection");
+          existingBot.ws.send(JSON.stringify({
+            type: "FORCE_DISCONNECT",
+            reason: "SUPERSEDED",
+            message: "Session replaced by new connection"
+          }));
+          existingBot.ws.close(4001, "Session replaced by new connection");
         } catch (e) {}
         this.bots.delete(existingId);
         this.broadcastToControllers({
@@ -131,6 +136,11 @@ export class HubRoom {
       try {
         const data = JSON.parse(event.data);
         botInfo.lastSeen = Date.now();
+
+        if (data.type === "PING") {
+          ws.send(JSON.stringify({ type: "PONG", timestamp: Date.now() }));
+          return;
+        }
 
         if (data.type === "TELEMETRY") {
           Object.assign(botInfo, data.payload || {});
@@ -233,6 +243,10 @@ export class HubRoom {
     ws.addEventListener("message", (event) => {
       try {
         const data = JSON.parse(event.data);
+        if (data.type === "PING") {
+          ws.send(JSON.stringify({ type: "PONG", timestamp: Date.now() }));
+          return;
+        }
         if (data.type === "COMMAND") {
           const { targetBotId, action, payload } = data;
           this.routeCommandToBot(targetBotId, action, payload);
