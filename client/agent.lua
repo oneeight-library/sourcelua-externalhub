@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv15v8i5)
+    Version: 3.3.0 (Build: v3.3.mv162uth)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv15v8i5"
+local AGENT_BUILD_ID = "v3.3.mv162uth"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -726,6 +726,7 @@ function DealershipFeature.GetCars(dealerTarget)
                     stock = stockVal,
                     timeLeft = timeLeft,
                     expiresAt = expiresAt,
+                    startAt = timeInfo and timeInfo.startAt,
                     serverTime = serverTime
                 })
             end

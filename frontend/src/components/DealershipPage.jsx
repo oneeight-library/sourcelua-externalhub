@@ -1,3 +1,19 @@
+
+function formatReleaseDate(startAt, timeLeft) {
+  if (startAt && startAt > 0) {
+    const d = new Date(startAt * 1000);
+    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const dateStr = `${d.getDate()} ${months[d.getMonth()]}`;
+    const hours = String(d.getHours()).padStart(2, "0");
+    const mins = String(d.getMinutes()).padStart(2, "0");
+    return `Rilis: ${dateStr}, ${hours}:${mins} WIB`;
+  }
+  if (timeLeft && timeLeft !== "00:00:00") {
+    return `Rilis Dalam: ${timeLeft}`;
+  }
+  return "Upcoming (Segera Rilis)";
+}
+
 import * as React from "react";
 import { Card, CardContent } from "@/ui/card.jsx";
 import { Button } from "@/ui/button.jsx";
@@ -356,8 +372,11 @@ export function DealershipPage({
           matchesPass = cleanGp.includes("emergency");
         }
 
-        if (isUpcomingOnly && !car.isUpcoming) {
-          return false;
+        // Mobil upcoming HANYA muncul saat filter Bocoran aktif
+        if (isUpcomingOnly) {
+          if (!car.isUpcoming) return false;
+        } else {
+          if (car.isUpcoming) return false;
         }
 
         return matchesDealer && matchesSearch && matchesPass;
@@ -914,11 +933,11 @@ export function DealershipPage({
                         <Button
                           size="sm"
                           onClick={() => handleOpenBuyModal(car)}
-                          className="w-full h-7 sm:h-8 text-[11px] sm:text-xs font-bold tracking-tight tabular-nums transition-all active:scale-95 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/10 rounded-lg cursor-pointer flex items-center justify-center gap-1.5"
-                          title={`Bocoran mobil upcoming: ${car.name}`}
+                          className="w-full h-7 sm:h-8 text-[10px] sm:text-[11px] font-bold tracking-tight tabular-nums transition-all active:scale-95 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/10 rounded-lg cursor-pointer flex items-center justify-center gap-1.5 px-1 truncate"
+                          title={`Bocoran mobil upcoming: ${car.name} (${formatReleaseDate(car.startAt, car.timeLeft)})`}
                         >
-                          <Flame className="h-3 w-3 text-amber-400 fill-amber-400" />
-                          <span>Upcoming</span>
+                          <Clock className="h-3 w-3 text-amber-400 shrink-0" />
+                          <span className="truncate">{formatReleaseDate(car.startAt, car.timeLeft)}</span>
                         </Button>
                       ) : (
                         <Button
@@ -982,15 +1001,22 @@ export function DealershipPage({
               )}
 
               <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-20">
-                {modalCar.isLimited && (
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500 shadow-md shadow-rose-600/30 px-2 py-0.5 rounded-md leading-none">
-                    LIMITED!
+                {modalCar.isUpcoming ? (
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950 border border-amber-400 shadow-md shadow-amber-500/20 px-2 py-0.5 rounded-md leading-none flex items-center gap-1">
+                    <Flame className="h-3 w-3 fill-zinc-950" />
+                    UPCOMING
                   </span>
+                ) : (
+                  modalCar.isLimited && (
+                    <span className="text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white border border-rose-500 shadow-md shadow-rose-600/30 px-2 py-0.5 rounded-md leading-none">
+                      LIMITED!
+                    </span>
+                  )
                 )}
                 {(modalCar.timeLeft || modalCar.expiresAt) && (
                   <CountdownBadge timeLeft={modalCar.timeLeft} expiresAt={modalCar.expiresAt} serverTime={modalCar.serverTime} className="text-[9px] px-2 py-0.5 rounded-md" />
                 )}
-                {modalCar.isNew && (
+                {modalCar.isNew && !modalCar.isUpcoming && (
                   <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500 shadow-md shadow-emerald-600/30 px-2 py-0.5 rounded-md leading-none">
                     NEW!
                   </span>
@@ -1117,11 +1143,11 @@ export function DealershipPage({
               )}
               {modalCar.isUpcoming ? (
                 <Button
-                  className="flex-1 h-10 sm:h-9 font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-not-allowed flex items-center justify-center gap-1.5"
+                  className="flex-1 h-10 sm:h-9 font-bold text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-not-allowed flex items-center justify-center gap-2"
                   disabled={true}
                 >
-                  <Flame className="h-4 w-4 text-amber-400 fill-amber-400" />
-                  Belum Rilis di Game (Upcoming)
+                  <Clock className="h-4 w-4 text-amber-400 shrink-0" />
+                  <span>{formatReleaseDate(modalCar.startAt, modalCar.timeLeft)}</span>
                 </Button>
               ) : (
                 <Button

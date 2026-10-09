@@ -295,6 +295,7 @@ function DealershipFeature.GetCars(dealerTarget)
                     stock = stockVal,
                     timeLeft = timeLeft,
                     expiresAt = expiresAt,
+                    startAt = timeInfo and timeInfo.startAt,
                     serverTime = serverTime
                 })
             end
