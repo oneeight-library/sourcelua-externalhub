@@ -45,9 +45,11 @@ export function Navbar({ bots, selectedBotId, onSelectBot }) {
 
   const selectedBot = bots.get(selectedBotId);
   const gameCfg = selectedBot ? getGameConfig(selectedBot.gameId) : null;
-  const currentLabel = selectedBotId === "ALL" 
-    ? `Semua Akun (${bots.size})` 
-    : (selectedBot ? selectedBot.name : "Pilih Akun");
+  const botKeys = Array.from(bots.keys());
+  const currentIndex = selectedBotId === "ALL" ? -1 : botKeys.indexOf(selectedBotId);
+  const currentLabel = selectedBotId === "ALL"
+    ? `Semua (${bots.size})`
+    : (currentIndex !== -1 ? `Akun ${currentIndex + 1}/${bots.size}` : "Pilih Akun");
 
   return (
     <header className="h-14 sm:h-16 w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md shrink-0 flex flex-col justify-center">
@@ -113,7 +115,8 @@ export function Navbar({ bots, selectedBotId, onSelectBot }) {
               onClick={() => setIsOpen(true)}
               className="flex items-center gap-1.5 h-8 px-2.5 bg-zinc-900/70 border-zinc-800 text-xs font-bold rounded-xl"
             >
-              <span className="truncate max-w-[95px] sm:max-w-[140px]">{currentLabel}</span>
+              <Users className="h-3 w-3 text-zinc-400 shrink-0" />
+              <span>{currentLabel}</span>
               <ChevronDown className="h-3 w-3 text-zinc-400 shrink-0" />
             </Button>
 
