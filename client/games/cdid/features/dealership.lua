@@ -130,8 +130,14 @@ function DealershipFeature.GetCars(dealerTarget)
     pcall(function()
         if getgc then
             for _, t in ipairs(getgc(true)) do
-                if type(t) == "table" and (rawget(t, "2022TokomaYarisJunior") or rawget(t, "2021Mcsena765LT") or rawget(t, "2018AMCygnetV8")) then
-                    for carId, entry in pairs(t) do
+                if type(t) == "table" then
+                    local firstVal = nil
+                    for _, v in pairs(t) do
+                        firstVal = v
+                        break
+                    end
+                    if type(firstVal) == "table" and rawget(firstVal, "end_ts") and rawget(firstVal, "start_ts") then
+                        for carId, entry in pairs(t) do
                         if type(entry) == "table" and entry.end_ts and type(entry.end_ts) == "table" then
                             local expTs = os.time(entry.end_ts)
                             local diffSec = expTs - serverTime
@@ -147,7 +153,8 @@ function DealershipFeature.GetCars(dealerTarget)
                             end
                         end
                     end
-                    break
+                        break
+                    end
                 end
             end
         end
