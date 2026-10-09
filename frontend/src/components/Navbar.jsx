@@ -178,7 +178,7 @@ export function Navbar({ bots, selectedBotId, onSelectBot, isWsOnline, wsStatus 
                             ) : b.isFarming ? (
                               <span className="text-emerald-400 font-semibold">{b.placeName || b.gameName || bGameCfg.name} • {b.job || bGameCfg.defaultJob}</span>
                             ) : (
-                              <span>{b.placeName || b.gameName || bGameCfg.name} • {b.job || "Standby"}</span>
+                              <span>{b.placeName || b.gameName || bGameCfg.name} • {b.job || "Unemployed"}</span>
                             )}
                           </div>
                         </div>

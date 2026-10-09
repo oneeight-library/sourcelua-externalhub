@@ -53,7 +53,7 @@ export class HubRoom {
     const placeId = url.searchParams.get("placeId") || "110369730911937";
     const placeName = url.searchParams.get("placeName") || url.searchParams.get("gameName") || "Car Driving Indonesia";
     const gameName = url.searchParams.get("gameName") || placeName;
-    const job = url.searchParams.get("job") || (gameId === "cdid_menu" ? "Server Gateway" : "Standby");
+    const job = url.searchParams.get("job") || (gameId === "cdid_menu" ? "Server Gateway" : "Unemployed");
     const botId = `${name}_${Date.now().toString(36)}`;
 
     // 1. PENTING: Bersihkan koneksi lama dengan username yang sama (mencegah double bot saat teleport/reconnect)

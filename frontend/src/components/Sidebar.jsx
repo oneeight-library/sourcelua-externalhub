@@ -93,7 +93,7 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
                   ) : b.isFarming ? (
                     <span className="text-emerald-400 font-semibold">{b.placeName || b.gameName || gameCfg.name} • {b.job || gameCfg.defaultJob}</span>
                   ) : (
-                    <span>{b.placeName || b.gameName || gameCfg.name} • {b.job || "Standby"}</span>
+                    <span>{b.placeName || b.gameName || gameCfg.name} • {b.job || "Unemployed"}</span>
                   )}
                 </div>
               </div>

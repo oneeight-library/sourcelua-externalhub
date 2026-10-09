@@ -199,7 +199,7 @@ function CDIDModule.GetTelemetry()
     local st = TruckJob and TruckJob.GetState() or {}
     local elapsedSec = (st.IsFarming and st.FarmStartTime and st.FarmStartTime > 0) and math.floor(os.clock() - st.FarmStartTime) or 0
     local placeName = getPlaceName()
-    local dynamicJob = st.IsFarming and "Truk Kargo" or "Standby"
+    local dynamicJob = st.IsFarming and "Truk Kargo" or "Unemployed"
     return {
         status = st.Status or "CONNECTED",
         job = dynamicJob,

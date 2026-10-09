@@ -216,7 +216,7 @@ export function BotDetailView({
                 {!isLobby && (
                   <Badge variant={isFarming ? "emerald" : "secondary"} className={`font-medium text-xs gap-1.5 px-2.5 py-0.5 ${!isFarming ? 'bg-zinc-800 text-zinc-300' : ''}`}>
                     <Briefcase className="h-3 w-3 text-zinc-400" />
-                    <span>Job: {isFarming ? (bot.job || "Truk Kargo") : (bot.job === "Truk Kargo" ? "Truk Kargo (Siap)" : (bot.job || "Standby"))}</span>
+                    <span>Job: {isFarming ? (bot.job || "Truk Kargo") : (bot.job === "Truk Kargo" ? "Truk Kargo (Siap)" : (bot.job || "Unemployed"))}</span>
                   </Badge>
                 )}
               </div>
