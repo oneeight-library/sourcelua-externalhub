@@ -636,11 +636,11 @@ export function DealershipPage({
               title={isUpcomingOnly ? "Klik untuk kembali ke semua mobil" : "Klik untuk sortir cepat mobil bocoran upcoming"}
             >
               <Flame className={`h-3.5 w-3.5 ${isUpcomingOnly ? "text-amber-400 fill-amber-400 animate-pulse" : "text-amber-400"}`} />
-              <span>{isUpcomingOnly ? "Mode Bocoran" : "Upcoming"}</span>
+              <span>Bocoran</span>
               <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded-full font-bold ${
                 isUpcomingOnly ? "bg-amber-500/30 text-amber-200" : "bg-zinc-800 text-zinc-400"
               }`}>
-                {isUpcomingOnly ? `${filteredCars.length}` : `${upcomingCount}`}
+                {upcomingCount}
               </span>
             </Button>
 
@@ -752,11 +752,44 @@ export function DealershipPage({
         {/* 3. Catalog Grid (2 Kolom di Mobile, 3-4 di Desktop) */}
         {filteredCars.length === 0 ? (
           <div className="py-16 sm:py-20 text-center rounded-2xl border border-zinc-800 bg-zinc-900/30 px-4">
-            <Car className="h-10 w-10 sm:h-12 sm:w-12 text-zinc-600 mx-auto mb-3" />
-            <h3 className="text-xs sm:text-sm font-bold text-zinc-300">Tidak ada mobil yang sesuai filter</h3>
-            <p className="text-[11px] sm:text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
-              Coba ubah opsi pencarian, showroom, atau filter Pass di atas.
-            </p>
+            {isUpcomingOnly ? (
+              <>
+                <Flame className="h-10 w-10 sm:h-12 sm:w-12 text-amber-500/40 mx-auto mb-3" />
+                <h3 className="text-xs sm:text-sm font-bold text-amber-300">Belum ada bocoran</h3>
+                <p className="text-[11px] sm:text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
+                  {selectedDealer !== "Semua Dealer"
+                    ? `Belum ada bocoran mobil upcoming untuk dealer ${selectedDealer}. Coba pilih "Semua Dealer" atau kembali ke mode normal.`
+                    : "Belum ada jadwal rilis mobil baru atau bocoran upcoming yang terdeteksi di database game CDID saat ini."}
+                </p>
+                <div className="mt-3.5 flex items-center justify-center gap-2 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsUpcomingOnly(false)}
+                    className="text-xs border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-200"
+                  >
+                    Kembali ke Semua Mobil
+                  </Button>
+                  {selectedDealer !== "Semua Dealer" && (
+                    <Button
+                      size="sm"
+                      onClick={() => setSelectedDealer("Semua Dealer")}
+                      className="text-xs bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold"
+                    >
+                      Cek Semua Dealer
+                    </Button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <Car className="h-10 w-10 sm:h-12 sm:w-12 text-zinc-600 mx-auto mb-3" />
+                <h3 className="text-xs sm:text-sm font-bold text-zinc-300">Tidak ada mobil yang sesuai filter</h3>
+                <p className="text-[11px] sm:text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+                  Coba ubah opsi pencarian, showroom, atau filter Pass di atas.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3.5">
