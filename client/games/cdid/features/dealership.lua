@@ -131,20 +131,20 @@ function DealershipFeature.GetCars(dealerTarget)
             if isMatch then
                 local maps = getGamepassMaps()
                 local lowerId = car.Name:lower()
-                local gamepassLabel = "None Gamepass"
+                local gamepassLabel = ""
                 local isGamepass = false
 
                 if maps.Luxury[lowerId] then
-                    gamepassLabel = "Gamepass (Luxury)"
+                    gamepassLabel = "Luxury"
                     isGamepass = true
                 elseif maps.Rare[lowerId] then
-                    gamepassLabel = "Gamepass (Rare Import)"
+                    gamepassLabel = "Rare Import"
                     isGamepass = true
                 elseif maps.Retro[lowerId] then
-                    gamepassLabel = "Gamepass (Retro)"
+                    gamepassLabel = "Retro"
                     isGamepass = true
                 elseif maps.Emergency[lowerId] then
-                    gamepassLabel = "Gamepass (Emergency)"
+                    gamepassLabel = "Emergency"
                     isGamepass = true
                 end
 
@@ -166,6 +166,8 @@ function DealershipFeature.GetCars(dealerTarget)
 
                 local img = car:FindFirstChild("CarImage") and car.CarImage.Value or ""
                 local assetId = img:match("id=(%d+)") or img:match("(%d+)$") or ""
+                local engineVal = car:FindFirstChild("Engine") and tostring(car.Engine.Value) or ""
+                local seaterVal = car:FindFirstChild("Seater") and tostring(car.Seater.Value) or ""
                 table.insert(list, {
                     id = car.Name,
                     name = car:FindFirstChild("CarName") and car.CarName.Value or car.Name,
@@ -175,6 +177,8 @@ function DealershipFeature.GetCars(dealerTarget)
                     topSpeed = car:FindFirstChild("TopSpeed") and car.TopSpeed.Value or 0,
                     hp = car:FindFirstChild("Horsepower") and car.Horsepower.Value or 0,
                     year = car:FindFirstChild("CarYear") and car.CarYear.Value or "",
+                    engine = engineVal,
+                    seater = seaterVal,
                     gamepass = gamepassLabel,
                     isGamepass = isGamepass,
                     isLimited = isLimited,

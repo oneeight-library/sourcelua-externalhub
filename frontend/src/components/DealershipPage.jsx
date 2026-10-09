@@ -15,7 +15,8 @@ import {
   Store,
   X,
   ChevronDown,
-  Users
+  Users,
+  Cpu
 } from "lucide-react";
 
 // Daftar dealer resmi CDID 100% persis sesuai nilai car.Dealership.Value di in-game CarData
@@ -78,6 +79,11 @@ const PASS_OPTIONS = [
   { value: "retro", label: "Retro" },
   { value: "emergency", label: "Emergency" },
 ];
+
+function formatGamepass(gp) {
+  if (!gp || gp === "None Gamepass" || gp === "No Pass") return "";
+  return gp.replace(/^Gamepass\s*\((.*?)\)$/i, "$1").trim();
+}
 
 function useOutsideClick(ref, handler) {
   React.useEffect(() => {
@@ -268,16 +274,17 @@ export function DealershipPage({
 
         // Filter Pass persis sesuai in-game CDID (FilterFrame.Pass)
         let matchesPass = true;
+        const cleanGp = formatGamepass(car.gamepass).toLowerCase();
         if (selectedPass === "nopass") {
-          matchesPass = !car.isGamepass && (!car.gamepass || car.gamepass === "None Gamepass");
+          matchesPass = !car.isGamepass && (!car.gamepass || car.gamepass === "None Gamepass" || !cleanGp);
         } else if (selectedPass === "luxury") {
-          matchesPass = !!(car.gamepass && car.gamepass.includes("Luxury"));
+          matchesPass = cleanGp.includes("luxury");
         } else if (selectedPass === "rareimport") {
-          matchesPass = !!(car.gamepass && car.gamepass.includes("Rare Import"));
+          matchesPass = cleanGp.includes("rare import");
         } else if (selectedPass === "retro") {
-          matchesPass = !!(car.gamepass && car.gamepass.includes("Retro"));
+          matchesPass = cleanGp.includes("retro");
         } else if (selectedPass === "emergency") {
-          matchesPass = !!(car.gamepass && car.gamepass.includes("Emergency"));
+          matchesPass = cleanGp.includes("emergency");
         }
 
         return matchesDealer && matchesSearch && matchesPass;
@@ -741,20 +748,19 @@ export function DealershipPage({
                         {car.name}
                       </h3>
 
-                      {/* Status Gamepass di bawah nama mobil */}
-                      <div className="mt-1 mb-1">
-                        {car.isGamepass || (car.gamepass && car.gamepass !== "None Gamepass") ? (
-                          <span className="inline-block text-[9px] sm:text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded leading-none">
-                            {car.gamepass || "Gamepass"}
-                          </span>
-                        ) : (
-                          <span className="inline-block text-[9px] sm:text-[10px] font-medium text-zinc-500 bg-zinc-900/80 border border-zinc-800 px-1.5 py-0.5 rounded leading-none">
-                            None Gamepass
-                          </span>
-                        )}
-                      </div>
+                      {/* Status Gamepass di bawah nama mobil (langsung Nama Gamepass tanpa Gamepass (...)) */}
+                      {(() => {
+                        const cleanGp = formatGamepass(car.gamepass);
+                        return cleanGp ? (
+                          <div className="mt-1 mb-1">
+                            <span className="inline-block text-[9px] sm:text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded leading-none">
+                              {cleanGp}
+                            </span>
+                          </div>
+                        ) : null;
+                      })()}
 
-                      {/* Specs Badges */}
+                      {/* Specs Badges: KM/H, HP, Seater */}
                       <div className="flex items-center gap-1 sm:gap-2 mt-1.5 sm:mt-2 flex-wrap">
                         <span className="text-[9px] sm:text-[10px] text-zinc-400 font-mono flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
                           <Gauge className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-cyan-400 shrink-0" />
@@ -764,6 +770,12 @@ export function DealershipPage({
                           <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-400 shrink-0" />
                           {car.hp || 0} HP
                         </span>
+                        {car.seater ? (
+                          <span className="text-[9px] sm:text-[10px] text-zinc-400 font-mono flex items-center gap-0.5 sm:gap-1 bg-zinc-900/60 px-1 sm:px-1.5 py-0.5 rounded border border-zinc-800">
+                            <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-400 shrink-0" />
+                            {car.seater} Seater
+                          </span>
+                        ) : null}
                         {car.stock !== undefined && car.stock !== null && (
                           <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-1 sm:px-1.5 py-0.5 rounded border ${
                             car.stock === 0
@@ -774,6 +786,16 @@ export function DealershipPage({
                           </span>
                         )}
                       </div>
+
+                      {/* Engine Info */}
+                      {car.engine ? (
+                        <div className="flex items-center gap-1 sm:gap-1.5 mt-1.5 text-[9px] sm:text-[10px] text-zinc-400 bg-zinc-900/50 px-1.5 py-0.5 sm:py-1 rounded border border-zinc-800/80">
+                          <Cpu className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-indigo-400 shrink-0" />
+                          <span className="truncate font-mono text-zinc-300" title={car.engine}>
+                            {car.engine}
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="pt-2 border-t border-zinc-800/80">
@@ -864,17 +886,16 @@ export function DealershipPage({
                   {modalCar.name}
                 </h3>
                 {/* Status Gamepass di bawah nama mobil */}
-                <div className="mt-1">
-                  {modalCar.isGamepass || (modalCar.gamepass && modalCar.gamepass !== "None Gamepass") ? (
-                    <span className="inline-block text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded leading-none">
-                      {modalCar.gamepass || "Gamepass"}
-                    </span>
-                  ) : (
-                    <span className="inline-block text-[10px] font-medium text-zinc-500 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded leading-none">
-                      None Gamepass
-                    </span>
-                  )}
-                </div>
+                {(() => {
+                  const mGp = formatGamepass(modalCar.gamepass);
+                  return mGp ? (
+                    <div className="mt-1">
+                      <span className="inline-block text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded leading-none">
+                        {mGp}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
               <span className="font-mono font-black text-sm sm:text-base text-emerald-400 shrink-0">
                 {formatRupiah(modalCar.cost)}
@@ -897,6 +918,32 @@ export function DealershipPage({
                   title={c.name}
                 />
               ))}
+            </div>
+
+            {/* Info Spesifikasi Modal (Speed, HP, Seater & Engine) */}
+            <div className="flex flex-col gap-1.5 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[10px] font-mono text-zinc-400">
+                <span className="flex items-center gap-1 bg-zinc-900/80 px-2 py-0.5 rounded border border-zinc-800">
+                  <Gauge className="h-2.5 w-2.5 text-cyan-400" />
+                  {modalCar.topSpeed || 0} KM/H
+                </span>
+                <span className="flex items-center gap-1 bg-zinc-900/80 px-2 py-0.5 rounded border border-zinc-800">
+                  <Zap className="h-2.5 w-2.5 text-amber-400" />
+                  {modalCar.hp || 0} HP
+                </span>
+                {modalCar.seater ? (
+                  <span className="flex items-center gap-1 bg-zinc-900/80 px-2 py-0.5 rounded border border-zinc-800">
+                    <Users className="h-2.5 w-2.5 text-emerald-400" />
+                    {modalCar.seater} Seater
+                  </span>
+                ) : null}
+              </div>
+              {modalCar.engine ? (
+                <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-300">
+                  <Cpu className="h-3 w-3 text-indigo-400 shrink-0" />
+                  <span className="truncate" title={modalCar.engine}>{modalCar.engine}</span>
+                </div>
+              ) : null}
             </div>
 
             {/* Info Akun Eksekusi */}
