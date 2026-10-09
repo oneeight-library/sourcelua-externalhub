@@ -59,13 +59,18 @@ export function useWebSocketHub() {
     });
   }, []);
 
-  const clearLogs = useCallback((targetBotId) => {
+  const clearLogs = useCallback((targetBotId, targetBotName) => {
     if (!targetBotId || targetBotId === "ALL") {
       setLogsHistory([]);
       try { sessionStorage.removeItem("oe_logs_history"); } catch (e) {}
     } else {
       setLogsHistory((prev) => {
-        const filtered = prev.filter((l) => l.botId !== targetBotId);
+        const targetNameLower = targetBotName ? targetBotName.toLowerCase() : null;
+        const filtered = prev.filter((l) => {
+          if (l.botId && l.botId === targetBotId) return false;
+          if (targetNameLower && l.source && l.source.toLowerCase() === targetNameLower) return false;
+          return true;
+        });
         try { sessionStorage.setItem("oe_logs_history", JSON.stringify(filtered)); } catch (e) {}
         return filtered;
       });

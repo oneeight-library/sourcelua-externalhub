@@ -445,32 +445,32 @@ export function BotDetailView({
                 <span>Dealerships</span>
               </button>
 
-              {/* TAB 5: PROTEKSI KEAMANAN */}
+              {/* TAB 5: MISC */}
               <button
                 type="button"
                 onClick={() => handleSelectTab("safety")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   activeTab === "safety"
-                    ? "bg-zinc-700 text-white shadow-md ring-1 ring-zinc-500/40"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                    ? "bg-purple-700 text-white shadow-md shadow-purple-500/25 ring-1 ring-purple-400/40"
+                    : "text-zinc-400 hover:text-purple-300 hover:bg-zinc-800/60"
                 }`}
               >
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                <span>Proteksi Keamanan</span>
+                <SlidersHorizontal className="h-4 w-4 text-purple-400" />
+                <span>Misc</span>
               </button>
 
-              {/* TAB 6: KONSOL & OPTIMASI */}
+              {/* TAB 6: LIVE KONSOL */}
               <button
                 type="button"
                 onClick={() => handleSelectTab("console")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   activeTab === "console"
-                    ? "bg-purple-700 text-white shadow-md shadow-purple-500/25 ring-1 ring-purple-400/40"
-                    : "text-zinc-400 hover:text-purple-300 hover:bg-zinc-800/60"
+                    ? "bg-zinc-700 text-white shadow-md ring-1 ring-zinc-500/40"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                 }`}
               >
-                <Terminal className="h-4 w-4 text-purple-400" />
-                <span>Konsol & Optimasi</span>
+                <Terminal className="h-4 w-4 text-zinc-300" />
+                <span>Live Konsol</span>
               </button>
             </>
           )}
@@ -988,7 +988,7 @@ export function BotDetailView({
         </div>
       )}
 
-      {/* E. TAMPILAN PROTEKSI KEAMANAN */}
+      {/* E. TAMPILAN MISC (SPOOFING, OPTIMASI & PROTEKSI) */}
       {activeTab === "safety" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-6 space-y-5">
@@ -1038,6 +1038,50 @@ export function BotDetailView({
               </CardContent>
             </Card>
 
+            {/* Optimasi Grafis & Tampilan (GPU Saver) Card */}
+            <Card className="border-zinc-800">
+              <CardHeader className="p-4 pb-2 border-b border-zinc-800/60">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-purple-400" />
+                  Optimasi Grafis & Tampilan (GPU Saver)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                  <div>
+                    <div className="font-semibold text-xs text-zinc-200 flex items-center gap-1.5">
+                      <Gauge className="h-3.5 w-3.5 text-amber-400" /> Low Render (GPU)
+                    </div>
+                    <div className="text-[10px] text-zinc-400">Turunkan beban FPS / GPU</div>
+                  </div>
+                  <Switch checked={lowRender} onCheckedChange={handleToggleLowRender} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                  <div>
+                    <div className="font-semibold text-xs text-zinc-200 flex items-center gap-1.5">
+                      <Sun className="h-3.5 w-3.5 text-yellow-400" /> Fullbright
+                    </div>
+                    <div className="text-[10px] text-zinc-400">Pencahayaan terang maksimal</div>
+                  </div>
+                  <Switch checked={fullbright} onCheckedChange={handleToggleFullbright} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                  <div>
+                    <div className="font-semibold text-xs text-zinc-200 flex items-center gap-1.5">
+                      <EyeOff className="h-3.5 w-3.5 text-blue-400" /> No Fog
+                    </div>
+                    <div className="text-[10px] text-zinc-400">Hapus kabut lingkungan</div>
+                  </div>
+                  <Switch checked={noFog} onCheckedChange={handleToggleNoFog} />
+                </div>
+              </CardContent>
+            </Card>
+
+          </div>
+
+          <div className="lg:col-span-6 space-y-5">
             <Card className="border-zinc-800">
               <CardHeader className="p-4 pb-2 border-b border-zinc-800/60">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
@@ -1076,9 +1120,7 @@ export function BotDetailView({
                 </div>
               </CardContent>
             </Card>
-          </div>
 
-          <div className="lg:col-span-6 space-y-5">
             <Card className="border-zinc-800">
               <CardHeader className="p-4 pb-2 border-b border-zinc-800/60">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
@@ -1131,55 +1173,9 @@ export function BotDetailView({
         </div>
       )}
 
-      {/* F. TAMPILAN KONSOL & OPTIMASI */}
+      {/* F. TAMPILAN LIVE KONSOL */}
       {activeTab === "console" && (
-        <div className="space-y-5">
-          {/* Baris Optimasi Tampilan */}
-          <Card className="border-zinc-800">
-            <CardHeader className="p-4 pb-2 border-b border-zinc-800/60">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
-                <Zap className="h-4 w-4 text-purple-400" />
-                Optimasi Grafis & Tampilan (GPU Saver)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
-                  <div>
-                    <div className="font-semibold text-xs text-zinc-200 flex items-center gap-1.5">
-                      <Gauge className="h-3.5 w-3.5 text-amber-400" /> Low Render (GPU)
-                    </div>
-                    <div className="text-[10px] text-zinc-400">Turunkan beban FPS / GPU</div>
-                  </div>
-                  <Switch checked={lowRender} onCheckedChange={handleToggleLowRender} />
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
-                  <div>
-                    <div className="font-semibold text-xs text-zinc-200 flex items-center gap-1.5">
-                      <Sun className="h-3.5 w-3.5 text-yellow-400" /> Fullbright
-                    </div>
-                    <div className="text-[10px] text-zinc-400">Pencahayaan terang maksimal</div>
-                  </div>
-                  <Switch checked={fullbright} onCheckedChange={handleToggleFullbright} />
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
-                  <div>
-                    <div className="font-semibold text-xs text-zinc-200 flex items-center gap-1.5">
-                      <EyeOff className="h-3.5 w-3.5 text-blue-400" /> No Fog
-                    </div>
-                    <div className="text-[10px] text-zinc-400">Hapus kabut lingkungan</div>
-                  </div>
-                  <Switch checked={noFog} onCheckedChange={handleToggleNoFog} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Terminal Live Logs */}
-          <ConsoleTab bot={bot} logs={logs} onClearLogs={onClearLogs} onSendCommand={onSendCommand} />
-        </div>
+        <ConsoleTab bot={bot} logs={logs} onClearLogs={onClearLogs} onSendCommand={onSendCommand} />
       )}
 
     </div>

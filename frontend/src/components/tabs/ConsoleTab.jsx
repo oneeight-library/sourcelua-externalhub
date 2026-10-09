@@ -1,11 +1,12 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/ui/card.jsx";
 import { Button } from "@/ui/button.jsx";
-import { ScrollArea } from "@/ui/scroll-area.jsx";
-import { Terminal, Trash2, RefreshCw } from "lucide-react";
+import { Terminal, Trash2, RefreshCw, ArrowDown } from "lucide-react";
 
 export function ConsoleTab({ bot, logs, onClearLogs, onSendCommand }) {
   const scrollRef = React.useRef(null);
+  const [autoScroll, setAutoScroll] = React.useState(true);
+  const [unreadCount, setUnreadCount] = React.useState(0);
 
   const filteredLogs = React.useMemo(() => {
     return logs.filter((l) => {
@@ -14,19 +15,50 @@ export function ConsoleTab({ bot, logs, onClearLogs, onSendCommand }) {
     });
   }, [logs, bot]);
 
-  // Auto scroll to bottom
-  React.useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  // Handle user scroll detection
+  const handleScroll = (e) => {
+    const target = e.currentTarget;
+    const distanceToBottom = target.scrollHeight - target.scrollTop - target.clientHeight;
+    // Toleransi 40px dari dasar
+    const isAtBottom = distanceToBottom <= 40;
+    if (isAtBottom) {
+      if (!autoScroll) {
+        setAutoScroll(true);
+        setUnreadCount(0);
+      }
+    } else {
+      if (autoScroll) {
+        setAutoScroll(false);
+      }
     }
-  }, [filteredLogs]);
+  };
+
+  // Auto scroll to bottom only when user is at the bottom
+  React.useEffect(() => {
+    if (autoScroll && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    } else if (!autoScroll) {
+      setUnreadCount((prev) => prev + 1);
+    }
+  }, [filteredLogs, autoScroll]);
+
+  const scrollToBottom = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+      setAutoScroll(true);
+      setUnreadCount(0);
+    }
+  };
 
   return (
     <Card className="border-zinc-800 bg-zinc-950/60">
       <CardHeader className="p-4 pb-3 border-b border-zinc-800/80 flex flex-row items-center justify-between">
         <CardTitle className="text-xs md:text-sm font-bold flex items-center gap-2 text-zinc-200">
-          <Terminal className="h-4 w-4 text-zinc-400" />
-          Konsol Live: {bot?.name || "Akun"}
+          <Terminal className="h-4 w-4 text-purple-400" />
+          Live Konsol: {bot?.name || "Akun"}
         </CardTitle>
         <div className="flex items-center gap-2">
           <Button
@@ -45,8 +77,10 @@ export function ConsoleTab({ bot, logs, onClearLogs, onSendCommand }) {
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-xs px-2.5 gap-1.5 border-zinc-800 text-zinc-400 hover:text-zinc-200"
-            onClick={() => onClearLogs(bot?.botId)}
+            className="h-7 text-xs px-2.5 gap-1.5 border-zinc-800 text-zinc-400 hover:text-rose-400 hover:border-rose-900/50"
+            onClick={() => {
+              onClearLogs?.(bot?.botId, bot?.name);
+            }}
           >
             <Trash2 className="h-3 w-3" />
             Bersihkan
@@ -54,13 +88,14 @@ export function ConsoleTab({ bot, logs, onClearLogs, onSendCommand }) {
         </div>
       </CardHeader>
 
-      <CardContent className="p-3">
+      <CardContent className="p-3 relative">
         <div 
           ref={scrollRef}
-          className="h-72 overflow-y-auto font-mono text-[11px] leading-relaxed p-2 rounded-lg bg-black/40 border border-zinc-900 space-y-1.5"
+          onScroll={handleScroll}
+          className="h-80 overflow-y-auto font-mono text-[11px] leading-relaxed p-2.5 rounded-lg bg-black/40 border border-zinc-900 space-y-1.5"
         >
           {filteredLogs.length === 0 ? (
-            <div className="text-zinc-500 italic py-8 text-center">
+            <div className="text-zinc-500 italic py-12 text-center">
               Belum ada log aktivitas untuk akun {bot?.name || "ini"}...
             </div>
           ) : (
@@ -81,6 +116,25 @@ export function ConsoleTab({ bot, logs, onClearLogs, onSendCommand }) {
             })
           )}
         </div>
+
+        {/* Floating Scroll to Bottom Indicator if user scrolled up */}
+        {!autoScroll && filteredLogs.length > 0 && (
+          <div className="absolute bottom-5 right-5 z-10">
+            <Button
+              size="sm"
+              onClick={scrollToBottom}
+              className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/40 border border-purple-400/30"
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+              <span>Scroll ke Bawah</span>
+              {unreadCount > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.2 bg-purple-900 rounded-full text-[10px] font-bold">
+                  +{unreadCount}
+                </span>
+              )}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
