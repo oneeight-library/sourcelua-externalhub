@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv152kec)
+    Version: 3.3.0 (Build: v3.3.mv15v8i5)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv152kec"
+local AGENT_BUILD_ID = "v3.3.mv15v8i5"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -645,11 +645,9 @@ function DealershipFeature.GetCars(dealerTarget)
         local lowerId = car.Name:lower()
         local timeInfo = timeMap[lowerId]
 
-        -- Deteksi mobil bocoran upcoming:
-        -- 1) Terjadwal rilis di memory game masa depan
-        -- 2) Terdaftar di Shared.NewCar tapi masih unobtainable di CarData (belum rilis publik)
+        -- Kategori "Upcoming" HANYA diberikan jika ada entri start_ts di memori server yang menunjukkan waktu rilis di masa depan (start_ts > now)
         local isUpcoming = false
-        if (timeInfo and timeInfo.isUpcoming) or (maps.New[lowerId] and unobtainable) then
+        if timeInfo and timeInfo.isUpcoming == true then
             isUpcoming = true
         end
 
