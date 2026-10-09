@@ -123,9 +123,8 @@ export function Navbar({ bots, selectedBotId, onSelectBot }) {
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetContent side="bottom" className="p-4 pt-2">
                 <SheetHeader className="mb-3">
-                  <SheetTitle className="text-sm font-bold flex items-center justify-between">
-                    <span>Pilih Akun Roblox</span>
-                    <Badge variant="secondary" className="text-[10px]">{bots.size} Terhubung</Badge>
+                  <SheetTitle className="text-sm font-bold text-zinc-100">
+                    Pilih Akun Roblox
                   </SheetTitle>
                 </SheetHeader>
 
