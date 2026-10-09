@@ -177,6 +177,8 @@ export function Navbar({ bots, selectedBotId, onSelectBot }) {
                           <div className="text-[10px] text-zinc-400 truncate">
                             {b.isKicked ? (
                               <span className="text-rose-400 font-semibold">{b.placeName || b.gameName || bGameCfg.name} • Terputus</span>
+                            ) : b.isReconnecting ? (
+                              <span className="text-amber-400 font-semibold animate-pulse">{b.placeName || b.gameName || bGameCfg.name} • Reconnecting...</span>
                             ) : b.isFarming ? (
                               <span className="text-emerald-400 font-semibold">{b.placeName || b.gameName || bGameCfg.name} • {b.job || bGameCfg.defaultJob}</span>
                             ) : (

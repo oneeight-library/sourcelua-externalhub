@@ -75,7 +75,7 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
                   <AvatarFallback>{initial}</AvatarFallback>
                 </Avatar>
                 <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-zinc-950 ${
-                  b.isKicked ? "bg-rose-500" : (b.isFarming ? "bg-emerald-500" : "bg-amber-500")
+                  b.isKicked ? "bg-rose-500" : b.isReconnecting ? "bg-amber-400 animate-pulse" : (b.isFarming ? "bg-emerald-500" : "bg-amber-500")
                 }`} />
               </div>
 
@@ -90,6 +90,8 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
                 <div className="text-[10px] text-zinc-400 truncate">
                   {b.isKicked ? (
                     <span className="text-rose-400 font-semibold">{b.placeName || b.gameName || gameCfg.name} • Terputus</span>
+                  ) : b.isReconnecting ? (
+                    <span className="text-amber-400 font-semibold animate-pulse">{b.placeName || b.gameName || gameCfg.name} • Reconnecting...</span>
                   ) : b.isFarming ? (
                     <span className="text-emerald-400 font-semibold">{b.placeName || b.gameName || gameCfg.name} • {b.job || gameCfg.defaultJob}</span>
                   ) : (

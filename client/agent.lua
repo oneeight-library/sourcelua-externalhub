@@ -3640,8 +3640,8 @@ local function connectWebSocket()
             return
         end
 
-        local retryDelay = math.random(3, 5)
-        warn(string.format("[OE-External] WebSocket terputus! Mencoba rekoneksi dalam %d detik...", retryDelay))
+        local retryDelay = 1
+        warn(string.format("[OE-External] WebSocket terputus! Mencoba rekoneksi instan dalam %d detik...", retryDelay))
         task.wait(retryDelay)
         if isInstanceAlive() and not Safety.IsKicked and not CoreState.IsTerminated then
             connectWebSocket()

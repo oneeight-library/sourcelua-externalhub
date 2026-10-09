@@ -79,6 +79,17 @@ export function useWebSocketHub() {
     addLog("Controller", `Mengirim perintah beli mobil: ${carId} (${dealer})`, "INFO", botId);
   }, [sendBotCommand, addLog]);
 
+  // Cache bot terakhir yang diketahui agar UI tidak pernah unmount saat Delta reconnect
+  const lastKnownBotsRef = useRef(new Map());
+  useEffect(() => {
+    for (const [id, b] of bots.entries()) {
+      if (b && b.name) {
+        lastKnownBotsRef.current.set(b.name.toLowerCase(), b);
+        lastKnownBotsRef.current.set(id, b);
+      }
+    }
+  }, [bots]);
+
   // Resolusi bot terpilih secara tangguh (mencocokkan botId ATAU account username)
   let resolvedBot = null;
   if (selectedAccountName !== "ALL") {
@@ -87,6 +98,11 @@ export function useWebSocketHub() {
         resolvedBot = b;
         break;
       }
+    }
+    // Optimistic fallback jika bot sedang reconnecting sebentar
+    if (!resolvedBot && lastKnownBotsRef.current.has(selectedAccountName.toLowerCase())) {
+      const cached = lastKnownBotsRef.current.get(selectedAccountName.toLowerCase());
+      resolvedBot = { ...cached, isReconnecting: true, status: "RECONNECTING" };
     }
   }
 

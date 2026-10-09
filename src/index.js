@@ -54,85 +54,128 @@ export class HubRoom {
     const placeName = url.searchParams.get("placeName") || url.searchParams.get("gameName") || "Car Driving Indonesia";
     const gameName = url.searchParams.get("gameName") || placeName;
     const job = url.searchParams.get("job") || (gameId === "cdid_menu" ? "Server Gateway" : "Unemployed");
-    const botId = `${name}_${Date.now().toString(36)}`;
 
-    // 1. PENTING: Bersihkan koneksi lama dengan username yang sama (mencegah double bot saat teleport/reconnect)
-    for (const [existingId, existingBot] of this.bots.entries()) {
-      if (existingBot.info && existingBot.info.name && existingBot.info.name.toLowerCase() === name.toLowerCase()) {
-        try {
-          existingBot.ws.send(JSON.stringify({
-            type: "FORCE_DISCONNECT",
-            reason: "SUPERSEDED",
-            message: "Session replaced by new connection"
-          }));
-          existingBot.ws.close(4001, "Session replaced by new connection");
-        } catch (e) {}
-        this.bots.delete(existingId);
-        this.broadcastToControllers({
-          type: "BOT_LEFT",
-          botId: existingId,
-          name: name
-        });
+    // 1. Cek apakah ada bot dengan username yang sama (sedang reconnecting atau sesi lama)
+    let existingBotId = null;
+    let existingEntry = null;
+    for (const [id, b] of this.bots.entries()) {
+      if (b.info && b.info.name && b.info.name.toLowerCase() === name.toLowerCase()) {
+        existingBotId = id;
+        existingEntry = b;
+        break;
       }
     }
 
-    const botInfo = {
-      botId,
-      name,
-      userId,
-      displayName,
-      avatarUrl: null,
-      job,
-      placeId,
-      placeName,
-      gameId,
-      gameName,
-      status: "CONNECTED",
-      isKicked: false,
-      kickReason: null,
-      currentRoute: "Menunggu Instruksi",
-      tripCount: 0,
-      totalEarnings: 0,
-      currentCash: 0,
-      minDistance: 100000,
-      lowRender: false,
-      isFarming: false,
-      connectedAt: Date.now(),
-      lastSeen: Date.now()
-    };
+    let botId;
+    let botInfo;
+    let isReconnection = false;
 
-    this.bots.set(botId, { ws, info: botInfo });
+    if (existingEntry) {
+      isReconnection = true;
+      botId = existingBotId;
+      botInfo = existingEntry.info;
+
+      // Batalkan grace period disconnect timer
+      if (existingEntry.disconnectTimer) {
+        clearTimeout(existingEntry.disconnectTimer);
+        existingEntry.disconnectTimer = null;
+      }
+
+      // Tutup socket lama jika masih ada
+      if (existingEntry.ws && existingEntry.ws !== ws) {
+        try {
+          existingEntry.ws.close(4001, "Session replaced by new connection");
+        } catch (e) {}
+      }
+
+      // Pulihkan status ke CONNECTED dan perbarui metadata lokasi
+      botInfo.status = "CONNECTED";
+      botInfo.isReconnecting = false;
+      botInfo.placeId = placeId;
+      botInfo.placeName = placeName;
+      botInfo.gameName = gameName;
+      botInfo.job = job;
+      botInfo.lastSeen = Date.now();
+    } else {
+      botId = `${name}_${Date.now().toString(36)}`;
+      botInfo = {
+        botId,
+        name,
+        userId,
+        displayName,
+        avatarUrl: null,
+        job,
+        placeId,
+        placeName,
+        gameId,
+        gameName,
+        status: "CONNECTED",
+        isReconnecting: false,
+        isKicked: false,
+        kickReason: null,
+        currentRoute: "Menunggu Instruksi",
+        tripCount: 0,
+        totalEarnings: 0,
+        currentCash: 0,
+        minDistance: 100000,
+        lowRender: false,
+        isFarming: false,
+        connectedAt: Date.now(),
+        lastSeen: Date.now()
+      };
+    }
+
+    const currentEntry = { ws, info: botInfo, disconnectTimer: null };
+    this.bots.set(botId, currentEntry);
 
     ws.send(JSON.stringify({ type: "INIT_ACK", botId, message: "Connected to OneEight External Hub" }));
 
-    // Fetch avatar asynchronously tanpa memblokir koneksi WebSocket
-    (async () => {
-      let resolvedUserId = userId;
-      if (!resolvedUserId && name) {
-        const resolved = await robloxService.resolveUsername(name);
-        if (resolved) {
-          resolvedUserId = resolved.userId;
-          botInfo.userId = resolved.userId;
-          botInfo.displayName = resolved.displayName;
+    // Fetch avatar asynchronously jika belum ada
+    if (!botInfo.avatarUrl) {
+      (async () => {
+        let resolvedUserId = userId || botInfo.userId;
+        if (!resolvedUserId && name) {
+          const resolved = await robloxService.resolveUsername(name);
+          if (resolved) {
+            resolvedUserId = resolved.userId;
+            botInfo.userId = resolved.userId;
+            botInfo.displayName = resolved.displayName;
+          }
         }
-      }
-      if (resolvedUserId) {
-        const avatar = await robloxService.getAvatarHeadshot(resolvedUserId, "150x150");
-        if (avatar) {
-          botInfo.avatarUrl = avatar;
-          this.broadcastToControllers({
-            type: "BOT_TELEMETRY",
-            botId,
-            payload: { avatarUrl: avatar, userId: resolvedUserId, displayName: botInfo.displayName }
-          });
+        if (resolvedUserId) {
+          const avatar = await robloxService.getAvatarHeadshot(resolvedUserId, "150x150");
+          if (avatar) {
+            botInfo.avatarUrl = avatar;
+            this.broadcastToControllers({
+              type: "BOT_TELEMETRY",
+              botId,
+              payload: { avatarUrl: avatar, userId: resolvedUserId, displayName: botInfo.displayName }
+            });
+          }
         }
-      }
-    })().catch(() => {});
+      })().catch(() => {});
+    }
 
-    this.broadcastToControllers({
-      type: "BOT_JOINED",
-      bot: botInfo
-    });
+    if (isReconnection) {
+      this.broadcastToControllers({
+        type: "BOT_TELEMETRY",
+        botId,
+        payload: { ...botInfo, status: "CONNECTED", isReconnecting: false }
+      });
+      this.broadcastToControllers({
+        type: "BOT_LOG",
+        botId,
+        botName: botInfo.name,
+        log: `Koneksi WebSocket dipulihkan.`,
+        level: "SUCCESS",
+        timestamp: Date.now()
+      });
+    } else {
+      this.broadcastToControllers({
+        type: "BOT_JOINED",
+        bot: botInfo
+      });
+    }
 
     ws.addEventListener("message", (event) => {
       try {
@@ -208,12 +251,34 @@ export class HubRoom {
     });
 
     const cleanup = () => {
-      this.bots.delete(botId);
+      const entry = this.bots.get(botId);
+      // Jika socket ini sudah digantikan oleh koneksi baru yang lebih segar, abaikan
+      if (!entry || entry.ws !== ws) return;
+
+      // Tandai bot sebagai RECONNECTING, JANGAN LANGSUNG HAPUS (Optimistic / Grace Period)
+      botInfo.status = "RECONNECTING";
+      botInfo.isReconnecting = true;
+      botInfo.lastSeen = Date.now();
+
       this.broadcastToControllers({
-        type: "BOT_LEFT",
+        type: "BOT_TELEMETRY",
         botId,
-        name: botInfo.name
+        payload: { status: "RECONNECTING", isReconnecting: true }
       });
+
+      // Berikan masa tenggang 25 detik untuk Delta / Mobile Executor melakukan reconnect
+      if (entry.disconnectTimer) clearTimeout(entry.disconnectTimer);
+      entry.disconnectTimer = setTimeout(() => {
+        const recheck = this.bots.get(botId);
+        if (recheck && recheck.ws === ws) {
+          this.bots.delete(botId);
+          this.broadcastToControllers({
+            type: "BOT_LEFT",
+            botId,
+            name: botInfo.name
+          });
+        }
+      }, 25000);
     };
 
     ws.addEventListener("close", cleanup);

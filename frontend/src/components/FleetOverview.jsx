@@ -88,7 +88,7 @@ export function FleetOverview({ bots, onSelectBot, onRejoinBot }) {
                           <AvatarFallback>{initial}</AvatarFallback>
                         </Avatar>
                         <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-zinc-950 ${
-                          b.isKicked ? "bg-rose-500" : (b.isFarming ? "bg-emerald-500" : "bg-amber-500")
+                          b.isKicked ? "bg-rose-500" : b.isReconnecting ? "bg-amber-400 animate-pulse" : (b.isFarming ? "bg-emerald-500" : "bg-amber-500")
                         }`} />
                       </div>
 

@@ -233,6 +233,11 @@ export function BotDetailView({
                   <Badge variant="rose" className="text-[11px] font-bold flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" /> Terputus
                   </Badge>
+                ) : bot.isReconnecting ? (
+                  <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 text-amber-400 text-[11px] font-bold flex items-center gap-1.5 animate-pulse">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
+                    Reconnecting...
+                  </Badge>
                 ) : isLobby ? (
                   <Badge variant="secondary" className="text-[11px] font-semibold">
                     <span className="h-1.5 w-1.5 rounded-full mr-1.5 bg-blue-400" />
