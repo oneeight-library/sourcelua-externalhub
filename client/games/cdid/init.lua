@@ -270,6 +270,10 @@ function CDIDModule.GetTelemetry()
         elapsedSec = math.floor(os.clock() - stKj.FarmStartTime)
     end
 
+    local truckDuration = (st.IsFarming and st.FarmStartTime and st.FarmStartTime > 0) and math.floor(os.clock() - st.FarmStartTime) or 0
+    local baristaDuration = (stKj.IsFarming and stKj.FarmStartTime and stKj.FarmStartTime > 0) and math.floor(os.clock() - stKj.FarmStartTime) or 0
+    local minigameDuration = (stMg.IsFarming and stMg.FarmStartTime and stMg.FarmStartTime > 0) and math.floor(os.time() - stMg.FarmStartTime) or 0
+
     local placeName = getPlaceName()
     local dynamicJob = "Unemployed"
     if stMg.IsFarming then
@@ -298,17 +302,27 @@ function CDIDModule.GetTelemetry()
             emergencyAction = (SafetyFeature and SafetyFeature.EmergencyAction) or "Warn Only",
             ignoreFriends = (SafetyFeature and SafetyFeature.IgnoreFriends ~= false),
         },
-        status = isMinigameFarming and (stMg.Phase or "RUNNING") or (isKanjiFarming and (stKj.Phase or "RUNNING") or (st.Status or "CONNECTED")),
+        status = isTruckFarming and (st.Status or "CONNECTED") or (isKanjiFarming and (stKj.Phase or "RUNNING") or (isMinigameFarming and (stMg.Phase or "RUNNING") or "CONNECTED")),
         job = dynamicJob,
         placeName = placeName,
         gameName = placeName,
-        currentRoute = stMg.IsFarming and ("Sumo Arena: " .. (stMg.Phase or "Lobby")) or (stKj.IsFarming and ("Kanji Jiwa: " .. (stKj.Phase or "Standby")) or (st.CurrentRoute or "IDLE")),
+        currentRoute = isTruckFarming and (st.CurrentRoute or "IDLE") or (stMg.IsFarming and ("Sumo Arena: " .. (stMg.Phase or "Lobby")) or (stKj.IsFarming and ("Kanji Jiwa: " .. (stKj.Phase or "Standby")) or "IDLE")),
         tripCount = st.TripCount or 0,
         truckEarnings = st.IsFarming and (st.TotalEarnings or 0) or (st.TripCount and st.TripCount > 0 and (st.TotalEarnings or 0) or 0),
         totalEarnings = (st.IsFarming and (st.TotalEarnings or 0) or 0) + (stMg.IsFarming and (stMg.CashEarned or 0) or 0) + (stKj.IsFarming and (stKj.TotalEarned or 0) or 0),
         currentCash = (st.CurrentCash and st.CurrentCash > 0) and st.CurrentCash or ((stMg.CurrentCash and stMg.CurrentCash > 0) and stMg.CurrentCash or (stKj.CurrentCash or 0)),
         startCash = st.StartCash or 0,
         isFarming = isFarming,
+        truck = {
+            isFarming = isTruckFarming,
+            status = isTruckFarming and (st.Status or "CONNECTED") or "Standby",
+            currentRoute = isTruckFarming and (st.CurrentRoute or "IDLE") or "IDLE",
+            tripCount = st.TripCount or 0,
+            earnings = (st.IsFarming or (st.TripCount and st.TripCount > 0)) and (st.TotalEarnings or 0) or 0,
+            speed = isTruckFarming and (st.Speed or 0) or 0,
+            distRemaining = isTruckFarming and (st.DistRemaining or "0m") or "0m",
+            duration = truckDuration
+        },
         minigame = {
             isFarming = stMg.IsFarming or false,
             role = stMg.Role or "Winner",
@@ -322,7 +336,8 @@ function CDIDModule.GetTelemetry()
             autoOpenBox = stMg.AutoOpenBox or false,
             round = stMg.CurrentRound or 0,
             maxRounds = stMg.MaxRounds or 10,
-            lastResult = stMg.LastMatchResult or "-"
+            lastResult = stMg.LastMatchResult or "-",
+            duration = minigameDuration
         },
         barista = {
             isFarming = stKj.IsFarming or false,
@@ -333,11 +348,12 @@ function CDIDModule.GetTelemetry()
             lastGaji = stKj.LastGaji or 0,
             avgPerHour = stKj.AvgPerHour or 0,
             currentCustomer = stKj.CurrentCustomerName or "-",
-            currentOrder = stKj.CurrentOrder or {}
+            currentOrder = stKj.CurrentOrder or {},
+            duration = baristaDuration
         },
         jobProgress = JobProgressFeature and JobProgressFeature.GetProgressData("Barista") or nil,
-        speed = st.Speed or 0,
-        distRemaining = st.DistRemaining or "0m",
+        speed = isTruckFarming and (st.Speed or 0) or 0,
+        distRemaining = isTruckFarming and (st.DistRemaining or "0m") or "0m",
         lowRender = st.LowRender or false,
         minDistance = st.MinDistance or 100000,
         farmDuration = elapsedSec,

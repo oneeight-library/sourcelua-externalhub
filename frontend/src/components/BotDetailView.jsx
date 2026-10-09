@@ -208,27 +208,36 @@ export function BotDetailView({
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const trips = bot.tripCount || 0;
+  const truck = bot.truck || {};
+  const trips = truck.tripCount !== undefined ? truck.tripCount : (bot.tripCount || 0);
   const truckEarnings = isTruckFarming 
-    ? (bot.truckEarnings !== undefined ? bot.truckEarnings : (bot.totalEarnings || 0))
-    : (trips > 0 ? (bot.truckEarnings !== undefined ? bot.truckEarnings : (bot.totalEarnings || 0)) : 0);
+    ? (truck.earnings !== undefined ? truck.earnings : (bot.truckEarnings !== undefined ? bot.truckEarnings : (bot.totalEarnings || 0)))
+    : (trips > 0 ? (truck.earnings !== undefined ? truck.earnings : (bot.truckEarnings !== undefined ? bot.truckEarnings : 0)) : 0);
 
-  const elapsedSec = (bot.farmDuration && bot.farmDuration > 0) ? bot.farmDuration : (trips > 0 ? trips * 50 : 0);
-  const farmActiveTime = isTruckFarming || trips > 0 || isBaristaActive ? formatTime(elapsedSec) : "00:00:00";
+  const truckDurationSec = truck.duration !== undefined ? truck.duration : (isTruckFarming && bot.farmDuration ? bot.farmDuration : (trips > 0 ? trips * 50 : 0));
+  const truckActiveTime = isTruckFarming || trips > 0 ? formatTime(truckDurationSec) : "00:00:00";
+
+  const barista = bot.barista || {};
+  const baristaDurationSec = barista.duration !== undefined ? barista.duration : (isBaristaActive && bot.farmDuration ? bot.farmDuration : 0);
+  const baristaActiveTime = isBaristaActive ? formatTime(baristaDurationSec) : "00:00:00";
+
+  const truckRoute = isTruckFarming ? (truck.currentRoute || bot.currentRoute || "IDLE").replace(/\s*\(.*?\)/g, "").trim() : "IDLE";
+  const truckStatus = isTruckFarming ? (truck.status || bot.status || "Aktif") : "Standby";
+  const truckSpeed = isTruckFarming ? (truck.speed !== undefined ? truck.speed : (bot.speed || 0)) : 0;
+  const truckDistRemaining = isTruckFarming ? (truck.distRemaining || bot.distRemaining || "0m") : "0m";
 
   let avgPerHourStr = "Menghitung...";
   if (isTruckFarming && trips > 0 && truckEarnings > 0) {
-    const effectiveHours = Math.max(elapsedSec / 3600, (trips * 50) / 3600);
+    const effectiveHours = Math.max(truckDurationSec / 3600, (trips * 50) / 3600);
     const hourlyRate = Math.round(truckEarnings / effectiveHours);
     avgPerHourStr = gameCfg.formatMoney ? gameCfg.formatMoney(hourlyRate) + " / jam" : `${hourlyRate.toLocaleString()} / jam`;
   } else if (!isTruckFarming && trips === 0) {
     avgPerHourStr = "Job Standby";
-  } else if (elapsedSec >= 15 && truckEarnings === 0) {
+  } else if (truckDurationSec >= 15 && truckEarnings === 0) {
     avgPerHourStr = gameCfg.formatMoney ? gameCfg.formatMoney(0) + " / jam" : "0 / jam";
   }
 
   const mg = bot.minigame || {};
-  const barista = bot.barista || {};
 
   return (
     <div className="space-y-6">
@@ -753,7 +762,7 @@ export function BotDetailView({
                       {barista.phase || (isBaristaActive ? "Berjalan" : "Standby")}
                     </span>
                     <span className="text-[10px] text-zinc-500 block mt-0.5">
-                      Durasi: {farmActiveTime}
+                      Durasi: {baristaActiveTime}
                     </span>
                   </div>
 
@@ -875,7 +884,7 @@ export function BotDetailView({
                   <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Durasi Jalan</span>
                     <div className="text-base sm:text-lg font-black text-zinc-200 tabular-nums tracking-tight mt-0.5">
-                      {farmActiveTime}
+                      {truckActiveTime}
                     </div>
                   </div>
 
@@ -900,29 +909,29 @@ export function BotDetailView({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                     <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Status Rute</span>
-                    <span className="text-xs font-bold text-zinc-100 mt-0.5 block truncate" title={bot.currentRoute || "IDLE"}>
-                      {(bot.currentRoute || "IDLE").replace(/\s*\(.*?\)/g, "").trim()}
+                    <span className="text-xs font-bold text-zinc-100 mt-0.5 block truncate" title={truckRoute}>
+                      {truckRoute}
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                     <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Kecepatan Truk</span>
                     <span className="text-xs font-bold text-emerald-400 tabular-nums mt-0.5 block">
-                      {bot.speed || 0} KM/H
+                      {truckSpeed} KM/H
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                     <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Sisa Jarak</span>
                     <span className="text-xs font-bold text-zinc-100 tabular-nums mt-0.5 block">
-                      {bot.distRemaining || "0m"}
+                      {truckDistRemaining}
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                     <span className="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Status Kendaraan</span>
                     <span className="text-xs font-bold text-zinc-100 mt-0.5 block">
-                      {bot.status || "Standby"}
+                      {truckStatus}
                     </span>
                   </div>
                 </div>
