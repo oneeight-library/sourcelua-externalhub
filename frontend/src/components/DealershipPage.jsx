@@ -393,12 +393,9 @@ export function DealershipPage({
                 className="h-8 sm:h-9 px-2.5 sm:px-3 gap-2 border-zinc-800 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold text-zinc-100 shadow-sm transition-all"
               >
                 <Store className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span className="truncate max-w-[130px] sm:max-w-xs">
-                  {selectedDealer === "Semua Dealer" ? "CDID Showroom" : selectedDealer}
+                <span className="truncate max-w-[140px] sm:max-w-xs">
+                  {selectedDealer || "Semua Dealer"}
                 </span>
-                <Badge variant="emerald" className="text-[8px] sm:text-[9px] font-mono px-1 sm:px-1.5 py-0 leading-tight hidden xs:inline-flex">
-                  Live
-                </Badge>
                 <ChevronDown className={`h-3.5 w-3.5 text-zinc-400 ml-0.5 shrink-0 transition-transform duration-200 ${isDealerDropdownOpen ? "rotate-180" : ""}`} />
               </Button>
 
