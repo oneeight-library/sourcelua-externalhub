@@ -785,7 +785,7 @@ export function BotDetailView({
 
           </div>
 
-          {/* Kolom Kanan: Kontrol Barista */}
+          {/* Kolom Kanan: Kontrol Barista & Klaim Hadiah */}
           <div className="lg:col-span-6 space-y-5">
             <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/70 to-zinc-950/70">
               <CardHeader className="p-4 pb-2 border-b border-zinc-800/60 flex flex-row items-center justify-between">
@@ -827,10 +827,8 @@ export function BotDetailView({
 
               </CardContent>
             </Card>
-          </div>
 
-          {/* Progres Level & Claim Hadiah (100% Backend-Driven via DataReplication) */}
-          <div className="lg:col-span-12">
+            {/* Progres Level & Claim Hadiah (Ditempatkan di Bawah Kontrol Kanji Jiwa) */}
             <JobProgressView bot={bot} onSendCommand={onSendCommand} />
           </div>
 
