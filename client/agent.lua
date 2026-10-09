@@ -3179,6 +3179,61 @@ function Helpers.GetCash()
     return State.CurrentCash or 0
 end
 
+function Helpers.RestoreCamera()
+    pcall(function()
+        -- 1. Resmi Abort / Selesaikan NPC Dialog & Cutscene Cinematic
+        local rs = game:GetService("ReplicatedStorage")
+        local net = rs:FindFirstChild("NetworkContainer") and rs.NetworkContainer:FindFirstChild("RemoteEvents")
+        local remote = net and net:FindFirstChild("NpcDialog")
+        if remote then
+            pcall(function()
+                remote:FireServer("Finish", nil)
+            end)
+            if typeof(getconnections) == "function" then
+                local conns = getconnections(remote.OnClientEvent)
+                if conns and conns[1] and conns[1].Function then
+                    local ups = typeof(getupvalues) == "function" and getupvalues(conns[1].Function)
+                    if ups and typeof(ups[2]) == "function" then
+                        pcall(ups[2]) -- Panggil fungsi abort resmi di NpcDialog.LocalScript
+                    end
+                end
+            end
+        end
+
+        -- 2. Kembalikan CameraType, CameraSubject, FOV & matikan Tween kamera
+        local camera = Workspace.CurrentCamera
+        local hum, hrp = Helpers.GetValidHumanoid()
+        if camera then
+            pcall(function()
+                camera.CameraType = Enum.CameraType.Custom
+                if hum then
+                    camera.CameraSubject = hum
+                end
+                camera.FieldOfView = 70
+                if hrp then
+                    camera.CFrame = CFrame.new(hrp.Position - hrp.CFrame.LookVector * 10 + Vector3.new(0, 3.5, 0), hrp.Position)
+                end
+            end)
+        end
+
+        -- 3. Pulihkan Kontrol Karakter PlayerModule jika sempat terkunci dialog
+        pcall(function()
+            local pScripts = LocalPlayer:FindFirstChild("PlayerScripts")
+            local pModule = pScripts and pScripts:FindFirstChild("PlayerModule")
+            if pModule then
+                local controls = require(pModule):GetControls()
+                if controls and not controls:IsEnabled() then
+                    controls:Enable()
+                end
+            end
+        end)
+
+        -- 4. Bersihkan Attribute Dialog Player
+        LocalPlayer:SetAttribute("NpcDialogOpen", false)
+        LocalPlayer:SetAttribute("HidePrompt", false)
+    end)
+end
+
 function Helpers.CleanAllUIs()
     local pGui = LocalPlayer:FindFirstChild("PlayerGui")
 
@@ -3192,46 +3247,38 @@ function Helpers.CleanAllUIs()
         end
     end)
 
-    if not pGui then return end
+    if pGui then
+        -- 2. ChoicePicker
+        pcall(function()
+            local choicePicker = pGui:FindFirstChild("Job") and pGui.Job:FindFirstChild("ChoicePicker")
+            if choicePicker and choicePicker.Visible then
+                choicePicker.Visible = false
+            end
+        end)
 
-    -- 2. ChoicePicker
-    pcall(function()
-        local choicePicker = pGui:FindFirstChild("Job") and pGui.Job:FindFirstChild("ChoicePicker")
-        if choicePicker and choicePicker.Visible then
-            choicePicker.Visible = false
-        end
-    end)
+        -- 3. BrewMinigame
+        pcall(function()
+            local brewMinigame = pGui:FindFirstChild("Job") and pGui.Job:FindFirstChild("BrewMinigame")
+            if brewMinigame and brewMinigame.Visible then
+                brewMinigame.Visible = false
+            end
+        end)
 
-    -- 3. BrewMinigame
-    pcall(function()
-        local brewMinigame = pGui:FindFirstChild("Job") and pGui.Job:FindFirstChild("BrewMinigame")
-        if brewMinigame and brewMinigame.Visible then
-            brewMinigame.Visible = false
-        end
-    end)
+        -- 4. NpcDialog & Letterbox
+        pcall(function()
+            local npcDialog = pGui:FindFirstChild("NpcDialog")
+            if npcDialog then
+                if npcDialog.Enabled then npcDialog.Enabled = false end
+                local top = npcDialog:FindFirstChild("LetterboxTop")
+                local btm = npcDialog:FindFirstChild("LetterboxBottom")
+                if top and top.Visible then top.Visible = false end
+                if btm and btm.Visible then btm.Visible = false end
+            end
+        end)
+    end
 
-    -- 4. NpcDialog & Letterbox
-    pcall(function()
-        local npcDialog = pGui:FindFirstChild("NpcDialog")
-        if npcDialog then
-            if npcDialog.Enabled then npcDialog.Enabled = false end
-            local top = npcDialog:FindFirstChild("LetterboxTop")
-            local btm = npcDialog:FindFirstChild("LetterboxBottom")
-            if top and top.Visible then top.Visible = false end
-            if btm and btm.Visible then btm.Visible = false end
-        end
-    end)
-
-    -- 5. Restore Camera
-    pcall(function()
-        local camera = Workspace.CurrentCamera
-        local hum, hrp = Helpers.GetValidHumanoid()
-        if camera and hum and camera.CameraType ~= Enum.CameraType.Custom then
-            camera.CameraType = Enum.CameraType.Custom
-            camera.CameraSubject = hum
-            camera.FieldOfView = 70
-        end
-    end)
+    -- 5. Restore Camera & Controls secara menyeluruh
+    Helpers.RestoreCamera()
 end
 
 function Helpers.StandAt(standPos, lookTargetPos)
@@ -3304,6 +3351,7 @@ function Helpers.TeleportToCafe()
     if not hrp then return end
 
     pcall(function()
+        if hum then hum.Sit = false end
         hrp.Anchored = true
         if npc and npc:FindFirstChild("Head") then
             hrp.CFrame = CFrame.new(npc.Head.Position + Vector3.new(0, 3.5, -3), npc.Head.Position)
@@ -3319,6 +3367,7 @@ function Helpers.TeleportToCafe()
         hrp.AssemblyAngularVelocity = Vector3.zero
         hrp.Anchored = false
     end)
+    Helpers.RestoreCamera()
 end
 
 -- ==============================================================================
@@ -3516,11 +3565,7 @@ function NetworkHandler.CheckAndAnswerTelephone()
             task.wait(0.3)
         end
 
-        if phonePrompt then
-            fireproximityprompt(phonePrompt)
-            task.wait(0.5)
-        end
-
+        -- Selesaikan tutorial langsung ke server agar telepon tidak perlu berdering lagi
         local remote = NetworkHandler.GetBaristaRemote(3)
         if remote then
             pcall(function()
@@ -3528,13 +3573,19 @@ function NetworkHandler.CheckAndAnswerTelephone()
             end)
         end
 
+        if phonePrompt and phonePrompt.Enabled then
+            pcall(function()
+                fireproximityprompt(phonePrompt)
+            end)
+            task.wait(0.3)
+        end
+
         if phoneRing and phoneRing.IsPlaying then
             pcall(function() phoneRing:Stop() end)
         end
 
-        task.wait(0.5)
-        LocalPlayer:SetAttribute("NpcDialogOpen", false)
-        LocalPlayer:SetAttribute("HidePrompt", false)
+        task.wait(0.3)
+        Helpers.RestoreCamera()
         Helpers.CleanAllUIs()
         return true
     end
