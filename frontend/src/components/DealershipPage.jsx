@@ -719,13 +719,7 @@ export function DealershipPage({
                       )}
                     </div>
 
-                    {/* Dealer Badge di Pojok Kanan Atas */}
-                    <Badge
-                      variant="secondary"
-                      className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 text-[7.5px] sm:text-[8.5px] font-semibold bg-zinc-900/90 text-zinc-300 border border-zinc-700/60 z-10 px-1.5 py-0"
-                    >
-                      {car.dealer}
-                    </Badge>
+
                   </div>
 
                   {/* Car Details (Padding Ramping, Tata Letak Bersih & Seimbang) */}
