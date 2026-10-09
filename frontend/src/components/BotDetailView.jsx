@@ -13,6 +13,7 @@ import {
 } from "@/ui/select.jsx";
 import { ConsoleTab } from "@/components/tabs/ConsoleTab.jsx";
 import { CDIDMenuTab } from "@/components/tabs/CDIDMenuTab.jsx";
+import { CDIDFarmTab } from "@/components/tabs/CDIDFarmTab.jsx";
 import { DealershipPage } from "@/components/DealershipPage.jsx";
 import { getGameConfig } from "@/config/games.js";
 import { 
@@ -216,7 +217,7 @@ export function BotDetailView({
                 {!isLobby && (
                   <Badge variant={isFarming ? "emerald" : "secondary"} className={`font-medium text-xs gap-1.5 px-2.5 py-0.5 ${!isFarming ? 'bg-zinc-800 text-zinc-300' : ''}`}>
                     <Briefcase className="h-3 w-3 text-zinc-400" />
-                    <span>Job: {isFarming ? (bot.job || "Truk Kargo") : (bot.job === "Truk Kargo" ? "Truk Kargo (Siap)" : (bot.job || "Unemployed"))}</span>
+                    <span>Job: {bot.job || (isFarming ? "Bekerja" : "Unemployed")}</span>
                   </Badge>
                 )}
               </div>
@@ -455,46 +456,8 @@ export function BotDetailView({
           {/* GRID KANAN: KONTROL AUTOFARM & PENGATURAN */}
           <div className="lg:col-span-6 space-y-5">
             
-            {/* Section 1: Kontrol Utama Autofarm */}
-            <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/70 to-zinc-950/70">
-              <CardHeader className="p-4 pb-2 border-b border-zinc-800/60 flex flex-row items-center justify-between">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
-                  <SlidersHorizontal className="h-4 w-4 text-indigo-400" />
-                  Kontrol Utama Autofarm
-                </CardTitle>
-                <Badge variant={isFarming ? "emerald" : "secondary"} className="text-[10px] font-bold">
-                  {isFarming ? "BERJALAN" : "BERHENTI"}
-                </Badge>
-              </CardHeader>
-              <CardContent className="p-4 space-y-3">
-                
-                <Button
-                  variant={isFarming ? "destructive" : "emerald"}
-                  className="w-full font-bold text-sm h-12 gap-2 shadow-lg"
-                  onClick={() => onSendCommand(bot.botId, isFarming ? "STOP_FARM" : "START_FARM")}
-                >
-                  {isFarming ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  {isFarming ? "Hentikan Autofarm" : "Mulai Autofarm Sekarang"}
-                </Button>
-
-                {/* Tombol Depot HQ Truk CDID */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
-                  <div>
-                    <div className="font-semibold text-xs text-zinc-200">Teleport Depot Truk (HQ)</div>
-                    <div className="text-[11px] text-zinc-400">Pindahkan karakter langsung ke pangkalan truk</div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs font-semibold"
-                    onClick={() => onSendCommand(bot.botId, "TELEPORT_HQ")}
-                  >
-                    Teleport HQ
-                  </Button>
-                </div>
-
-              </CardContent>
-            </Card>
+            {/* Section 1: Dynamic Farm Tab (Truk Kargo di Jatim, Minigames Sumo di Jakarta) */}
+            <CDIDFarmTab bot={bot} onSendCommand={onSendCommand} />
 
             {/* Section 2: Remote Dealership CDID */}
             <Card className="border-zinc-800">

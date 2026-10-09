@@ -14,16 +14,32 @@ import {
   Crown,
   Bot,
   Gift,
-  Sparkles
+  Sparkles,
+  MapPin,
+  Navigation
 } from "lucide-react";
 
 export function CDIDFarmTab({ bot, onSendCommand }) {
   const isFarming = bot.isFarming;
   const isMinigameActive = bot.job && bot.job.includes("Minigame");
 
-  const [jobMode, setJobMode] = React.useState(isMinigameActive ? "minigame" : "truck");
+  const placeLower = (bot.placeName || "").toLowerCase();
+  const isJakarta = placeLower.includes("jakarta") || bot.placeId === "14005966837" || bot.placeId === 14005966837;
+  const isJatim = placeLower.includes("jawa timur") || bot.placeId === "110369730911937" || bot.placeId === 110369730911937;
+
+  // Jika di Jakarta, otomatis set mode minigame. Jika di Jatim, otomatis set mode truck.
+  const initialMode = isJakarta ? "minigame" : isJatim ? "truck" : (isMinigameActive ? "minigame" : "truck");
+  const [jobMode, setJobMode] = React.useState(initialMode);
   const [role, setRole] = React.useState(bot.minigame?.role || "Winner");
   const [autoOpenBox, setAutoOpenBox] = React.useState(bot.minigame?.autoOpenBox || false);
+
+  React.useEffect(() => {
+    if (isJakarta) {
+      setJobMode("minigame");
+    } else if (isJatim) {
+      setJobMode("truck");
+    }
+  }, [isJakarta, isJatim]);
 
   React.useEffect(() => {
     if (bot.minigame?.role) setRole(bot.minigame.role);
@@ -49,41 +65,76 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
 
   return (
     <div className="space-y-4">
-      {/* Job Mode Selector Tabs */}
-      <div className="flex items-center gap-2 p-1.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-sm">
-        <button
-          onClick={() => setJobMode("truck")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
-            jobMode === "truck"
-              ? "bg-zinc-800 text-emerald-400 shadow-sm border border-zinc-700/60"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850/50"
-          }`}
-        >
-          <Truck className="h-4 w-4" />
-          <span>Truk Kargo (Jatim)</span>
-          {isFarming && !isMinigameActive && (
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          )}
-        </button>
+      {/* Dynamic Place & Job Context Header */}
+      {isJakarta ? (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-cyan-950/40 border border-cyan-800/40 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-400">
+              <Gamepad2 className="h-4 w-4" />
+            </div>
+            <div>
+              <span className="font-bold text-cyan-200 block">Map Jakarta Terdeteksi</span>
+              <span className="text-[11px] text-zinc-400">Job Tersedia: Minigames Sumo Farm Arena</span>
+            </div>
+          </div>
+          <Badge variant="outline" className="border-cyan-700/60 text-cyan-300 bg-cyan-950/60 text-[10px] font-mono">
+            SUMO ARENA
+          </Badge>
+        </div>
+      ) : isJatim ? (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+              <Truck className="h-4 w-4" />
+            </div>
+            <div>
+              <span className="font-bold text-emerald-200 block">Map Jawa Timur Terdeteksi</span>
+              <span className="text-[11px] text-zinc-400">Job Tersedia: Pengiriman Truk Kargo</span>
+            </div>
+          </div>
+          <Badge variant="outline" className="border-emerald-700/60 text-emerald-300 bg-emerald-950/60 text-[10px] font-mono">
+            CARGO EXPEDITION
+          </Badge>
+        </div>
+      ) : (
+        /* Jika di map lain / custom, sediakan tab switch antar job */
+        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-sm">
+          <button
+            onClick={() => setJobMode("truck")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+              jobMode === "truck"
+                ? "bg-zinc-800 text-emerald-400 shadow-sm border border-zinc-700/60"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850/50"
+            }`}
+          >
+            <Truck className="h-4 w-4" />
+            <span>Truk Kargo (Jatim)</span>
+            {isFarming && !isMinigameActive && (
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            )}
+          </button>
 
-        <button
-          onClick={() => setJobMode("minigame")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
-            jobMode === "minigame"
-              ? "bg-zinc-800 text-cyan-400 shadow-sm border border-zinc-700/60"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850/50"
-          }`}
-        >
-          <Gamepad2 className="h-4 w-4" />
-          <span>Minigames Sumo (Jakarta)</span>
-          {isMinigameActive && (
-            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-          )}
-        </button>
-      </div>
+          <button
+            onClick={() => setJobMode("minigame")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+              jobMode === "minigame"
+                ? "bg-zinc-800 text-cyan-400 shadow-sm border border-zinc-700/60"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850/50"
+            }`}
+          >
+            <Gamepad2 className="h-4 w-4" />
+            <span>Minigames Sumo (Jakarta)</span>
+            {isMinigameActive && (
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            )}
+          </button>
+        </div>
+      )}
 
-      {/* MODE 1: TRUK KARGO (JAWA TIMUR) */}
-      {jobMode === "truck" && (
+      {/* =========================================================================
+          MODE 1: TRUK KARGO (HANYA DITAMPILKAN JIKA BUKAN DI JAKARTA)
+          ========================================================================= */}
+      {(!isJakarta && (isJatim || jobMode === "truck")) && (
         <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/50 to-zinc-950/50">
           <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -103,6 +154,22 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
               >
                 {isFarming && !isMinigameActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 {isFarming && !isMinigameActive ? "Hentikan Auto Farm Truk" : "Mulai Auto Farm Truk Kargo"}
+              </Button>
+            </div>
+
+            {/* Tombol Depot HQ Truk CDID */}
+            <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
+              <div>
+                <div className="font-semibold text-xs text-zinc-200">Teleport Depot Truk (HQ)</div>
+                <div className="text-[11px] text-zinc-400">Pindahkan karakter langsung ke pangkalan truk</div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs font-semibold"
+                onClick={() => onSendCommand(bot.botId, "TELEPORT_HQ")}
+              >
+                Teleport HQ
               </Button>
             </div>
 
@@ -128,8 +195,10 @@ export function CDIDFarmTab({ bot, onSendCommand }) {
         </Card>
       )}
 
-      {/* MODE 2: MINIGAMES SUMO (JAKARTA) */}
-      {jobMode === "minigame" && (
+      {/* =========================================================================
+          MODE 2: MINIGAMES SUMO (HANYA DITAMPILKAN JIKA BUKAN DI JATIM)
+          ========================================================================= */}
+      {(!isJatim && (isJakarta || jobMode === "minigame")) && (
         <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/50 to-zinc-950/50">
           <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-bold flex items-center gap-2">

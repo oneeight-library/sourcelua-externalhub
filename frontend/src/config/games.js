@@ -26,7 +26,7 @@ export const GameRegistry = {
     formatMoney: (num) => formatRupiah(num),
     metricLabel: "Terkirim",
     metricUnit: "Trips",
-    defaultJob: "Truk Kargo",
+    defaultJob: "Unemployed",
     tabs: [
       { id: "tab_autofarm", label: "Auto Farm" },
       { id: "tab_safety", label: "Proteksi & Rejoin" },
