@@ -438,7 +438,7 @@ export function DealershipPage({
           <div className="flex items-center gap-2">
             {isSingleBotMode ? (
               <div className="flex items-center px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-800 shadow-sm">
-                <span className="text-[11px] sm:text-xs font-mono font-bold text-emerald-400 leading-tight">
+                <span className="text-xs sm:text-sm font-bold text-emerald-400 leading-tight tracking-tight tabular-nums">
                   {formatRupiah(activeBot?.currentCash || 0)}
                 </span>
               </div>
@@ -782,7 +782,7 @@ export function DealershipPage({
                       <Button
                         size="sm"
                         onClick={() => handleOpenBuyModal(car)}
-                        className="w-full h-8 sm:h-9 text-xs sm:text-[13px] font-black font-mono tracking-tight transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/15 rounded-xl cursor-pointer"
+                        className="w-full h-8 sm:h-9 text-xs sm:text-[13px] font-bold tracking-tight tabular-nums transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/15 rounded-xl cursor-pointer"
                         title={`Beli mobil ini seharga ${formatRupiah(car.cost)}`}
                       >
                         {formatRupiah(car.cost)}
@@ -877,7 +877,7 @@ export function DealershipPage({
                   ) : null;
                 })()}
               </div>
-              <span className="font-mono font-black text-sm sm:text-base text-emerald-400 shrink-0">
+              <span className="font-bold text-sm sm:text-base text-emerald-400 shrink-0 tracking-tight tabular-nums">
                 {formatRupiah(modalCar.cost)}
               </span>
             </div>
