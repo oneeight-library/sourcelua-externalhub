@@ -370,7 +370,7 @@ export function DealershipPage({
           isEmbedded ? "w-full" : "max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16"
         }`}>
           
-          {/* Left: Tombol Kembali & Dropdown Showroom CDID */}
+          {/* Left: Tombol Kembali & Dropdown Dealerships */}
           <div className="flex items-center gap-2 sm:gap-3">
             <Button
               variant="outline"
@@ -384,7 +384,7 @@ export function DealershipPage({
 
             <div className="h-4 w-px bg-zinc-800" />
 
-            {/* Dropdown Shadcn UI Style untuk List Showroom CDID */}
+            {/* Dropdown Shadcn UI Style untuk List Dealerships */}
             <div className="relative" ref={dealerDropdownRef}>
               <Button
                 variant="outline"
@@ -405,7 +405,7 @@ export function DealershipPage({
               {isDealerDropdownOpen && (
                 <div className="absolute left-0 mt-2 w-56 max-h-80 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-xl p-1.5 text-zinc-200 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                    Pilih Showroom CDID
+                    Pilih Dealership
                   </div>
                   <div className="h-px bg-zinc-800/80 my-1" />
                   {dealerOptions.map((dealerName) => {

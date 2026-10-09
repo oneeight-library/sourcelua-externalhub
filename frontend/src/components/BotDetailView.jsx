@@ -317,7 +317,7 @@ export function BotDetailView({
                 }`}
               >
                 <Store className="h-4 w-4 text-emerald-400" />
-                <span>Showroom CDID</span>
+                <span>Dealerships</span>
               </button>
 
               <button
@@ -360,14 +360,6 @@ export function BotDetailView({
               >
                 <Gamepad2 className="h-4 w-4 text-cyan-400" />
                 <span>Minigames</span>
-                {isMinigameActive && (
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse ml-0.5" />
-                )}
-                {isJakarta && (
-                  <Badge variant="outline" className="text-[9px] py-0 px-1 bg-cyan-950/70 border-cyan-700/60 text-cyan-200 ml-1">
-                    Jakarta
-                  </Badge>
-                )}
               </button>
 
               {/* TAB 2: TRUK KARGO */}
@@ -382,31 +374,20 @@ export function BotDetailView({
               >
                 <Truck className="h-4 w-4 text-emerald-400" />
                 <span>Truk Kargo</span>
-                {isFarming && !isMinigameActive && (
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
-                )}
-                {isJatim && (
-                  <Badge variant="outline" className="text-[9px] py-0 px-1 bg-emerald-950/70 border-emerald-700/60 text-emerald-200 ml-1">
-                    Jatim
-                  </Badge>
-                )}
               </button>
 
-              {/* TAB 3: SHOWROOM DEALER */}
+              {/* TAB 3: DEALERSHIPS */}
               <button
                 type="button"
                 onClick={() => handleSelectTab("dealership")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   activeTab === "dealership"
-                    ? "bg-amber-600 text-white shadow-md shadow-amber-500/25"
+                    ? "bg-amber-600 text-white shadow-md shadow-amber-500/25 ring-1 ring-amber-400/40"
                     : "text-zinc-400 hover:text-amber-300 hover:bg-zinc-800/60"
                 }`}
               >
                 <Store className="h-4 w-4 text-amber-400" />
-                <span>Showroom CDID</span>
-                <Badge variant="outline" className="text-[9px] py-0 px-1 bg-amber-950/70 border-amber-700/60 text-amber-200 ml-1">
-                  Dealer
-                </Badge>
+                <span>Dealerships</span>
               </button>
 
               {/* TAB 4: PROTEKSI KEAMANAN */}
@@ -421,11 +402,6 @@ export function BotDetailView({
               >
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
                 <span>Proteksi Keamanan</span>
-                {serverLocked && (
-                  <Badge variant="outline" className="text-[9px] py-0 px-1 bg-rose-950/70 border-rose-700/60 text-rose-300 ml-1">
-                    Locked
-                  </Badge>
-                )}
               </button>
 
               {/* TAB 5: KONSOL & OPTIMASI */}
