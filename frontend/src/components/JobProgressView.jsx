@@ -13,12 +13,15 @@ import {
   Coins,
   Award,
   Zap,
-  Coffee
+  Coffee,
+  Loader2
 } from "lucide-react";
 
 export function JobProgressView({ bot, onSendCommand }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [filter, setFilter] = React.useState("all"); // "all", "claimable", "claimed"
+  const [isClaimingAll, setIsClaimingAll] = React.useState(false);
+  const [claimingLevel, setClaimingLevel] = React.useState(null);
 
   const progress = bot.jobProgress || {
     jobName: "Barista",
@@ -34,16 +37,24 @@ export function JobProgressView({ bot, onSendCommand }) {
   };
 
   const handleClaimSingle = (level) => {
+    setClaimingLevel(level);
     onSendCommand(bot.botId, "CLAIM_JOB_LEVEL", {
       jobName: progress.jobName || "Barista",
       level: level
     });
+    setTimeout(() => {
+      setClaimingLevel(null);
+    }, 1200);
   };
 
   const handleClaimAll = () => {
+    setIsClaimingAll(true);
     onSendCommand(bot.botId, "CLAIM_ALL_JOB_LEVELS", {
       jobName: progress.jobName || "Barista"
     });
+    setTimeout(() => {
+      setIsClaimingAll(false);
+    }, 1200);
   };
 
   const formatRupiah = (val) => {
@@ -73,7 +84,7 @@ export function JobProgressView({ bot, onSendCommand }) {
 
         <div className="flex items-center gap-2">
           {progress.claimableCount > 0 ? (
-            <Badge variant="amber" className="bg-amber-500/25 text-amber-300 border-amber-500/40 text-[11px] font-bold animate-pulse flex items-center gap-1">
+            <Badge variant="amber" className="bg-amber-500/25 text-amber-300 border-amber-500/40 text-[11px] font-bold flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
               {progress.claimableCount} Siap Klaim
             </Badge>
@@ -88,46 +99,40 @@ export function JobProgressView({ bot, onSendCommand }) {
       <CardContent className="p-4 space-y-4">
         {/* Banner Level & XP Progress Bar */}
         <div className="p-4 rounded-xl bg-zinc-900/70 border border-zinc-800/80 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-center justify-center px-3.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400/80">Tingkat</span>
                 <span className="text-lg font-black tracking-tight leading-none mt-0.5">Lv {progress.level || 1}</span>
               </div>
-
-              <div>
-                <div className="text-sm font-bold text-zinc-100 flex items-center gap-1.5">
-                  <span>Level {progress.level || 1}</span>
-                  {progress.level >= 50 && (
-                    <Badge variant="emerald" className="text-[10px] py-0 px-1.5">MAX</Badge>
-                  )}
-                  {progress.equippedTitle && (
-                    <Badge variant="outline" className="text-[10px] py-0 border-amber-700/60 text-amber-300 bg-amber-950/40">
-                      Gelar: {progress.equippedTitle}
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-xs text-zinc-400 mt-0.5">
-                  Total Akumulasi: <strong className="text-zinc-200">{(progress.xp || 0).toLocaleString()} XP</strong>
-                </div>
-              </div>
+              {progress.equippedTitle && (
+                <Badge variant="outline" className="text-[10px] py-1 border-amber-700/60 text-amber-300 bg-amber-950/40 font-semibold">
+                  Gelar: {progress.equippedTitle}
+                </Badge>
+              )}
             </div>
 
-            {/* Quick Stats & Claim All Button */}
-            <div className="flex items-center gap-2 self-start sm:self-center">
+            {/* Claim All Button (Tanpa efek heartbeat / pulse) */}
+            <div className="flex items-center gap-2">
               <Button
                 size="sm"
                 variant={progress.claimableCount > 0 ? "amber" : "outline"}
-                disabled={progress.claimableCount === 0}
+                disabled={progress.claimableCount === 0 || isClaimingAll}
                 className={`h-9 text-xs font-bold gap-1.5 shadow-md ${
                   progress.claimableCount > 0
-                    ? "bg-amber-600 hover:bg-amber-500 text-white animate-pulse"
+                    ? "bg-amber-600 hover:bg-amber-500 text-white"
                     : "border-zinc-800 text-zinc-500"
                 }`}
                 onClick={handleClaimAll}
               >
-                <Gift className="h-3.5 w-3.5" />
-                <span>Klaim Semua Hadiah ({progress.claimableCount || 0})</span>
+                {isClaimingAll ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Gift className="h-3.5 w-3.5" />
+                )}
+                <span>
+                  {isClaimingAll ? "Mengklaim..." : `Klaim Semua Hadiah (${progress.claimableCount || 0})`}
+                </span>
               </Button>
             </div>
           </div>
@@ -145,47 +150,50 @@ export function JobProgressView({ bot, onSendCommand }) {
 
             <div className="h-3 w-full bg-zinc-950 rounded-full border border-zinc-800/90 overflow-hidden p-0.5 shadow-inner">
               <div 
-                className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 rounded-full transition-all duration-500 shadow-sm"
-                style={{ width: `${Math.max(progress.percent || 0, progress.level >= 50 ? 100 : 3)}%` }}
+                className="h-full bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 rounded-full transition-all duration-500 shadow-sm"
+                style={{ width: `${Math.min(100, Math.max(0, progress.percent || 0))}%` }}
               />
             </div>
           </div>
         </div>
 
-        {/* Expandable Level Reward Matrix Tiers */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs font-bold text-amber-300 hover:text-amber-200 hover:bg-zinc-850 p-1.5 h-7 gap-1"
-                onClick={() => setIsExpanded(!isExpanded)}
-              >
-                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                <span>{isExpanded ? "Sembunyikan Daftar Tingkatan Hadiah" : "Lihat Semua Tingkat Hadiah (Lv 2 - 50)"}</span>
-              </Button>
-            </div>
+        {/* Accordion / Dropdown Daftar Hadiah Level 1 - 50 */}
+        <div className="border border-zinc-800/80 rounded-xl overflow-hidden bg-zinc-950/40">
+          <div className="p-3 bg-zinc-900/60 border-b border-zinc-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <button
+              type="button"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center gap-2 text-xs font-bold text-zinc-200 hover:text-amber-300 transition-colors text-left"
+            >
+              {isExpanded ? <ChevronUp className="h-4 w-4 text-amber-400" /> : <ChevronDown className="h-4 w-4 text-amber-400" />}
+              <span>Daftar Tingkat Hadiah Level (1 - 50)</span>
+              <span className="text-[10px] text-zinc-500 font-normal">
+                ({progress.totalClaimed || 0} Terklaim, {progress.claimableCount || 0} Siap)
+              </span>
+            </button>
 
             {isExpanded && (
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-zinc-950 border border-zinc-800 text-[11px]">
+              <div className="flex items-center gap-1.5 text-[11px]">
                 <button
+                  type="button"
                   onClick={() => setFilter("all")}
                   className={`px-2.5 py-1 rounded font-semibold transition-all ${
-                    filter === "all" ? "bg-zinc-800 text-zinc-100" : "text-zinc-400 hover:text-zinc-200"
+                    filter === "all" ? "bg-amber-600 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"
                   }`}
                 >
-                  Semua ({progress.rewards?.length || 0})
+                  Semua
                 </button>
                 <button
+                  type="button"
                   onClick={() => setFilter("claimable")}
                   className={`px-2.5 py-1 rounded font-semibold transition-all ${
                     filter === "claimable" ? "bg-amber-600/30 text-amber-300 border border-amber-500/40" : "text-zinc-400 hover:text-zinc-200"
                   }`}
                 >
-                  Bisa Klaim ({progress.claimableCount || 0})
+                  Siap ({progress.claimableCount || 0})
                 </button>
                 <button
+                  type="button"
                   onClick={() => setFilter("claimed")}
                   className={`px-2.5 py-1 rounded font-semibold transition-all ${
                     filter === "claimed" ? "bg-emerald-600/30 text-emerald-300 border border-emerald-500/40" : "text-zinc-400 hover:text-zinc-200"
@@ -199,7 +207,7 @@ export function JobProgressView({ bot, onSendCommand }) {
 
           {/* List of Tiers */}
           {isExpanded && (
-            <div className="max-h-80 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-zinc-700">
+            <div className="max-h-80 overflow-y-auto space-y-2 pr-1 p-3 scrollbar-thin scrollbar-thumb-zinc-700">
               {filteredRewards.length === 0 ? (
                 <div className="p-6 text-center text-xs text-zinc-500 bg-zinc-900/40 rounded-xl border border-zinc-800">
                   Tidak ada tingkatan reward yang sesuai filter ini.
@@ -209,6 +217,7 @@ export function JobProgressView({ bot, onSendCommand }) {
                   const isClaimable = item.status === "CAN_CLAIM";
                   const isClaimed = item.status === "CLAIMED";
                   const isLocked = item.status === "LOCKED";
+                  const isThisClaiming = claimingLevel === item.level;
 
                   return (
                     <div
@@ -255,22 +264,25 @@ export function JobProgressView({ bot, onSendCommand }) {
                         {isClaimable ? (
                           <Button
                             size="sm"
+                            disabled={isThisClaiming}
                             className="h-7 text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-md gap-1 px-3"
                             onClick={() => handleClaimSingle(item.level)}
                           >
-                            <Gift className="h-3 w-3" />
-                            <span>Klaim</span>
+                            {isThisClaiming ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Gift className="h-3 w-3" />
+                            )}
+                            <span>{isThisClaiming ? "Mengklaim..." : "Klaim Hadiah"}</span>
                           </Button>
                         ) : isClaimed ? (
-                          <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/40 px-2 py-1 rounded-md border border-emerald-800/40">
-                            <CheckCircle2 className="h-3 w-3" />
-                            <span>Sudah Diambil</span>
-                          </div>
+                          <Badge variant="emerald" className="text-[10px] gap-1 py-1 px-2.5 font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            <CheckCircle2 className="h-3 w-3" /> Sudah Diambil
+                          </Badge>
                         ) : (
-                          <div className="flex items-center gap-1 text-[11px] font-medium text-zinc-500 bg-zinc-900/80 px-2 py-1 rounded-md border border-zinc-800">
-                            <Lock className="h-3 w-3" />
-                            <span>Terkunci</span>
-                          </div>
+                          <Badge variant="secondary" className="text-[10px] gap-1 py-1 px-2.5 font-semibold text-zinc-500 bg-zinc-800/50 border border-zinc-700/40">
+                            <Lock className="h-3 w-3" /> Terkunci
+                          </Badge>
                         )}
                       </div>
                     </div>
