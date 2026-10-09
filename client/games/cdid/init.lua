@@ -65,6 +65,7 @@ function CDIDModule.Init(coreContext)
         pcall(SafetyFeature.CheckCurrentLockState)
     end
     print("[OE-External CDID] Modular Coordinator Berhasil Diinisialisasi (Truk, Minigames & Cafe Kanji Jawa)!")
+    _G.OE_ExternalCDID = CDIDModule
 
     -- Auto-push katalog dealer saat inisialisasi agar web langsung punya data tanpa nunggu tombol
     task.spawn(function()
