@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv17eu1j)
+    Version: 3.3.0 (Build: v3.3.mv17mrkt)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv17eu1j"
+local AGENT_BUILD_ID = "v3.3.mv17mrkt"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -5381,8 +5381,9 @@ activeGameModule.Init({
 -- OVER-THE-AIR (OTA) HOT-RELOAD & STATE PRESERVATION SYSTEM
 -- ============================================================================
 local function performHotReload(targetBuildId)
-    if CoreState.IsReloading then return end
+    if CoreState.IsReloading or CoreState.IsTerminated then return end
     CoreState.IsReloading = true
+    CoreState.IsTerminated = true
     CoreState.IsTerminated = true
 
     sendLog(string.format("Memulai Hot-Reload OTA ke build [%s] tanpa rejoin...", tostring(targetBuildId or "TERBARU")), "WARN")
@@ -5625,7 +5626,7 @@ local function connectWebSocket()
             return
         end
 
-        local retryDelay = 1
+        local retryDelay = 2.5
         warn(string.format("[OE-External] WebSocket terputus! Mencoba rekoneksi instan dalam %d detik...", retryDelay))
         task.wait(retryDelay)
         if isInstanceAlive() and not Safety.IsKicked and not CoreState.IsTerminated then

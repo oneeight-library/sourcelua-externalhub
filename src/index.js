@@ -82,8 +82,14 @@ export class HubRoom {
         existingEntry.disconnectTimer = null;
       }
 
-      // Tutup socket lama jika masih ada
+      // Beritahu dan tutup socket lama secara bersih jika ada koneksi baru
       if (existingEntry.ws && existingEntry.ws !== ws) {
+        try {
+          existingEntry.ws.send(JSON.stringify({
+            type: "FORCE_DISCONNECT",
+            message: "Session replaced by new connection"
+          }));
+        } catch (e) {}
         try {
           existingEntry.ws.close(4001, "Session replaced by new connection");
         } catch (e) {}
