@@ -301,17 +301,108 @@ export function BotDetailView({
     setNoFog(features.noFog !== undefined ? !!features.noFog : !!bot.lighting?.NoFog);
   }, [bot?.botId]);
 
+  // Pending Switches State (Geser ke tengah saat menunggu balasan Roblox tanpa denyut)
+  const [pendingSwitches, setPendingSwitches] = React.useState({});
+
+  const setSwitchPending = (key) => {
+    setPendingSwitches((prev) => ({ ...prev, [key]: true }));
+    setTimeout(() => {
+      setPendingSwitches((prev) => {
+        if (!prev[key]) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }, 2500);
+  };
+
+  React.useEffect(() => {
+    setPendingSwitches((prev) => {
+      if (!prev.streamerMode) return prev;
+      const next = { ...prev };
+      delete next.streamerMode;
+      return next;
+    });
+  }, [features.streamerMode]);
+
+  React.useEffect(() => {
+    setPendingSwitches((prev) => {
+      if (!prev.lowRender) return prev;
+      const next = { ...prev };
+      delete next.lowRender;
+      return next;
+    });
+  }, [features.lowRender]);
+
+  React.useEffect(() => {
+    setPendingSwitches((prev) => {
+      if (!prev.fullbright) return prev;
+      const next = { ...prev };
+      delete next.fullbright;
+      return next;
+    });
+  }, [features.fullbright]);
+
+  React.useEffect(() => {
+    setPendingSwitches((prev) => {
+      if (!prev.noFog) return prev;
+      const next = { ...prev };
+      delete next.noFog;
+      return next;
+    });
+  }, [features.noFog]);
+
+  React.useEffect(() => {
+    setPendingSwitches((prev) => {
+      if (!prev.playerDetector) return prev;
+      const next = { ...prev };
+      delete next.playerDetector;
+      return next;
+    });
+  }, [features.playerDetector]);
+
+  React.useEffect(() => {
+    setPendingSwitches((prev) => {
+      if (!prev.ignoreFriends) return prev;
+      const next = { ...prev };
+      delete next.ignoreFriends;
+      return next;
+    });
+  }, [config.ignoreFriends]);
+
+  React.useEffect(() => {
+    setPendingSwitches((prev) => {
+      if (!prev.autoRejoin) return prev;
+      const next = { ...prev };
+      delete next.autoRejoin;
+      return next;
+    });
+  }, [bot.autoRejoin]);
+
+  React.useEffect(() => {
+    setPendingSwitches((prev) => {
+      if (!prev.autoOpenBox) return prev;
+      const next = { ...prev };
+      delete next.autoOpenBox;
+      return next;
+    });
+  }, [features.autoOpenBox]);
+
   const handleToggleAutoRejoin = (checked) => {
+    setSwitchPending("autoRejoin");
     setAutoRejoin(checked);
     onSendCommand(bot.botId, "TOGGLE_AUTO_REJOIN", { enabled: checked });
   };
 
   const handleToggleLowRender = (checked) => {
+    setSwitchPending("lowRender");
     setLowRender(checked);
     onSendCommand(bot.botId, "TOGGLE_LOW_RENDER", { enabled: checked });
   };
 
   const handleSafetyUpdate = (newDetector, newAction, newIgnore) => {
+    if (newDetector !== undefined) setSwitchPending("playerDetector");
+    if (newIgnore !== undefined) setSwitchPending("ignoreFriends");
     const d = newDetector !== undefined ? newDetector : playerDetector;
     const a = newAction !== undefined ? newAction : emergencyAction;
     const ig = newIgnore !== undefined ? newIgnore : ignoreFriends;
@@ -332,11 +423,13 @@ export function BotDetailView({
   };
 
   const handleToggleFullbright = (checked) => {
+    setSwitchPending("fullbright");
     setFullbright(checked);
     onSendCommand(bot.botId, "SET_LIGHTING_CONFIG", { fullbright: checked, noFog });
   };
 
   const handleToggleNoFog = (checked) => {
+    setSwitchPending("noFog");
     setNoFog(checked);
     onSendCommand(bot.botId, "SET_LIGHTING_CONFIG", { fullbright, noFog: checked });
   };
@@ -386,6 +479,7 @@ export function BotDetailView({
   }, [bot?.botId]);
 
   const handleToggleStreamerMode = (checked) => {
+    setSwitchPending("streamerMode");
     onSendCommand(bot.botId, "TOGGLE_STREAMER_MODE", { 
       enabled: checked, 
       spoofedName: localSpoofName || customSpoofInput || "Warga_Sipil" 
@@ -860,7 +954,12 @@ export function BotDetailView({
                     </div>
                     <Switch
                       checked={autoOpenBox}
-                      onCheckedChange={(checked) => setAutoOpenBox(checked)}
+                      isPending={!!pendingSwitches.autoOpenBox}
+                      onCheckedChange={(checked) => {
+                        setSwitchPending("autoOpenBox");
+                        setAutoOpenBox(checked);
+                        onSendCommand(bot.botId, "START_MINIGAME_FARM", { role, autoOpenBox: checked });
+                      }}
                     />
                   </div>
                   <Button
@@ -1209,6 +1308,7 @@ export function BotDetailView({
                   </div>
                   <Switch 
                     checked={streamerMode} 
+                    isPending={!!pendingSwitches.streamerMode}
                     onCheckedChange={handleToggleStreamerMode} 
                   />
                 </div>
@@ -1269,7 +1369,7 @@ export function BotDetailView({
                     </div>
                     <div className="text-[10px] text-zinc-400">Turunkan beban FPS / GPU</div>
                   </div>
-                  <Switch checked={lowRender} onCheckedChange={handleToggleLowRender} />
+                  <Switch checked={lowRender} isPending={!!pendingSwitches.lowRender} onCheckedChange={handleToggleLowRender} />
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
@@ -1279,7 +1379,7 @@ export function BotDetailView({
                     </div>
                     <div className="text-[10px] text-zinc-400">Pencahayaan terang maksimal</div>
                   </div>
-                  <Switch checked={fullbright} onCheckedChange={handleToggleFullbright} />
+                  <Switch checked={fullbright} isPending={!!pendingSwitches.fullbright} onCheckedChange={handleToggleFullbright} />
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
@@ -1289,7 +1389,7 @@ export function BotDetailView({
                     </div>
                     <div className="text-[10px] text-zinc-400">Hapus kabut lingkungan</div>
                   </div>
-                  <Switch checked={noFog} onCheckedChange={handleToggleNoFog} />
+                  <Switch checked={noFog} isPending={!!pendingSwitches.noFog} onCheckedChange={handleToggleNoFog} />
                 </div>
               </CardContent>
             </Card>
@@ -1331,7 +1431,7 @@ export function BotDetailView({
                     <div className="font-semibold text-xs text-zinc-200">Auto Rejoin Saat Kick</div>
                     <div className="text-[11px] text-zinc-400">Otomatis masuk kembali jika Roblox disconnect</div>
                   </div>
-                  <Switch checked={autoRejoin} onCheckedChange={handleToggleAutoRejoin} />
+                  <Switch checked={autoRejoin} isPending={!!pendingSwitches.autoRejoin} onCheckedChange={handleToggleAutoRejoin} />
                 </div>
               </CardContent>
             </Card>
@@ -1351,6 +1451,7 @@ export function BotDetailView({
                   </div>
                   <Switch
                     checked={playerDetector}
+                    isPending={!!pendingSwitches.playerDetector}
                     onCheckedChange={(checked) => handleSafetyUpdate(checked, undefined, undefined)}
                   />
                 </div>
@@ -1362,6 +1463,7 @@ export function BotDetailView({
                   </div>
                   <Switch
                     checked={ignoreFriends}
+                    isPending={!!pendingSwitches.ignoreFriends}
                     onCheckedChange={(checked) => handleSafetyUpdate(undefined, undefined, checked)}
                   />
                 </div>
