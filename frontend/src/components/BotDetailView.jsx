@@ -141,24 +141,79 @@ export function BotDetailView({
     tabsContainerRef.current.scrollLeft = scrollLeftRef.current - walk;
   };
 
-  // State Minigames (SSOT Direct Sync)
+  // State Minigames (SSOT Direct Sync with Local State)
   const [role, setRole] = React.useState(config.minigameRole || bot.minigame?.role || "Winner");
-  const autoOpenBox = features.autoOpenBox !== undefined ? !!features.autoOpenBox : !!bot.minigame?.autoOpenBox;
+  const [autoOpenBox, setAutoOpenBox] = React.useState(features.autoOpenBox !== undefined ? !!features.autoOpenBox : !!bot.minigame?.autoOpenBox);
 
   React.useEffect(() => {
     if (config.minigameRole) setRole(config.minigameRole);
     else if (bot.minigame?.role) setRole(bot.minigame.role);
   }, [config.minigameRole, bot.minigame?.role]);
 
-  // State Proteksi & Lighting (SSOT Direct Sync)
-  const autoRejoin = bot.autoRejoin !== false;
-  const lowRender = features.lowRender !== undefined ? !!features.lowRender : !!bot.lowRender;
-  const playerDetector = features.playerDetector !== undefined ? !!features.playerDetector : !!bot.safety?.PlayerDetectorEnabled;
-  const emergencyAction = config.emergencyAction || bot.safety?.EmergencyAction || "Warn Only";
-  const ignoreFriends = config.ignoreFriends !== undefined ? config.ignoreFriends : (bot.safety?.IgnoreFriends !== false);
-  const serverLocked = features.serverLocked !== undefined ? !!features.serverLocked : !!bot.safety?.ServerLocked;
-  const fullbright = features.fullbright !== undefined ? !!features.fullbright : !!bot.lighting?.Fullbright;
-  const noFog = features.noFog !== undefined ? !!features.noFog : !!bot.lighting?.NoFog;
+  React.useEffect(() => {
+    if (features.autoOpenBox !== undefined) setAutoOpenBox(!!features.autoOpenBox);
+    else if (bot.minigame?.autoOpenBox !== undefined) setAutoOpenBox(!!bot.minigame.autoOpenBox);
+  }, [features.autoOpenBox, bot.minigame?.autoOpenBox]);
+
+  // State Proteksi & Lighting (SSOT Direct Sync with Local State)
+  const [autoRejoin, setAutoRejoin] = React.useState(bot.autoRejoin !== false);
+  const [lowRender, setLowRender] = React.useState(features.lowRender !== undefined ? !!features.lowRender : !!bot.lowRender);
+  const [playerDetector, setPlayerDetector] = React.useState(features.playerDetector !== undefined ? !!features.playerDetector : !!bot.safety?.PlayerDetectorEnabled);
+  const [emergencyAction, setEmergencyAction] = React.useState(config.emergencyAction || bot.safety?.EmergencyAction || "Warn Only");
+  const [ignoreFriends, setIgnoreFriends] = React.useState(config.ignoreFriends !== undefined ? config.ignoreFriends : (bot.safety?.IgnoreFriends !== false));
+  const [serverLocked, setServerLocked] = React.useState(features.serverLocked !== undefined ? !!features.serverLocked : !!bot.safety?.ServerLocked);
+  const [fullbright, setFullbright] = React.useState(features.fullbright !== undefined ? !!features.fullbright : !!bot.lighting?.Fullbright);
+  const [noFog, setNoFog] = React.useState(features.noFog !== undefined ? !!features.noFog : !!bot.lighting?.NoFog);
+
+  React.useEffect(() => {
+    if (bot.autoRejoin !== undefined) setAutoRejoin(bot.autoRejoin !== false);
+  }, [bot.autoRejoin]);
+
+  React.useEffect(() => {
+    if (features.lowRender !== undefined) setLowRender(!!features.lowRender);
+    else if (bot.lowRender !== undefined) setLowRender(!!bot.lowRender);
+  }, [features.lowRender, bot.lowRender]);
+
+  React.useEffect(() => {
+    if (features.serverLocked !== undefined) setServerLocked(!!features.serverLocked);
+    else if (bot.safety?.ServerLocked !== undefined) setServerLocked(!!bot.safety?.ServerLocked);
+  }, [features.serverLocked, bot.safety?.ServerLocked]);
+
+  React.useEffect(() => {
+    if (features.playerDetector !== undefined) setPlayerDetector(!!features.playerDetector);
+    else if (bot.safety?.PlayerDetectorEnabled !== undefined) setPlayerDetector(!!bot.safety?.PlayerDetectorEnabled);
+  }, [features.playerDetector, bot.safety?.PlayerDetectorEnabled]);
+
+  React.useEffect(() => {
+    if (config.emergencyAction) setEmergencyAction(config.emergencyAction);
+    else if (bot.safety?.EmergencyAction) setEmergencyAction(bot.safety.EmergencyAction);
+  }, [config.emergencyAction, bot.safety?.EmergencyAction]);
+
+  React.useEffect(() => {
+    if (config.ignoreFriends !== undefined) setIgnoreFriends(config.ignoreFriends);
+    else if (bot.safety?.IgnoreFriends !== undefined) setIgnoreFriends(bot.safety.IgnoreFriends !== false);
+  }, [config.ignoreFriends, bot.safety?.IgnoreFriends]);
+
+  React.useEffect(() => {
+    if (features.fullbright !== undefined) setFullbright(!!features.fullbright);
+    else if (bot.lighting?.Fullbright !== undefined) setFullbright(!!bot.lighting?.Fullbright);
+  }, [features.fullbright, bot.lighting?.Fullbright]);
+
+  React.useEffect(() => {
+    if (features.noFog !== undefined) setNoFog(!!features.noFog);
+    else if (bot.lighting?.NoFog !== undefined) setNoFog(!!bot.lighting?.NoFog);
+  }, [features.noFog, bot.lighting?.NoFog]);
+
+  React.useEffect(() => {
+    setAutoRejoin(bot.autoRejoin !== false);
+    setLowRender(features.lowRender !== undefined ? !!features.lowRender : !!bot.lowRender);
+    setPlayerDetector(features.playerDetector !== undefined ? !!features.playerDetector : !!bot.safety?.PlayerDetectorEnabled);
+    setEmergencyAction(config.emergencyAction || bot.safety?.EmergencyAction || "Warn Only");
+    setIgnoreFriends(config.ignoreFriends !== undefined ? config.ignoreFriends : (bot.safety?.IgnoreFriends !== false));
+    setServerLocked(features.serverLocked !== undefined ? !!features.serverLocked : !!bot.safety?.ServerLocked);
+    setFullbright(features.fullbright !== undefined ? !!features.fullbright : !!bot.lighting?.Fullbright);
+    setNoFog(features.noFog !== undefined ? !!features.noFog : !!bot.lighting?.NoFog);
+  }, [bot?.botId]);
 
   const handleToggleAutoRejoin = (checked) => {
     setAutoRejoin(checked);
