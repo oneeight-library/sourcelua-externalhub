@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useToast } from "@/ui/toast.jsx";
 import { Card, CardHeader, CardTitle, CardContent } from "@/ui/card.jsx";
 import { Button } from "@/ui/button.jsx";
 import { Badge } from "@/ui/badge.jsx";
@@ -64,6 +65,7 @@ export function BotDetailView({
   onBuyCar,
   buyCarResult
 }) {
+  const { toast } = useToast();
   const gameCfg = getGameConfig(bot.gameId);
   const isKicked = bot.isKicked;
   const isLobby = bot.gameId === "cdid_menu";
@@ -117,6 +119,75 @@ export function BotDetailView({
       localStorage.setItem(storageKey, tabId);
     } catch (e) {}
     if (onTabChange) onTabChange(tabId);
+  };
+
+  // Handlers Terpusat Auto Farm dengan Validasi & Toast Feedback
+  const handleToggleTruckFarm = () => {
+    if (isTruckFarming) {
+      onSendCommand(bot.botId, "STOP_FARM", { jobType: "truck" });
+      toast.info("Auto Farm Dihentikan", `Truk Kargo untuk ${bot.name || "Akun"} dihentikan.`);
+      return;
+    }
+
+    if (bot.status !== "CONNECTED" || bot.isKicked) {
+      toast.error("Gagal Memulai Truk Kargo", `Akun ${bot.name || "ini"} sedang tidak terhubung (${bot.status || "Offline"}).`);
+      return;
+    }
+    if (isLobby) {
+      toast.error("Gagal Memulai Truk Kargo", `Akun masih di Lobi CDID. Silakan join ke map Jawa Timur terlebih dahulu.`);
+      return;
+    }
+    if (!isJatim) {
+      toast.error("Lokasi Map Tidak Sesuai", `Truk Kargo hanya tersedia di Jawa Timur. Saat ini ${bot.name || "Akun"} berada di ${bot.placeName || "luar Jawa Timur"}.`);
+      return;
+    }
+
+    onSendCommand(bot.botId, "START_FARM", { jobType: "truck" });
+    toast.success("Auto Farm Dimulai", `Truk Kargo untuk ${bot.name || "Akun"} berhasil dinyalakan.`);
+  };
+
+  const handleToggleMinigameFarm = () => {
+    if (isMinigameActive) {
+      onSendCommand(bot.botId, "STOP_MINIGAME_FARM");
+      toast.info("Auto Farm Dihentikan", `Minigames Sumo untuk ${bot.name || "Akun"} dihentikan.`);
+      return;
+    }
+
+    if (bot.status !== "CONNECTED" || bot.isKicked) {
+      toast.error("Gagal Memulai Minigames", `Akun ${bot.name || "ini"} sedang tidak terhubung (${bot.status || "Offline"}).`);
+      return;
+    }
+    if (isLobby) {
+      toast.error("Gagal Memulai Minigames", `Akun masih di Lobi CDID. Silakan masuk ke map permainan terlebih dahulu.`);
+      return;
+    }
+
+    onSendCommand(bot.botId, "START_MINIGAME_FARM", { role, autoOpenBox });
+    toast.success("Auto Farm Dimulai", `Minigames Sumo (${role}) untuk ${bot.name || "Akun"} berhasil dinyalakan.`);
+  };
+
+  const handleToggleBaristaFarm = () => {
+    if (isBaristaActive) {
+      onSendCommand(bot.botId, "STOP_KANJI_JAWA_FARM");
+      toast.info("Auto Farm Dihentikan", `Kanji Jiwa (Barista) untuk ${bot.name || "Akun"} dihentikan.`);
+      return;
+    }
+
+    if (bot.status !== "CONNECTED" || bot.isKicked) {
+      toast.error("Gagal Memulai Barista", `Akun ${bot.name || "ini"} sedang tidak terhubung (${bot.status || "Offline"}).`);
+      return;
+    }
+    if (isLobby) {
+      toast.error("Gagal Memulai Barista", `Akun masih di Lobi CDID. Silakan join ke map Jakarta terlebih dahulu.`);
+      return;
+    }
+    if (!isJakarta) {
+      toast.error("Lokasi Map Tidak Sesuai", `Kanji Jiwa (Barista) hanya tersedia di Jakarta. Saat ini ${bot.name || "Akun"} berada di ${bot.placeName || "luar Jakarta"}.`);
+      return;
+    }
+
+    onSendCommand(bot.botId, "START_KANJI_JAWA_FARM");
+    toast.success("Auto Farm Dimulai", `Kanji Jiwa (Barista) untuk ${bot.name || "Akun"} berhasil dinyalakan.`);
   };
 
   // Drag to scroll horizontal mouse support
@@ -759,13 +830,7 @@ export function BotDetailView({
                 <Button
                   variant={isMinigameActive ? "destructive" : "cyan"}
                   className="w-full font-bold text-sm h-12 gap-2 shadow-lg"
-                  onClick={() => {
-                    if (isMinigameActive) {
-                      onSendCommand(bot.botId, "STOP_MINIGAME_FARM");
-                    } else {
-                      onSendCommand(bot.botId, "START_MINIGAME_FARM", { role, autoOpenBox });
-                    }
-                  }}
+                  onClick={handleToggleMinigameFarm}
                 >
                   {isMinigameActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   {isMinigameActive ? "Hentikan Minigames" : "Mulai Minigames Sekarang"}
@@ -914,13 +979,7 @@ export function BotDetailView({
                 <Button
                   variant={isBaristaActive ? "destructive" : "amber"}
                   className={`w-full font-bold text-sm h-12 gap-2 shadow-lg ${!isBaristaActive ? "bg-amber-600 hover:bg-amber-500 text-white" : ""}`}
-                  onClick={() => {
-                    if (isBaristaActive) {
-                      onSendCommand(bot.botId, "STOP_KANJI_JAWA_FARM");
-                    } else {
-                      onSendCommand(bot.botId, "START_KANJI_JAWA_FARM");
-                    }
-                  }}
+                  onClick={handleToggleBaristaFarm}
                 >
                   {isBaristaActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   {isBaristaActive ? "Hentikan Auto Farm Kanji Jiwa" : "Mulai Auto Farm Kanji Jiwa"}
@@ -1047,7 +1106,7 @@ export function BotDetailView({
                 <Button
                   variant={isTruckFarming ? "destructive" : "emerald"}
                   className="w-full font-bold text-sm h-12 gap-2 shadow-lg"
-                  onClick={() => onSendCommand(bot.botId, isTruckFarming ? "STOP_FARM" : "START_FARM", { jobType: "truck" })}
+                  onClick={handleToggleTruckFarm}
                 >
                   {isTruckFarming ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   {isTruckFarming ? "Hentikan Truk Kargo" : "Mulai Truk Kargo Sekarang"}
