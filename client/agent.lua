@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv20qvqk)
+    Version: 3.3.0 (Build: v3.3.mv211ueq)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv20qvqk"
+local AGENT_BUILD_ID = "v3.3.mv211ueq"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -2309,7 +2309,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 local MinigameJob = {}
-MinigameJob.JobName = "Minigames Sumo"
+MinigameJob.JobName = "Minigame"
 MinigameJob.PlaceId = 14005966837
 
 local Context = nil
@@ -2321,7 +2321,7 @@ local Context = nil
 --]]
 
 local Config = {
-    JobName = "Minigames Sumo Farm",
+    JobName = "Minigame Farm",
     PlaceIds = { 14005966837 }, -- Jakarta Map
 
     -- Minigame Server Constraints
@@ -3144,7 +3144,7 @@ function AutoFarm.Start()
 
             lastArenaState = inArena
 
-            -- CASE A: Sedang di dalam Arena Minigames (Sumo Match)
+            -- CASE A: Sedang di dalam Arena Minigames (Pertandingan Minigame)
             if inArena then
                 local currentRound, maxRounds = Helpers.GetRoundInfo()
                 State.CurrentRound = currentRound
@@ -3268,7 +3268,7 @@ function MinigameJob.Init(coreContext)
     end
     Helpers.GetMinigamePoints()
     Helpers.GetCash()
-    print("[OE-External CDID] Modul Minigames Sumo Berhasil Diinisialisasi")
+    print("[OE-External CDID] Modul Minigame Berhasil Diinisialisasi")
 end
 
 function MinigameJob.SetConfig(config)
@@ -3304,7 +3304,7 @@ function MinigameJob.Start(options)
     end
     AutoFarm.Start()
     if Context and Context.SendLog then
-        Context.SendLog(string.format("Minigames Sumo Farm Dimulai (Role: %s, Mobil: %s)", State.Role, State.SelectedCar), "SUCCESS")
+        Context.SendLog(string.format("Minigame Farm Dimulai (Role: %s, Mobil: %s)", State.Role, State.SelectedCar), "SUCCESS")
     end
 end
 
@@ -3312,7 +3312,7 @@ function MinigameJob.Stop()
     AutoFarm.Stop()
     pcall(function() NetworkHandler.LeaveLobby() end)
     if Context and Context.SendLog then
-        Context.SendLog("Minigames Sumo Farm Dihentikan.", "WARN")
+        Context.SendLog("Minigame Farm Dihentikan.", "WARN")
     end
 end
 
@@ -4838,7 +4838,7 @@ function CDIDModule.GetTelemetry()
     local placeName = getPlaceName()
     local dynamicJob = "Unemployed"
     if stMg.IsFarming then
-        dynamicJob = "Minigames Sumo (" .. (stMg.Role or "Winner") .. ")"
+        dynamicJob = "Minigame (" .. (stMg.Role or "Winner") .. ")"
     elseif stKj.IsFarming then
         dynamicJob = "Kanji Jiwa (Barista)"
     elseif st.IsFarming then
@@ -4869,7 +4869,7 @@ function CDIDModule.GetTelemetry()
         job = dynamicJob,
         placeName = placeName,
         gameName = placeName,
-        currentRoute = isTruckFarming and (st.CurrentRoute or "IDLE") or (stMg.IsFarming and ("Sumo Arena: " .. (stMg.Phase or "Lobby")) or (stKj.IsFarming and ("Kanji Jiwa: " .. (stKj.Phase or "Standby")) or "IDLE")),
+        currentRoute = isTruckFarming and (st.CurrentRoute or "IDLE") or (stMg.IsFarming and ("Arena Minigame: " .. (stMg.Phase or "Lobby")) or (stKj.IsFarming and ("Kanji Jiwa: " .. (stKj.Phase or "Standby")) or "IDLE")),
         tripCount = st.TripCount or 0,
         truckEarnings = st.IsFarming and (st.TotalEarnings or 0) or (st.TripCount and st.TripCount > 0 and (st.TotalEarnings or 0) or 0),
         totalEarnings = (st.IsFarming and (st.TotalEarnings or 0) or 0) + (stMg.IsFarming and (stMg.CashEarned or 0) or 0) + (stKj.IsFarming and (stKj.TotalEarned or 0) or 0),

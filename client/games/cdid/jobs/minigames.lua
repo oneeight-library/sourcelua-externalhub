@@ -9,7 +9,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 local MinigameJob = {}
-MinigameJob.JobName = "Minigames Sumo"
+MinigameJob.JobName = "Minigame"
 MinigameJob.PlaceId = 14005966837
 
 local Context = nil
@@ -21,7 +21,7 @@ local Context = nil
 --]]
 
 local Config = {
-    JobName = "Minigames Sumo Farm",
+    JobName = "Minigame Farm",
     PlaceIds = { 14005966837 }, -- Jakarta Map
 
     -- Minigame Server Constraints
@@ -844,7 +844,7 @@ function AutoFarm.Start()
 
             lastArenaState = inArena
 
-            -- CASE A: Sedang di dalam Arena Minigames (Sumo Match)
+            -- CASE A: Sedang di dalam Arena Minigames (Pertandingan Minigame)
             if inArena then
                 local currentRound, maxRounds = Helpers.GetRoundInfo()
                 State.CurrentRound = currentRound
@@ -968,7 +968,7 @@ function MinigameJob.Init(coreContext)
     end
     Helpers.GetMinigamePoints()
     Helpers.GetCash()
-    print("[OE-External CDID] Modul Minigames Sumo Berhasil Diinisialisasi")
+    print("[OE-External CDID] Modul Minigame Berhasil Diinisialisasi")
 end
 
 function MinigameJob.SetConfig(config)
@@ -1004,7 +1004,7 @@ function MinigameJob.Start(options)
     end
     AutoFarm.Start()
     if Context and Context.SendLog then
-        Context.SendLog(string.format("Minigames Sumo Farm Dimulai (Role: %s, Mobil: %s)", State.Role, State.SelectedCar), "SUCCESS")
+        Context.SendLog(string.format("Minigame Farm Dimulai (Role: %s, Mobil: %s)", State.Role, State.SelectedCar), "SUCCESS")
     end
 end
 
@@ -1012,7 +1012,7 @@ function MinigameJob.Stop()
     AutoFarm.Stop()
     pcall(function() NetworkHandler.LeaveLobby() end)
     if Context and Context.SendLog then
-        Context.SendLog("Minigames Sumo Farm Dihentikan.", "WARN")
+        Context.SendLog("Minigame Farm Dihentikan.", "WARN")
     end
 end
 

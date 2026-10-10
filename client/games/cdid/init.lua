@@ -366,7 +366,7 @@ function CDIDModule.GetTelemetry()
     local placeName = getPlaceName()
     local dynamicJob = "Unemployed"
     if stMg.IsFarming then
-        dynamicJob = "Minigames Sumo (" .. (stMg.Role or "Winner") .. ")"
+        dynamicJob = "Minigame (" .. (stMg.Role or "Winner") .. ")"
     elseif stKj.IsFarming then
         dynamicJob = "Kanji Jiwa (Barista)"
     elseif st.IsFarming then
@@ -397,7 +397,7 @@ function CDIDModule.GetTelemetry()
         job = dynamicJob,
         placeName = placeName,
         gameName = placeName,
-        currentRoute = isTruckFarming and (st.CurrentRoute or "IDLE") or (stMg.IsFarming and ("Sumo Arena: " .. (stMg.Phase or "Lobby")) or (stKj.IsFarming and ("Kanji Jiwa: " .. (stKj.Phase or "Standby")) or "IDLE")),
+        currentRoute = isTruckFarming and (st.CurrentRoute or "IDLE") or (stMg.IsFarming and ("Arena Minigame: " .. (stMg.Phase or "Lobby")) or (stKj.IsFarming and ("Kanji Jiwa: " .. (stKj.Phase or "Standby")) or "IDLE")),
         tripCount = st.TripCount or 0,
         truckEarnings = st.IsFarming and (st.TotalEarnings or 0) or (st.TripCount and st.TripCount > 0 and (st.TotalEarnings or 0) or 0),
         totalEarnings = (st.IsFarming and (st.TotalEarnings or 0) or 0) + (stMg.IsFarming and (stMg.CashEarned or 0) or 0) + (stKj.IsFarming and (stKj.TotalEarned or 0) or 0),

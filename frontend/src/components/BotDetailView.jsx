@@ -139,7 +139,7 @@ export function BotDetailView({
   // Deteksi pekerjaan lain yang sedang aktif untuk proteksi 1 Akun 1 Pekerjaan
   const getActiveRunningJob = () => {
     if (isTruckFarming) return "Truk Kargo";
-    if (isMinigameActive) return "Minigames Sumo";
+    if (isMinigameActive) return "Minigame";
     if (isBaristaActive) return "Kanji Jiwa (Barista)";
     return null;
   };
@@ -181,7 +181,7 @@ export function BotDetailView({
   const handleToggleMinigameFarm = () => {
     if (isMinigameActive) {
       onSendCommand(bot.botId, "STOP_MINIGAME_FARM");
-      toast.info("Auto Farm Dihentikan", `Minigames Sumo untuk ${bot.name || "Akun"} dihentikan. Karakter di-respawn bersih.`);
+      toast.info("Auto Farm Dihentikan", `Minigame untuk ${bot.name || "Akun"} dihentikan. Karakter di-respawn bersih.`);
       return;
     }
 
@@ -189,7 +189,7 @@ export function BotDetailView({
     if (currentActiveJob) {
       toast.warn(
         "Pekerjaan Lain Sedang Berjalan",
-        `Akun sedang menjalankan ${currentActiveJob}. Harap hentikan ${currentActiveJob} terlebih dahulu sebelum memulai Minigames Sumo.`
+        `Akun sedang menjalankan ${currentActiveJob}. Harap hentikan ${currentActiveJob} terlebih dahulu sebelum memulai Minigame.`
       );
       return;
     }
@@ -204,7 +204,7 @@ export function BotDetailView({
     }
 
     onSendCommand(bot.botId, "START_MINIGAME_FARM", { role, autoOpenBox });
-    toast.success("Auto Farm Dimulai", `Minigames Sumo (${role}) untuk ${bot.name || "Akun"} berhasil dinyalakan.`);
+    toast.success("Auto Farm Dimulai", `Minigame (${role}) untuk ${bot.name || "Akun"} berhasil dinyalakan.`);
   };
 
   const handleToggleBaristaFarm = () => {
@@ -764,7 +764,10 @@ export function BotDetailView({
                 }`}
               >
                 <Gamepad2 className="h-4 w-4 text-cyan-400" />
-                <span>Minigames</span>
+                <span>Minigame</span>
+                {isMinigameActive && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                )}
                 {isMinigameActive && <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />}
               </button>
 
@@ -892,9 +895,62 @@ export function BotDetailView({
         </div>
       )}
 
-      {/* C1. TAMPILAN MINIGAMES (JAKARTA) */}
+      {/* C1. TAMPILAN MINIGAMES */}
       {!isLobby && activeTab === "minigames" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="space-y-5">
+          {/* Hero Status Banner Minigame */}
+          <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+            isMinigameActive
+              ? "bg-gradient-to-r from-cyan-950/70 via-zinc-900/90 to-zinc-950 border-cyan-500/60 shadow-lg shadow-cyan-950/40"
+              : "bg-zinc-900/50 border-zinc-800"
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
+                  isMinigameActive 
+                    ? "bg-cyan-500/20 border-cyan-400/60 text-cyan-300 shadow-md shadow-cyan-500/20" 
+                    : "bg-zinc-800/80 border-zinc-700 text-zinc-400"
+                }`}>
+                  <Gamepad2 className="h-6 w-6" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-extrabold text-sm sm:text-base text-zinc-100 tracking-tight">
+                      {isMinigameActive ? "MINIGAME SEDANG BERJALAN" : "MINIGAME STANDBY (BERHENTI)"}
+                    </span>
+                    <Badge 
+                      variant={isMinigameActive ? "cyan" : "secondary"} 
+                      className={`text-[10px] font-black px-2 py-0.5 ${
+                        isMinigameActive 
+                          ? "bg-cyan-400 text-zinc-950 animate-pulse" 
+                          : "bg-zinc-800 text-zinc-400"
+                      }`}
+                    >
+                      {isMinigameActive ? "RUNNING" : "STOPPED"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                    {isMinigameActive 
+                      ? `Akun sedang aktif bermain di arena • Role: ${role || "Winner"} • Fase: ${mg.phase || "InArena"}`
+                      : "Bot sedang diam / tidak bertanding. Klik tombol di kanan untuk memulai Minigame."}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="self-end sm:self-center shrink-0">
+                <Button
+                  variant={isMinigameActive ? "destructive" : "cyan"}
+                  className="font-bold text-xs h-10 px-5 gap-2 shadow-lg"
+                  onClick={handleToggleMinigameFarm}
+                >
+                  {isMinigameActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  <span>{isMinigameActive ? "Hentikan Minigame" : "Mulai Minigame Sekarang"}</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Kolom Kiri: Live Telemetri Minigames */}
           <div className="lg:col-span-6 space-y-5">
@@ -949,7 +1005,7 @@ export function BotDetailView({
               </CardContent>
             </Card>
 
-            {/* Card Status Sumo Arena */}
+            {/* Card Status Pertandingan Minigame */}
             <Card className="border-zinc-800">
               <CardHeader className="p-4 pb-2 border-b border-zinc-800/60">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
@@ -1066,6 +1122,7 @@ export function BotDetailView({
             </Card>
           </div>
 
+        </div>
         </div>
       )}
 
