@@ -271,7 +271,33 @@ export function BotDetailView({
     } catch (e) {}
     return config.minigameRole || bot.minigame?.role || "Winner";
   });
-  const [autoOpenBox, setAutoOpenBox] = React.useState(features.autoOpenBox !== undefined ? !!features.autoOpenBox : !!bot.minigame?.autoOpenBox);
+  const autoBoxStorageKey = `oe_minigame_autobox_${botAccountKey}`;
+  const [autoOpenBox, setAutoOpenBox] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem(autoBoxStorageKey);
+      if (saved !== null) return saved === "true";
+    } catch (e) {}
+    return features.autoOpenBox !== undefined ? !!features.autoOpenBox : !!bot.minigame?.autoOpenBox;
+  });
+
+  const handleToggleAutoOpenBox = (checked) => {
+    setSwitchPending("autoOpenBox");
+    setAutoOpenBox(checked);
+    try {
+      localStorage.setItem(autoBoxStorageKey, String(checked));
+    } catch (e) {}
+    onSendCommand(bot.botId, "SET_MINIGAME_CONFIG", { autoOpenBox: checked });
+  };
+
+  const handleBuyMinigameBox = () => {
+    const currentPoints = mg.points || 0;
+    if (currentPoints < 20) {
+      toast.warn("Poin Tidak Mencukupi", `Poin minigame saat ini ${currentPoints}. Butuh minimal 20 Poin untuk menukar 1 Box.`);
+      return;
+    }
+    onSendCommand(bot.botId, "BUY_MINIGAME_BOX");
+    toast.success("Membeli Box", "Perintah tukar Minigame Box (-20 Poin) terkirim.");
+  };
 
   React.useEffect(() => {
     try {
@@ -1012,18 +1038,14 @@ export function BotDetailView({
                     <Switch
                       checked={autoOpenBox}
                       isPending={!!pendingSwitches.autoOpenBox}
-                      onCheckedChange={(checked) => {
-                        setSwitchPending("autoOpenBox");
-                        setAutoOpenBox(checked);
-                        onSendCommand(bot.botId, "START_MINIGAME_FARM", { role, autoOpenBox: checked });
-                      }}
+                      onCheckedChange={handleToggleAutoOpenBox}
                     />
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
                     className="w-full text-xs font-semibold h-8 border-zinc-700 hover:bg-zinc-800 text-cyan-300 gap-1.5"
-                    onClick={() => onSendCommand(bot.botId, "BUY_MINIGAME_BOX")}
+                    onClick={handleBuyMinigameBox}
                   >
                     <Gift className="h-3.5 w-3.5 text-cyan-400" />
                     Beli 1 Box Sekarang (-20 Poin)

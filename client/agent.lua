@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv20j06l)
+    Version: 3.3.0 (Build: v3.3.mv20qvqk)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv20j06l"
+local AGENT_BUILD_ID = "v3.3.mv20qvqk"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -3271,6 +3271,19 @@ function MinigameJob.Init(coreContext)
     print("[OE-External CDID] Modul Minigames Sumo Berhasil Diinisialisasi")
 end
 
+function MinigameJob.SetConfig(config)
+    if not config then return end
+    if config.autoOpenBox ~= nil then
+        State.AutoOpenBox = (config.autoOpenBox == true)
+    end
+    if config.role and (config.role == "Winner" or config.role == "Loser") then
+        State.Role = config.role
+    end
+    if State.UpdateStatsUI then
+        State.UpdateStatsUI()
+    end
+end
+
 function MinigameJob.SetRole(role)
     if role and (role == "Winner" or role == "Loser") then
         State.Role = role
@@ -4617,6 +4630,16 @@ function CDIDModule.HandleCommand(action, payload)
         end)
         return true
 
+    elseif action == "SET_MINIGAME_CONFIG" then
+        if MinigameJob and payload then
+            if MinigameJob.SetConfig then
+                MinigameJob.SetConfig(payload)
+            else
+                if payload.role and MinigameJob.SetRole then MinigameJob.SetRole(payload.role) end
+            end
+        end
+        return true
+
     elseif action == "SET_MINIGAME_ROLE" then
         if MinigameJob and payload and payload.role then
             if MinigameJob.SetRole then
@@ -4796,7 +4819,7 @@ function CDIDModule.GetTelemetry()
     local stKj = KanjiJawaJob and KanjiJawaJob.GetState() or {}
 
     local isTruckFarming = (st.IsFarming == true)
-    local isMinigameFarming = (stMg.IsFarming == true)
+    local isMinigameFarming = (stMg.IsFarming == true) or (stMg.AutoFarmActive == true)
     local isKanjiFarming = (stKj.IsFarming == true)
     local isFarming = isTruckFarming or isMinigameFarming or isKanjiFarming
     local elapsedSec = 0

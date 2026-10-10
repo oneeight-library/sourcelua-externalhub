@@ -971,6 +971,19 @@ function MinigameJob.Init(coreContext)
     print("[OE-External CDID] Modul Minigames Sumo Berhasil Diinisialisasi")
 end
 
+function MinigameJob.SetConfig(config)
+    if not config then return end
+    if config.autoOpenBox ~= nil then
+        State.AutoOpenBox = (config.autoOpenBox == true)
+    end
+    if config.role and (config.role == "Winner" or config.role == "Loser") then
+        State.Role = config.role
+    end
+    if State.UpdateStatsUI then
+        State.UpdateStatsUI()
+    end
+end
+
 function MinigameJob.SetRole(role)
     if role and (role == "Winner" or role == "Loser") then
         State.Role = role

@@ -158,6 +158,16 @@ function CDIDModule.HandleCommand(action, payload)
         end)
         return true
 
+    elseif action == "SET_MINIGAME_CONFIG" then
+        if MinigameJob and payload then
+            if MinigameJob.SetConfig then
+                MinigameJob.SetConfig(payload)
+            else
+                if payload.role and MinigameJob.SetRole then MinigameJob.SetRole(payload.role) end
+            end
+        end
+        return true
+
     elseif action == "SET_MINIGAME_ROLE" then
         if MinigameJob and payload and payload.role then
             if MinigameJob.SetRole then
@@ -337,7 +347,7 @@ function CDIDModule.GetTelemetry()
     local stKj = KanjiJawaJob and KanjiJawaJob.GetState() or {}
 
     local isTruckFarming = (st.IsFarming == true)
-    local isMinigameFarming = (stMg.IsFarming == true)
+    local isMinigameFarming = (stMg.IsFarming == true) or (stMg.AutoFarmActive == true)
     local isKanjiFarming = (stKj.IsFarming == true)
     local isFarming = isTruckFarming or isMinigameFarming or isKanjiFarming
     local elapsedSec = 0
