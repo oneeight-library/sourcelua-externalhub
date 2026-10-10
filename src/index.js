@@ -372,9 +372,16 @@ export class HubRoom {
     if (target) {
       try { target.ws.send(cmdPacket); } catch (_) {}
     } else {
-      for (const [_, b] of this.bots.entries()) {
-        try { b.ws.send(cmdPacket); } catch (_) {}
-      }
+      // Isolasi ketat: Jangan pernah broadcast ke bot lain jika targetBotId spesifik tidak ditemukan
+      console.warn(`[HubRoom] Target bot '${targetBotId}' tidak ditemukan / offline. Command '${action}' dibatalkan agar tidak bocor ke akun lain.`);
+      this.broadcastToControllers({
+        type: "BOT_LOG",
+        botId: targetBotId,
+        botName: targetBotId,
+        log: `Perintah '${action}' gagal: Akun sedang tidak terhubung / offline.`,
+        level: "WARN",
+        timestamp: Date.now()
+      });
     }
   }
 
