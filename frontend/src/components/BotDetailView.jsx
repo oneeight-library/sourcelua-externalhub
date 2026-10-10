@@ -262,14 +262,36 @@ export function BotDetailView({
     tabsContainerRef.current.scrollLeft = scrollLeftRef.current - walk;
   };
 
-  // State Minigames (SSOT Direct Sync with Local State)
-  const [role, setRole] = React.useState(config.minigameRole || bot.minigame?.role || "Winner");
+  // State Minigames (SSOT Direct Sync with Local State & Per-Account Persistence)
+  const roleStorageKey = `oe_minigame_role_${botAccountKey}`;
+  const [role, setRole] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem(roleStorageKey);
+      if (saved) return saved;
+    } catch (e) {}
+    return config.minigameRole || bot.minigame?.role || "Winner";
+  });
   const [autoOpenBox, setAutoOpenBox] = React.useState(features.autoOpenBox !== undefined ? !!features.autoOpenBox : !!bot.minigame?.autoOpenBox);
 
   React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem(roleStorageKey);
+      if (saved) {
+        setRole(saved);
+        return;
+      }
+    } catch (e) {}
     if (config.minigameRole) setRole(config.minigameRole);
     else if (bot.minigame?.role) setRole(bot.minigame.role);
-  }, [config.minigameRole, bot.minigame?.role]);
+  }, [bot.botId, roleStorageKey, config.minigameRole, bot.minigame?.role]);
+
+  const handleSelectRole = (newRole) => {
+    setRole(newRole);
+    try {
+      localStorage.setItem(roleStorageKey, newRole);
+    } catch (e) {}
+    onSendCommand(bot.botId, "SET_MINIGAME_ROLE", { role: newRole });
+  };
 
   React.useEffect(() => {
     if (features.autoOpenBox !== undefined) setAutoOpenBox(!!features.autoOpenBox);
@@ -957,17 +979,17 @@ export function BotDetailView({
                       type="button"
                       variant={role === "Winner" ? "emerald" : "outline"}
                       className="font-bold text-xs h-10 gap-1.5"
-                      onClick={() => setRole("Winner")}
+                      onClick={() => handleSelectRole("Winner")}
                     >
-                      <Crown className="h-4 w-4 text-amber-400" /> Winner (Panen)
+                      <Crown className="h-4 w-4 text-amber-400" /> Winner
                     </Button>
                     <Button
                       type="button"
                       variant={role === "Loser" ? "destructive" : "outline"}
                       className="font-bold text-xs h-10 gap-1.5"
-                      onClick={() => setRole("Loser")}
+                      onClick={() => handleSelectRole("Loser")}
                     >
-                      <Bot className="h-4 w-4" /> Loser (Tumbal)
+                      <Bot className="h-4 w-4" /> Loser
                     </Button>
                   </div>
                   <p className="text-[11px] text-zinc-400 mt-2 leading-relaxed">

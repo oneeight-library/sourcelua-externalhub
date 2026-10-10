@@ -158,6 +158,16 @@ function CDIDModule.HandleCommand(action, payload)
         end)
         return true
 
+    elseif action == "SET_MINIGAME_ROLE" then
+        if MinigameJob and payload and payload.role then
+            if MinigameJob.SetRole then
+                MinigameJob.SetRole(payload.role)
+            else
+                MinigameJob.Start({ role = payload.role })
+            end
+        end
+        return true
+
     elseif action == "BUY_MINIGAME_BOX" then
         if MinigameJob then MinigameJob.BuyBox() end
         return true

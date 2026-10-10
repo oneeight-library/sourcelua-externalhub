@@ -971,6 +971,18 @@ function MinigameJob.Init(coreContext)
     print("[OE-External CDID] Modul Minigames Sumo Berhasil Diinisialisasi")
 end
 
+function MinigameJob.SetRole(role)
+    if role and (role == "Winner" or role == "Loser") then
+        State.Role = role
+        if Context and Context.SendLog then
+            Context.SendLog(string.format("Role Minigames diubah ke: %s", State.Role), "INFO")
+        end
+        if State.UpdateStatsUI then
+            State.UpdateStatsUI()
+        end
+    end
+end
+
 function MinigameJob.Start(options)
     if options then
         if options.role then State.Role = options.role end

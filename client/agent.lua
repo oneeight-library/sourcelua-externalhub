@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv2075cu)
+    Version: 3.3.0 (Build: v3.3.mv20j06l)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv2075cu"
+local AGENT_BUILD_ID = "v3.3.mv20j06l"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -3271,6 +3271,18 @@ function MinigameJob.Init(coreContext)
     print("[OE-External CDID] Modul Minigames Sumo Berhasil Diinisialisasi")
 end
 
+function MinigameJob.SetRole(role)
+    if role and (role == "Winner" or role == "Loser") then
+        State.Role = role
+        if Context and Context.SendLog then
+            Context.SendLog(string.format("Role Minigames diubah ke: %s", State.Role), "INFO")
+        end
+        if State.UpdateStatsUI then
+            State.UpdateStatsUI()
+        end
+    end
+end
+
 function MinigameJob.Start(options)
     if options then
         if options.role then State.Role = options.role end
@@ -4603,6 +4615,16 @@ function CDIDModule.HandleCommand(action, payload)
             task.wait(0.3)
             respawnPlayerCharacter()
         end)
+        return true
+
+    elseif action == "SET_MINIGAME_ROLE" then
+        if MinigameJob and payload and payload.role then
+            if MinigameJob.SetRole then
+                MinigameJob.SetRole(payload.role)
+            else
+                MinigameJob.Start({ role = payload.role })
+            end
+        end
         return true
 
     elseif action == "BUY_MINIGAME_BOX" then
