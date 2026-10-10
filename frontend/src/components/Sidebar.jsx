@@ -3,8 +3,10 @@ import * as React from "react";
 import { Badge } from "@/ui/badge.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
 import { getGameConfig } from "@/config/games.js";
+import { getBotDisplayName, isBotWebSpoofed, useSpoofWebListener } from "@/lib/spoof.js";
 
 export function Sidebar({ bots, selectedBotId, onSelectBot }) {
+  useSpoofWebListener();
   return (
     <aside className="hidden md:flex flex-col w-72 shrink-0 border-r border-zinc-800/80 bg-zinc-950 h-full select-none">
       
@@ -56,7 +58,9 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
         {Array.from(bots.entries()).map(([id, b]) => {
           const gameCfg = getGameConfig(b.gameId);
           const isSelected = selectedBotId === id;
-          const initial = (b.name || "B").substring(0, 2).toUpperCase();
+          const displayName = getBotDisplayName(b);
+          const isSpoofed = isBotWebSpoofed(b);
+          const initial = displayName.substring(0, 2).toUpperCase();
 
           return (
             <button
@@ -81,7 +85,10 @@ export function Sidebar({ bots, selectedBotId, onSelectBot }) {
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-zinc-100 truncate">{b.name || "Bot"}</span>
+                  <span className="font-bold text-xs text-zinc-100 truncate flex items-center gap-1.5">
+                    <span>{displayName}</span>
+                    {isSpoofed && <span className="h-1.5 w-1.5 rounded-full bg-purple-400 shrink-0" title="Web Spoofed" />}
+                  </span>
                   <span className="text-[10px] ml-1">{gameCfg.icon}</span>
                 </div>
                 <div className="text-[11px] text-emerald-400 font-bold tabular-nums">

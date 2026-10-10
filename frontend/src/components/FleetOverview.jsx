@@ -5,8 +5,10 @@ import { Badge } from "@/ui/badge.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
 import { Users, Gamepad2, ArrowRight, AlertTriangle } from "lucide-react";
 import { getGameConfig } from "@/config/games.js";
+import { getBotDisplayName, isBotWebSpoofed, useSpoofWebListener } from "@/lib/spoof.js";
 
 export function FleetOverview({ bots, onSelectBot, onRejoinBot }) {
+  useSpoofWebListener();
   let farmingCount = 0;
   let kickedCount = 0;
   for (const [_, b] of bots.entries()) {
@@ -69,7 +71,9 @@ export function FleetOverview({ bots, onSelectBot, onRejoinBot }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {Array.from(bots.entries()).map(([id, b]) => {
                 const gameCfg = getGameConfig(b.gameId);
-                const initial = (b.name || "B").substring(0, 2).toUpperCase();
+                const displayName = getBotDisplayName(b);
+                const isSpoofed = isBotWebSpoofed(b);
+                const initial = displayName.substring(0, 2).toUpperCase();
 
                 return (
                   <div
@@ -94,7 +98,10 @@ export function FleetOverview({ bots, onSelectBot, onRejoinBot }) {
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-xs text-zinc-100 truncate">{b.name || "Bot"}</span>
+                          <span className="font-bold text-xs text-zinc-100 truncate flex items-center gap-1.5">
+                            <span>{displayName}</span>
+                            {isSpoofed && <span className="h-1.5 w-1.5 rounded-full bg-purple-400 shrink-0" title="Web Spoofed" />}
+                          </span>
                         </div>
                         <div className="text-xs text-emerald-400 font-bold tabular-nums mt-0.5">
                           {gameCfg.formatMoney(b.currentCash)}

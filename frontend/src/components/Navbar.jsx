@@ -5,8 +5,10 @@ import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/ui
 import { Avatar, AvatarImage, AvatarFallback } from "@/ui/avatar.jsx";
 import { ChevronDown, Users, Code2, Check } from "lucide-react";
 import { getGameConfig } from "@/config/games.js";
+import { getBotDisplayName, isBotWebSpoofed, useSpoofWebListener } from "@/lib/spoof.js";
 
 export function Navbar({ bots, selectedBotId, onSelectBot }) {
+  useSpoofWebListener();
   const [isOpen, setIsOpen] = React.useState(false);
   const [copiedLoader, setCopiedLoader] = React.useState(false);
 
@@ -68,7 +70,7 @@ export function Navbar({ bots, selectedBotId, onSelectBot }) {
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-zinc-400">Dashboard /</span>
             <span className="text-sm font-bold text-zinc-100">
-              {selectedBotId === "ALL" ? "Ringkasan Seluruh Akun" : (selectedBot ? selectedBot.name : "Akun")}
+              {selectedBotId === "ALL" ? "Ringkasan Seluruh Akun" : (selectedBot ? getBotDisplayName(selectedBot) : "Akun")}
             </span>
           </div>
           {selectedBot && gameCfg && (
@@ -148,7 +150,9 @@ export function Navbar({ bots, selectedBotId, onSelectBot }) {
                   {Array.from(bots.entries()).map(([id, b]) => {
                     const bGameCfg = getGameConfig(b.gameId);
                     const isSelected = selectedBotId === id;
-                    const initial = (b.name || "B").substring(0, 2).toUpperCase();
+                    const displayName = getBotDisplayName(b);
+                    const isSpoofed = isBotWebSpoofed(b);
+                    const initial = displayName.substring(0, 2).toUpperCase();
 
                     return (
                       <button
@@ -168,7 +172,10 @@ export function Navbar({ bots, selectedBotId, onSelectBot }) {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-xs text-zinc-100 truncate">{b.name || "Bot"}</span>
+                            <span className="font-bold text-xs text-zinc-100 truncate flex items-center gap-1.5">
+                              <span>{displayName}</span>
+                              {isSpoofed && <span className="h-1.5 w-1.5 rounded-full bg-purple-400 shrink-0" title="Web Spoofed" />}
+                            </span>
                             <span className="text-[10px]">{bGameCfg.icon}</span>
                           </div>
                           <div className="text-[11px] text-emerald-400 font-bold tabular-nums">

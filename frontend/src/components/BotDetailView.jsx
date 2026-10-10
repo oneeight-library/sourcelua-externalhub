@@ -367,6 +367,7 @@ export function BotDetailView({
     setSpoofWebsite(checked);
     try {
       localStorage.setItem(spoofWebStorageKey, String(checked));
+      window.dispatchEvent(new Event("oe_spoof_changed"));
     } catch (e) {}
   };
 
@@ -396,6 +397,9 @@ export function BotDetailView({
     const val = customSpoofInput ? customSpoofInput.trim() : "";
     if (!val) return;
     setLocalSpoofName(val);
+    try {
+      window.dispatchEvent(new Event("oe_spoof_changed"));
+    } catch (e) {}
     onSendCommand(bot.botId, "SET_SPOOFED_NAME", { spoofedName: val });
   };
 
