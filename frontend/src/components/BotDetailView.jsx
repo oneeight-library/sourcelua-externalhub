@@ -348,6 +348,28 @@ export function BotDetailView({
   const [customSpoofInput, setCustomSpoofInput] = React.useState(serverSpoofedName);
   const [isInputFocused, setIsInputFocused] = React.useState(false);
 
+  // Spoof Web Dashboard (Default: MATI/false, tersimpan per-akun di localStorage)
+  const spoofWebStorageKey = `oe_spoof_web_${botAccountKey}`;
+  const [spoofWebsite, setSpoofWebsite] = React.useState(() => {
+    try {
+      return localStorage.getItem(spoofWebStorageKey) === "true";
+    } catch (e) {}
+    return false;
+  });
+
+  React.useEffect(() => {
+    try {
+      setSpoofWebsite(localStorage.getItem(spoofWebStorageKey) === "true");
+    } catch (e) {}
+  }, [spoofWebStorageKey]);
+
+  const handleToggleSpoofWebsite = (checked) => {
+    setSpoofWebsite(checked);
+    try {
+      localStorage.setItem(spoofWebStorageKey, String(checked));
+    } catch (e) {}
+  };
+
   React.useEffect(() => {
     if (serverSpoofedName) {
       setLocalSpoofName(serverSpoofedName);
@@ -438,9 +460,16 @@ export function BotDetailView({
 
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-zinc-100">
-                  {bot.name || "Roblox Player"}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-zinc-100">
+                    {spoofWebsite ? (localSpoofName || "Warga_Sipil") : (bot.name || "Roblox Player")}
+                  </h2>
+                  {spoofWebsite && (
+                    <Badge variant="purple" className="text-[10px] font-bold bg-purple-950/60 text-purple-300 border border-purple-700/60">
+                      Web Spoofed
+                    </Badge>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-3 mt-1.5 text-xs text-zinc-400 flex-wrap">
@@ -1138,30 +1167,41 @@ export function BotDetailView({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-6 space-y-5">
             
-            {/* Spoofing Name Card */}
+            {/* Spoofing Name Card (2 Toggle: Roblox & Web) */}
             <Card className="border-purple-800/60 bg-gradient-to-br from-purple-950/20 via-zinc-900/60 to-zinc-950/80 shadow-lg">
               <CardHeader className="p-4 pb-2 border-b border-purple-900/40 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
                   <EyeOff className="h-4 w-4 text-purple-400" />
                   Spoofing Name
                 </CardTitle>
-                <Badge variant={streamerMode ? "purple" : "secondary"} className={`text-[10px] font-bold ${streamerMode ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-zinc-800 text-zinc-400"}`}>
-                  {streamerMode ? "AKTIF" : "NONAKTIF"}
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant={streamerMode ? "purple" : "secondary"} className={`text-[9px] font-bold ${streamerMode ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-zinc-800 text-zinc-400"}`}>
+                    Roblox: {streamerMode ? "ON" : "OFF"}
+                  </Badge>
+                  <Badge variant={spoofWebsite ? "purple" : "secondary"} className={`text-[9px] font-bold ${spoofWebsite ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-zinc-800 text-zinc-400"}`}>
+                    Web: {spoofWebsite ? "ON" : "OFF"}
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/50 border border-zinc-800/80">
-                  <div className="font-semibold text-xs text-zinc-100 flex items-center gap-2">
-                    <span>Nama Tampilan:</span>
-                    {streamerMode ? (
-                      <span className="bg-purple-950/80 border border-purple-700/60 text-purple-300 font-mono text-[10px] px-2 py-0.5 rounded-md font-bold">
-                        {localSpoofName || "Warga_Sipil"}
-                      </span>
-                    ) : (
-                      <span className="bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono text-[10px] px-2 py-0.5 rounded-md font-bold">
-                        {bot.name || "Nama Asli"} (Asli)
-                      </span>
-                    )}
+                {/* Status Nama Samaran Terpasang */}
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/80 flex items-center justify-between">
+                  <span className="text-xs text-zinc-400 font-medium">Nama Samaran:</span>
+                  <span className="bg-purple-950/80 border border-purple-700/60 text-purple-300 font-mono text-xs px-2.5 py-0.5 rounded-md font-bold">
+                    {localSpoofName || "Warga_Sipil"}
+                  </span>
+                </div>
+
+                {/* Toggle 1: Spoof Game Roblox (Default: AKTIF) */}
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold text-xs text-zinc-100 flex items-center gap-2">
+                      <Gamepad2 className="h-3.5 w-3.5 text-purple-400" />
+                      <span>Spoof Game Roblox</span>
+                    </div>
+                    <div className="text-[11px] text-zinc-400">
+                      Samarkan nama di overhead nametag, menu HP & CoreGui CDID
+                    </div>
                   </div>
                   <Switch 
                     checked={streamerMode} 
@@ -1169,7 +1209,25 @@ export function BotDetailView({
                   />
                 </div>
 
-                <form onSubmit={handleSendCustomSpoof} className="flex items-center gap-2">
+                {/* Toggle 2: Spoof Web Dashboard (Default: MATI) */}
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold text-xs text-zinc-100 flex items-center gap-2">
+                      <EyeOff className="h-3.5 w-3.5 text-blue-400" />
+                      <span>Spoof Web Dashboard</span>
+                    </div>
+                    <div className="text-[11px] text-zinc-400">
+                      Samarkan nama akun di header web saat live streaming / screen record
+                    </div>
+                  </div>
+                  <Switch 
+                    checked={spoofWebsite} 
+                    onCheckedChange={handleToggleSpoofWebsite} 
+                  />
+                </div>
+
+                {/* Form Input Custom Spoof Name */}
+                <form onSubmit={handleSendCustomSpoof} className="flex items-center gap-2 pt-1">
                   <input
                     type="text"
                     value={customSpoofInput}
