@@ -93,8 +93,9 @@ export function BotDetailView({
   const isJakarta = placeLower.includes("jakarta") || bot.placeId === "14005966837" || bot.placeId === 14005966837;
   const isJatim = placeLower.includes("jawa timur") || bot.placeId === "110369730911937" || bot.placeId === 110369730911937;
 
-  // Persistent Tab State (Disimpan di localStorage agar refresh tidak reset)
-  const storageKey = `oe_active_tab_${bot.gameId || "cdid"}`;
+  // Persistent Tab State Per-Akun (Setiap akun mengingat tab terakhirnya sendiri)
+  const botAccountKey = (bot.name || bot.botId || "default").toLowerCase();
+  const storageKey = `oe_active_tab_account_${botAccountKey}`;
   const defaultTab = isLobby
     ? "gateway"
     : isJakarta
@@ -112,6 +113,20 @@ export function BotDetailView({
     } catch (e) {}
     return defaultTab;
   });
+
+  // Saat akun berganti di sidebar, otomatis sinkronkan ke tab terakhir milik akun tersebut
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        setActiveTab(saved);
+        if (onTabChange) onTabChange(saved);
+        return;
+      }
+    } catch (e) {}
+    setActiveTab(defaultTab);
+    if (onTabChange) onTabChange(defaultTab);
+  }, [bot.botId, bot.name, storageKey, defaultTab]);
 
   const handleSelectTab = (tabId) => {
     setActiveTab(tabId);
