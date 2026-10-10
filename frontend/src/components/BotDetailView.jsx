@@ -136,11 +136,28 @@ export function BotDetailView({
     if (onTabChange) onTabChange(tabId);
   };
 
-  // Handlers Terpusat Auto Farm dengan Validasi & Toast Feedback
+  // Deteksi pekerjaan lain yang sedang aktif untuk proteksi 1 Akun 1 Pekerjaan
+  const getActiveRunningJob = () => {
+    if (isTruckFarming) return "Truk Kargo";
+    if (isMinigameActive) return "Minigames Sumo";
+    if (isBaristaActive) return "Kanji Jiwa (Barista)";
+    return null;
+  };
+
+  // Handlers Terpusat Auto Farm dengan Validasi, Mutual Exclusion & Toast Feedback
   const handleToggleTruckFarm = () => {
     if (isTruckFarming) {
       onSendCommand(bot.botId, "STOP_FARM", { jobType: "truck" });
-      toast.info("Auto Farm Dihentikan", `Truk Kargo untuk ${bot.name || "Akun"} dihentikan.`);
+      toast.info("Auto Farm Dihentikan", `Truk Kargo untuk ${bot.name || "Akun"} dihentikan. Karakter di-respawn bersih.`);
+      return;
+    }
+
+    const currentActiveJob = getActiveRunningJob();
+    if (currentActiveJob) {
+      toast.warn(
+        "Pekerjaan Lain Sedang Berjalan",
+        `Akun sedang menjalankan ${currentActiveJob}. Harap hentikan ${currentActiveJob} terlebih dahulu sebelum memulai Truk Kargo.`
+      );
       return;
     }
 
@@ -164,7 +181,16 @@ export function BotDetailView({
   const handleToggleMinigameFarm = () => {
     if (isMinigameActive) {
       onSendCommand(bot.botId, "STOP_MINIGAME_FARM");
-      toast.info("Auto Farm Dihentikan", `Minigames Sumo untuk ${bot.name || "Akun"} dihentikan.`);
+      toast.info("Auto Farm Dihentikan", `Minigames Sumo untuk ${bot.name || "Akun"} dihentikan. Karakter di-respawn bersih.`);
+      return;
+    }
+
+    const currentActiveJob = getActiveRunningJob();
+    if (currentActiveJob) {
+      toast.warn(
+        "Pekerjaan Lain Sedang Berjalan",
+        `Akun sedang menjalankan ${currentActiveJob}. Harap hentikan ${currentActiveJob} terlebih dahulu sebelum memulai Minigames Sumo.`
+      );
       return;
     }
 
@@ -184,7 +210,16 @@ export function BotDetailView({
   const handleToggleBaristaFarm = () => {
     if (isBaristaActive) {
       onSendCommand(bot.botId, "STOP_KANJI_JAWA_FARM");
-      toast.info("Auto Farm Dihentikan", `Kanji Jiwa (Barista) untuk ${bot.name || "Akun"} dihentikan.`);
+      toast.info("Auto Farm Dihentikan", `Kanji Jiwa (Barista) untuk ${bot.name || "Akun"} dihentikan. Karakter di-respawn bersih.`);
+      return;
+    }
+
+    const currentActiveJob = getActiveRunningJob();
+    if (currentActiveJob) {
+      toast.warn(
+        "Pekerjaan Lain Sedang Berjalan",
+        `Akun sedang menjalankan ${currentActiveJob}. Harap hentikan ${currentActiveJob} terlebih dahulu sebelum memulai Kanji Jiwa.`
+      );
       return;
     }
 

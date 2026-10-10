@@ -1,9 +1,9 @@
 --[[
     OneEight External Hub - Master Modular Client Agent
-    Version: 3.3.0 (Build: v3.3.mv18j3s2)
+    Version: 3.3.0 (Build: v3.3.mv2075cu)
 --]]
 
-local AGENT_BUILD_ID = "v3.3.mv18j3s2"
+local AGENT_BUILD_ID = "v3.3.mv2075cu"
 local LOADER_URL = "https://externalhub.oneeight-project18.workers.dev/loader"
 local HttpService = game:GetService("HttpService")
 local MY_INSTANCE_ID = HttpService:GenerateGUID(false)
@@ -4533,30 +4533,76 @@ function CDIDModule.Init(coreContext)
     end)
 end
 
+local function resignJobUnemployed()
+    pcall(function()
+        local rem = game:GetService("ReplicatedStorage"):FindFirstChild("NetworkContainer")
+        local evs = rem and rem:FindFirstChild("RemoteEvents")
+        local jobEv = evs and evs:FindFirstChild("Job")
+        if jobEv then
+            jobEv:FireServer("Unemployee")
+        end
+    end)
+end
+
+local function respawnPlayerCharacter()
+    pcall(function()
+        local char = LocalPlayer and LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                hum.Health = 0
+            end
+        end
+    end)
+end
+
+local function stopAllJobsClean(shouldRespawn)
+    if TruckJob and TruckJob.Stop then TruckJob.Stop() end
+    if MinigameJob and MinigameJob.Stop then MinigameJob.Stop() end
+    if KanjiJawaJob and KanjiJawaJob.Stop then KanjiJawaJob.Stop() end
+    resignJobUnemployed()
+    if shouldRespawn then
+        task.defer(function()
+            task.wait(0.3)
+            respawnPlayerCharacter()
+        end)
+    end
+end
+
 function CDIDModule.HandleCommand(action, payload)
     if action == "START_FARM" then
         local jobType = payload and payload.jobType or "truck"
         if jobType == "minigame" then
+            stopAllJobsClean(false)
             if MinigameJob then MinigameJob.Start(payload) end
         elseif jobType == "kanji_jawa" or jobType == "barista" then
+            stopAllJobsClean(false)
             if KanjiJawaJob then KanjiJawaJob.Start() end
         else
+            stopAllJobsClean(false)
             if TruckJob then TruckJob.Start() end
         end
         return true
 
     elseif action == "STOP_FARM" then
-        if TruckJob then TruckJob.Stop() end
-        if MinigameJob then MinigameJob.Stop() end
-        if KanjiJawaJob then KanjiJawaJob.Stop() end
+        stopAllJobsClean(true)
+        if Context and Context.SendLog then
+            Context.SendLog("Semua pekerjaan dihentikan. Resign ke Unemployed & karakter di-respawn.", "WARN")
+        end
         return true
 
     elseif action == "START_MINIGAME_FARM" then
+        stopAllJobsClean(false)
         if MinigameJob then MinigameJob.Start(payload) end
         return true
 
     elseif action == "STOP_MINIGAME_FARM" then
         if MinigameJob then MinigameJob.Stop() end
+        resignJobUnemployed()
+        task.defer(function()
+            task.wait(0.3)
+            respawnPlayerCharacter()
+        end)
         return true
 
     elseif action == "BUY_MINIGAME_BOX" then
@@ -4564,11 +4610,17 @@ function CDIDModule.HandleCommand(action, payload)
         return true
 
     elseif action == "START_KANJI_JAWA_FARM" or action == "START_BARISTA_FARM" then
+        stopAllJobsClean(false)
         if KanjiJawaJob then KanjiJawaJob.Start() end
         return true
 
     elseif action == "STOP_KANJI_JAWA_FARM" or action == "STOP_BARISTA_FARM" then
         if KanjiJawaJob then KanjiJawaJob.Stop() end
+        resignJobUnemployed()
+        task.defer(function()
+            task.wait(0.3)
+            respawnPlayerCharacter()
+        end)
         return true
 
     elseif action == "TELEPORT_CAFE" then
